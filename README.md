@@ -1,5 +1,5 @@
-# Window Tint Meter
- Desktop application for Window Tint Meter
+# Entry Gate and Play Detector
+ Desktop application for Entry Gate and Play Detector
 
 ## for Windows OS
 Install git for windows
