@@ -1,7 +1,9 @@
 from kivy.clock import Clock
 from kivy.lang import Builder
+from kivy.logger import Logger
 from kivy.core.window import Window
 from kivy.core.text import LabelBase
+from kivy.graphics.texture import Texture
 from kivymd.font_definitions import theme_font_styles
 from kivymd.uix.datatables import MDDataTable
 from kivy.uix.screenmanager import ScreenManager
@@ -17,6 +19,8 @@ import configparser
 import serial.tools.list_ports as ports
 import hashlib
 import serial
+import cv2
+from pymodbus.client import ModbusTcpClient
 
 colors = {
     "Red": {
@@ -80,6 +84,8 @@ COM_PORT_PRINTER = config['device']['COM_PORT_PRINTER']
 COM_PORT_WTM = config['device']['COM_PORT_WTM']
 TIME_OUT = 500
 
+rtsp_url_cam1 = 'rtsp://admin:TRBintegrated202@192.168.1.64:554/Streaming/Channels/101'
+
 dt_wtm_value = 0
 dt_wtm_flag = 0
 dt_wtm_user = 1
@@ -90,6 +96,14 @@ dt_no_reg = ""
 dt_no_uji = ""
 dt_nama = ""
 dt_jenis_kendaraan = ""
+
+modbus_client = ModbusTcpClient('192.168.1.111')
+
+flag_gate = False
+side_slip_val = 0
+axle_load_l_val = 0
+axle_load_r_val = 0
+speed_val = 0
 
 class ScreenLogin(MDScreen):
     def __init__(self, **kwargs):
@@ -141,11 +155,9 @@ class ScreenMain(MDScreen):
     def __init__(self, **kwargs):
         super(ScreenMain, self).__init__(**kwargs)
         global mydb, db_antrian
-        global audio, stream
         global flag_conn_stat, flag_play
         global count_starting, count_get_data
 
-        Clock.schedule_interval(self.regular_update_connection, 5)
         Clock.schedule_once(self.delayed_init, 1)
 
         flag_conn_stat = False
@@ -163,49 +175,13 @@ class ScreenMain(MDScreen):
 
         except Exception as e:
             toast_msg = f'error initiate Database: {e}'
-            toast(toast_msg)           
-
-    def regular_update_connection(self, dt):
-        global printer, wtm_device
-        global flag_conn_stat
-
-        try:
-            com_ports = list(ports.comports()) # create a list of com ['COM1','COM2'] 
-            for i in com_ports:
-                if i.name == COM_PORT_PRINTER:
-                    flag_conn_stat = True
-
-            printer = printerSerial(devfile = COM_PORT_PRINTER,
-                    baudrate = 38400,
-                    bytesize = 8,
-                    parity = 'N',
-                    stopbits = 1,
-                    timeout = 1.00,
-                    dsrdtr = True)    
-
-            wtm_device = serial.Serial()
-            wtm_device.baudrate = 115200
-            wtm_device.port = COM_PORT_WTM
-            parity=serial.PARITY_NONE,
-            stopbits=serial.STOPBITS_ONE,
-            bytesize=serial.EIGHTBITS        
-
-            # wtm_device = serial.Serial()devfile = COM_PORT_WTM,
-            #         baudrate = 115200,
-            #         bytesize = 8,
-            #         parity = 'N',
-            #         stopbits = 1,
-            #         timeout = 1.00)
-            
-            wtm_device.open()
-            
-        except Exception as e:
-            toast_msg = f'error initiate Printer'
-            toast(toast_msg)   
-            flag_conn_stat = False
-
+            toast(toast_msg)     
+        
     def delayed_init(self, dt):
+        Clock.schedule_interval(self.regular_update_connection, 5)
+        Clock.schedule_interval(self.regular_get_data, 0.5)
         Clock.schedule_interval(self.regular_update_display, 1)
+        # Clock.schedule_interval(self.regular_highspeed_display, 0.5)
         layout = self.ids.layout_table
         
         self.data_tables = MDDataTable(
@@ -225,6 +201,59 @@ class ScreenMain(MDScreen):
         self.data_tables.bind(on_row_press=self.on_row_press)
         layout.add_widget(self.data_tables)
         self.exec_reload_table()
+
+
+    def regular_update_connection(self, dt):
+        global flag_conn_stat
+
+        try:
+            modbus_client.connect()
+            flag_conn_stat = modbus_client.connected
+            modbus_client.close()
+
+            # com_ports = list(ports.comports()) # create a list of com ['COM1','COM2'] 
+            # for i in com_ports:
+            #     if i.name == COM_PORT_PRINTER:
+            #         flag_conn_stat = True
+
+            # printer = printerSerial(devfile = COM_PORT_PRINTER,
+            #         baudrate = 38400,
+            #         bytesize = 8,
+            #         parity = 'N',
+            #         stopbits = 1,
+            #         timeout = 1.00,
+            #         dsrdtr = True)    
+
+            # wtm_device = serial.Serial()
+            # wtm_device.baudrate = 115200
+            # wtm_device.port = COM_PORT_WTM
+            # parity=serial.PARITY_NONE,
+            # stopbits=serial.STOPBITS_ONE,
+            # bytesize=serial.EIGHTBITS        
+            
+        except Exception as e:
+            toast_msg = f'{e}'
+            toast(toast_msg)   
+            flag_conn_stat = False
+
+    def regular_get_data(self, dt):
+        try:
+            if flag_conn_stat:
+                modbus_client.connect()
+                side_slip_registers = modbus_client.read_holding_registers(3212, 2, slave=1) #V1000 - V3001
+                axle_load_registers = modbus_client.read_holding_registers(3242, 2, slave=1) #V1030 - V3031
+                speed_registers = modbus_client.read_holding_registers(3272, 2, slave=1) #V1060 - V3061
+                
+        except Exception as e:
+            Logger.error(e)
+
+    # def regular_highspeed_display(self, dt):
+    #     try:
+    #         pass           
+
+    #     except Exception as e:
+    #         Logger.error(e)
+
 
     def sort_on_num(self, data):
         try:
@@ -256,14 +285,14 @@ class ScreenMain(MDScreen):
         global dt_wtm_flag, dt_wtm_value, dt_wtm_user, dt_wtm_post
         try:
             screen_login = self.screen_manager.get_screen('screen_login')
-            screen_counter = self.screen_manager.get_screen('screen_counter')
+            screen_control = self.screen_manager.get_screen('screen_control')
 
             self.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
             self.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
             screen_login.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
             screen_login.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
-            screen_counter.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
-            screen_counter.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
+            screen_control.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
+            screen_control.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
 
             self.ids.lb_no_antrian.text = str(dt_no_antrian)
             self.ids.lb_no_reg.text = str(dt_no_reg)
@@ -271,121 +300,36 @@ class ScreenMain(MDScreen):
             self.ids.lb_nama.text = str(dt_nama)
             self.ids.lb_jenis_kendaraan.text = str(dt_jenis_kendaraan)
 
-            screen_counter.ids.lb_no_antrian.text = str(dt_no_antrian)
-            screen_counter.ids.lb_no_reg.text = str(dt_no_reg)
-            screen_counter.ids.lb_no_uji.text = str(dt_no_uji)
-            screen_counter.ids.lb_nama.text = str(dt_nama)
-            screen_counter.ids.lb_jenis_kendaraan.text = str(dt_jenis_kendaraan)
+            screen_control.ids.lb_no_antrian.text = str(dt_no_antrian)
+            screen_control.ids.lb_no_reg.text = str(dt_no_reg)
+            screen_control.ids.lb_no_uji.text = str(dt_no_uji)
+            screen_control.ids.lb_nama.text = str(dt_nama)
+            screen_control.ids.lb_jenis_kendaraan.text = str(dt_jenis_kendaraan)
 
             if(dt_wtm_flag == "Belum Tes"):
                 self.ids.bt_start.disabled = False
             else:
                 self.ids.bt_start.disabled = True
 
-            if(not flag_play):
-                screen_counter.ids.bt_save.md_bg_color = colors['Green']['200']
-                screen_counter.ids.bt_save.disabled = False
-                screen_counter.ids.bt_reload.md_bg_color = colors['Red']['A200']
-                screen_counter.ids.bt_reload.disabled = False
-            else:
-                screen_counter.ids.bt_reload.disabled = True
-                screen_counter.ids.bt_save.disabled = True
-
             if(not flag_conn_stat):
                 self.ids.lb_comm.color = colors['Red']['A200']
-                self.ids.lb_comm.text = 'Printer Tidak Terhubung'
+                self.ids.lb_comm.text = 'PLC Tidak Terhubung'
                 screen_login.ids.lb_comm.color = colors['Red']['A200']
-                screen_login.ids.lb_comm.text = 'Printer Tidak Terhubung'
-                screen_counter.ids.lb_comm.color = colors['Red']['A200']
-                screen_counter.ids.lb_comm.text = 'Printer Tidak Terhubung'
+                screen_login.ids.lb_comm.text = 'PLC Tidak Terhubung'
 
             else:
                 self.ids.lb_comm.color = colors['Blue']['200']
-                self.ids.lb_comm.text = 'Printer Terhubung'
+                self.ids.lb_comm.text = 'PLC Terhubung'
                 screen_login.ids.lb_comm.color = colors['Blue']['200']
-                screen_login.ids.lb_comm.text = 'Printer Terhubung'
-                screen_counter.ids.lb_comm.color = colors['Blue']['200']
-                screen_counter.ids.lb_comm.text = 'Printer Terhubung'
-
-            if(count_starting <= 0):
-                screen_counter.ids.lb_test_subtitle.text = "HASIL PENGUKURAN"
-                screen_counter.ids.lb_window_tint.text = str(np.round(dt_wtm_value, 2))
-                screen_counter.ids.lb_info.text = "Ambang Batas Tingkat Meneruskan Cahaya pada Kaca Kendaraan Anda adalah 70%"
-                                               
-            elif(count_starting > 0):
-                if(flag_play):
-                    screen_counter.ids.lb_test_subtitle.text = "MEMULAI PENGUKURAN"
-                    screen_counter.ids.lb_window_tint.text = str(count_starting)
-                    screen_counter.ids.lb_info.text = "Silahkan Nyalakan Klakson Kendaraan"
-
-            if(dt_wtm_value >= 70):
-                screen_counter.ids.lb_info.text = "Kaca Kendaraan Anda Memiliki Tingkat Meneruskan Cahaya Dalam Range Ambang Batas"
-            else:
-                screen_counter.ids.lb_info.text = "Kaca Kendaraan Anda Memiliki Tingkat Meneruskan Cahaya Diluar Ambang Batas"
-
-            if(count_get_data <= 0):
-                if(not flag_play):
-                    screen_counter.ids.lb_test_result.size_hint_y = 0.25
-                    if(dt_wtm_value >= 70):
-                        screen_counter.ids.lb_test_result.md_bg_color = colors['Green']['200']
-                        screen_counter.ids.lb_test_result.text = "LULUS"
-                        dt_wtm_flag = "Lulus"
-                        screen_counter.ids.lb_test_result.text_color = colors['Green']['700']
-                    else:
-                        screen_counter.ids.lb_test_result.md_bg_color = colors['Red']['A200']
-                        screen_counter.ids.lb_test_result.text = "TIDAK LULUS"
-                        dt_wtm_flag = "Tidak Lulus"
-                        screen_counter.ids.lb_test_result.text_color = colors['Red']['A700']
-
-            elif(count_get_data > 0):
-                    screen_counter.ids.lb_test_result.md_bg_color = "#EEEEEE"
-                    # screen_counter.ids.lb_test_result.size_hint_y = None
-                    # screen_counter.ids.lb_test_result.height = dp(0)
-                    screen_counter.ids.lb_test_result.text = ""
+                screen_login.ids.lb_comm.text = 'PLC Terhubung'
 
             self.ids.lb_operator.text = dt_user
             screen_login.ids.lb_operator.text = dt_user
-            screen_counter.ids.lb_operator.text = dt_user
+            screen_control.ids.lb_operator.text = dt_user
 
         except Exception as e:
             toast_msg = f'error update display: {e}'
             toast(toast_msg)                
-
-    def regular_get_data(self, dt):
-        global flag_play
-        global dt_wtm_value
-        global count_starting, count_get_data
-        global wtm_device
-        try:
-            if(count_starting > 0):
-                count_starting -= 1              
-
-            if(count_get_data > 0):
-                count_get_data -= 1
-                
-            elif(count_get_data <= 0):
-                # flag_play = False
-                # Clock.unschedule(self.regular_get_data)
-
-            # if(count_starting <= 0):
-                arr_ref = np.loadtxt("data\sample_data.csv", delimiter=";", dtype=str, skiprows=1)
-                arr_val_ref = arr_ref[:,0]
-                arr_data_ref = arr_ref[:,1:]
-
-                data_byte = wtm_device.readline().decode("utf-8").strip()  # read the incoming data and remove newline character
-                if data_byte != "":
-                    arr_data_byte = np.array(data_byte.split())
-
-                    for i in range(arr_val_ref.size):
-                        if(np.array_equal(arr_data_byte, arr_data_ref[i])):
-                            dt_wtm_value = float(arr_val_ref[i])
-                
-                flag_play = False
-                Clock.unschedule(self.regular_get_data)
-
-        except Exception as e:
-            toast_msg = f'error get data: {e}'
-            print(toast_msg) 
 
     def exec_reload_table(self):
         global mydb, db_antrian
@@ -404,61 +348,99 @@ class ScreenMain(MDScreen):
             print(toast_msg)
 
     def exec_start(self):
-        global flag_play, stream, audio
+        global flag_play
 
         if(not flag_play):
-            stream.start_stream()
             Clock.schedule_interval(self.regular_get_data, 1)
-            self.open_screen_counter()
+            self.open_screen_control()
             flag_play = True
 
             # stream.close()
             # audio.terminate()  
 
-    def open_screen_counter(self):
-        self.screen_manager.current = 'screen_counter'
+    def open_screen_control(self):
+        self.screen_manager.current = 'screen_control'
 
     def exec_logout(self):
         self.screen_manager.current = 'screen_login'
 
-class ScreenCounter(MDScreen):        
+class ScreenControl(MDScreen):        
     def __init__(self, **kwargs):
-        super(ScreenCounter, self).__init__(**kwargs)
+        super(ScreenControl, self).__init__(**kwargs)
         Clock.schedule_once(self.delayed_init, 2)
+        Clock.schedule_interval(self.update_frame, 1)
         
     def delayed_init(self, dt):
         pass
 
-    def exec_start(self):
-        global flag_play
-        global count_starting, count_get_data
+    def exec_gate_open(self):
+        global flag_conn_stat
+        global flag_gate
 
-        screen_main = self.screen_manager.get_screen('screen_main')
+        if(not flag_gate):
+            flag_gate = True
 
-        count_starting = 3
-        count_get_data = 10
+        try:
+            if flag_conn_stat:
+                modbus_client.connect()
+                modbus_client.write_coil(3072, flag_gate, slave=1) #M0
+                modbus_client.close()
+        except:
+            toast("error send exec_gate_open data to PLC Slave") 
 
-        if(not flag_play):
-            stream.start_stream()
-            Clock.schedule_interval(screen_main.regular_get_data, 1)
-            flag_play = True
+    def exec_gate_close(self):
+        global flag_conn_stat
+        global flag_gate
 
-    def exec_reload(self):
-        global flag_play
-        global count_starting, count_get_data, dt_wtm_value
+        if(flag_gate):
+            flag_gate = False
 
-        screen_main = self.screen_manager.get_screen('screen_main')
+        try:
+            if flag_conn_stat:
+                modbus_client.connect()
+                modbus_client.write_coil(3073, not flag_gate, slave=1) #M1
+                modbus_client.close()
+        except:
+            toast("error send exec_gate_close data to PLC Slave") 
 
-        count_starting = 3
-        count_get_data = 10
-        dt_wtm_value = 0
-        self.ids.bt_reload.disabled = True
-        self.ids.lb_window_tint.text = "..."
+    def exec_gate_stop(self):
+        global flag_conn_stat
 
-        if(not flag_play):
-            stream.start_stream()
-            Clock.schedule_interval(screen_main.regular_get_data, 1)
-            flag_play = True
+        try:
+            if flag_conn_stat:
+                modbus_client.connect()
+                modbus_client.write_coil(3072, False, slave=1) #M0
+                modbus_client.write_coil(3073, False, slave=1) #M1
+                modbus_client.close()
+        except:
+            toast("error send exec_gate_stop data to PLC Slave") 
+
+    def update_frame(self, dt):
+        global rtsp_url_cam1
+        try:
+            # Membaca frame dari stream
+            self.capture = cv2.VideoCapture(rtsp_url_cam1)
+            ret, frame = self.capture.read()
+
+            if ret:
+                # Membalik frame secara vertikal
+                frame = cv2.flip(frame, 0)  # 0 untuk membalik secara vertikal
+
+                # OpenCV menggunakan format BGR, ubah ke RGB
+                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+                # Konversi frame menjadi texture untuk ditampilkan di Kivy
+                buf = frame_rgb.tobytes()
+                texture = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt='rgb')
+                texture.blit_buffer(buf, colorfmt='rgb', bufferfmt='ubyte')
+
+                # Update widget Image dengan texture baru
+                # self.img_widget.texture = texture
+                self.ids.image_view_front.texture = texture
+
+        except Exception as e:
+            toast_msg = f'error update frame: {e}'
+            print(toast_msg)
 
     def exec_save(self):
         global flag_play
@@ -466,46 +448,6 @@ class ScreenCounter(MDScreen):
         global mydb, db_antrian
         global dt_no_antrian, dt_no_reg, dt_no_uji, dt_nama, dt_jenis_kendaraan
         global dt_wtm_flag, dt_wtm_value, dt_wtm_user, dt_wtm_post
-        global printer
-
-        self.ids.bt_save.disabled = True
-
-        mycursor = mydb.cursor()
-
-        sql = "UPDATE tb_cekident SET wtm_flag = %s, wtm_value = %s, wtm_user = %s, wtm_post = %s WHERE noantrian = %s"
-        sql_wtm_flag = (1 if dt_wtm_flag == "Lulus" else 2)
-        dt_wtm_post = str(time.strftime("%Y/%m/%d %H:%M:%S", time.localtime()))
-        print_datetime = str(time.strftime("%d %B %Y %H:%M:%S", time.localtime()))
-        sql_val = (sql_wtm_flag, dt_wtm_value, dt_wtm_user, dt_wtm_post, dt_no_antrian)
-        mycursor.execute(sql, sql_val)
-        mydb.commit()
-
-        printer.set(align="center", normal_textsize=True)
-        printer.image("assets/logo-dishub-print.png")
-        printer.ln()
-        printer.textln("HASIL UJI TINGKAT PENERUSAN CAHAYA KACA KENDARAAN")
-        printer.set(bold=True)
-        printer.textln(f"Tanggal: {print_datetime}")
-        printer.textln("=======================================")
-        printer.set(align="left", normal_textsize=True)
-        printer.textln(f"No Antrian: {dt_no_antrian}")
-        printer.text(f"No Reg: {dt_no_reg}\t")
-        printer.textln(f"No Uji: {dt_no_uji}")
-        printer.textln(f"Nama: {dt_nama}")
-        printer.textln(f"Jenis Kendaraan: {dt_jenis_kendaraan}")
-        printer.textln("  ")
-        printer.set(double_height=True, double_width=True)
-        printer.text(f"Status:\t")
-        printer.set(bold=True)
-        printer.textln(f"{dt_wtm_flag}")
-        printer.set(bold=False)
-        printer.text(f"Nilai:\t")
-        printer.set(bold=True)
-        printer.textln(f"{str(np.round(dt_wtm_value, 2))}")
-        printer.set(align="center", normal_textsize=True)     
-        printer.textln("  ")
-        printer.image("assets/logo-trb-print.png")
-        printer.cut()
 
         self.open_screen_main()
 
