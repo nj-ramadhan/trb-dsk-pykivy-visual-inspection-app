@@ -180,7 +180,7 @@ class ScreenMain(MDScreen):
     def delayed_init(self, dt):
         Clock.schedule_interval(self.regular_update_connection, 5)
         Clock.schedule_interval(self.regular_get_data, 0.5)
-        Clock.schedule_interval(self.regular_update_display, 1)
+        Clock.schedule_interval(self.regular_update_display, 0.5)
         # Clock.schedule_interval(self.regular_highspeed_display, 0.5)
         layout = self.ids.layout_table
         
@@ -237,12 +237,19 @@ class ScreenMain(MDScreen):
             flag_conn_stat = False
 
     def regular_get_data(self, dt):
+        global side_slip_val, axle_load_l_val, axle_load_r_val, speed_val
         try:
             if flag_conn_stat:
                 modbus_client.connect()
-                side_slip_registers = modbus_client.read_holding_registers(3212, 2, slave=1) #V1000 - V3001
-                axle_load_registers = modbus_client.read_holding_registers(3242, 2, slave=1) #V1030 - V3031
-                speed_registers = modbus_client.read_holding_registers(3272, 2, slave=1) #V1060 - V3061
+                side_slip_registers = modbus_client.read_holding_registers(1512, 2, slave=1) #V1000 - V1001
+                axle_load_registers = modbus_client.read_holding_registers(1542, 2, slave=1) #V1030 - V1031
+                speed_registers = modbus_client.read_holding_registers(1572, 2, slave=1) #V1060 - V1061
+                modbus_client.close()
+
+                side_slip_val = side_slip_registers.registers[0]
+                axle_load_l_val = axle_load_registers.registers[0]
+                axle_load_r_val = axle_load_registers.registers[1]
+                speed_val = speed_registers.registers[0]
                 
         except Exception as e:
             Logger.error(e)
@@ -283,6 +290,7 @@ class ScreenMain(MDScreen):
         global dt_wtm_value, count_starting, count_get_data
         global dt_user, dt_no_antrian, dt_no_reg, dt_no_uji, dt_nama, dt_jenis_kendaraan
         global dt_wtm_flag, dt_wtm_value, dt_wtm_user, dt_wtm_post
+        global side_slip_val, axle_load_l_val, axle_load_r_val, speed_val
         try:
             screen_login = self.screen_manager.get_screen('screen_login')
             screen_control = self.screen_manager.get_screen('screen_control')
@@ -305,6 +313,12 @@ class ScreenMain(MDScreen):
             screen_control.ids.lb_no_uji.text = str(dt_no_uji)
             screen_control.ids.lb_nama.text = str(dt_nama)
             screen_control.ids.lb_jenis_kendaraan.text = str(dt_jenis_kendaraan)
+
+            screen_control.ids.lb_side_slip_val.text = str(side_slip_val)
+            screen_control.ids.lb_axle_load_l_val.text = str(axle_load_l_val)
+            screen_control.ids.lb_axle_load_r_val.text = str(axle_load_r_val)
+            screen_control.ids.lb_speed_val.text = str(speed_val)
+
 
             if(dt_wtm_flag == "Belum Tes"):
                 self.ids.bt_start.disabled = False
@@ -368,7 +382,7 @@ class ScreenControl(MDScreen):
     def __init__(self, **kwargs):
         super(ScreenControl, self).__init__(**kwargs)
         Clock.schedule_once(self.delayed_init, 2)
-        Clock.schedule_interval(self.update_frame, 1)
+        # Clock.schedule_interval(self.update_frame, 1)
         
     def delayed_init(self, dt):
         pass
