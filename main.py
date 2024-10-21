@@ -241,12 +241,12 @@ class ScreenMain(MDScreen):
         try:
             if flag_conn_stat:
                 modbus_client.connect()
-                side_slip_registers = modbus_client.read_holding_registers(1512, 2, slave=1) #V1000 - V1001
-                axle_load_registers = modbus_client.read_holding_registers(1542, 2, slave=1) #V1030 - V1031
-                speed_registers = modbus_client.read_holding_registers(1572, 2, slave=1) #V1060 - V1061
+                side_slip_registers = modbus_client.read_holding_registers(1612, 1, slave=1) #V1100
+                axle_load_registers = modbus_client.read_holding_registers(1712, 2, slave=1) #V1200 - V1201
+                speed_registers = modbus_client.read_holding_registers(1812, 1, slave=1) #V1360
                 modbus_client.close()
 
-                side_slip_val = side_slip_registers.registers[0]
+                side_slip_val = side_slip_registers.registers[0] / 10
                 axle_load_l_val = axle_load_registers.registers[0]
                 axle_load_r_val = axle_load_registers.registers[1]
                 speed_val = speed_registers.registers[0]
