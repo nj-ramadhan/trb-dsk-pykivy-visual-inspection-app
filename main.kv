@@ -3,7 +3,8 @@
 #:import NoTransition kivy.uix.screenmanager.NoTransition
 #:include screen_login.kv
 #:include screen_main.kv
-#:include screen_control.kv
+#:include screen_gate_control.kv
+#:include screen_play_detect.kv
 
 # ScreenManager:
 <RootScreen>:
@@ -20,8 +21,13 @@
         name: 'screen_main'
         screen_manager: screen_manager
 
-    ScreenControl:
-        id: screen_control
-        name: 'screen_control'
+    ScreenGateControl:
+        id: screen_gate_control
+        name: 'screen_gate_control'
+        screen_manager: screen_manager   
+
+    ScreenPlayDetect:
+        id: screen_play_detect
+        name: 'screen_play_detect'
         screen_manager: screen_manager   
 

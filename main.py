@@ -293,14 +293,17 @@ class ScreenMain(MDScreen):
         global side_slip_val, axle_load_l_val, axle_load_r_val, speed_val
         try:
             screen_login = self.screen_manager.get_screen('screen_login')
-            screen_control = self.screen_manager.get_screen('screen_control')
+            screen_gate_control = self.screen_manager.get_screen('screen_gate_control')
+            screen_play_detect = self.screen_manager.get_screen('screen_play_detect')
 
             self.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
             self.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
             screen_login.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
             screen_login.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
-            screen_control.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
-            screen_control.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
+            screen_gate_control.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
+            screen_gate_control.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
+            screen_play_detect.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
+            screen_play_detect.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
 
             self.ids.lb_no_antrian.text = str(dt_no_antrian)
             self.ids.lb_no_reg.text = str(dt_no_reg)
@@ -308,17 +311,17 @@ class ScreenMain(MDScreen):
             self.ids.lb_nama.text = str(dt_nama)
             self.ids.lb_jenis_kendaraan.text = str(dt_jenis_kendaraan)
 
-            screen_control.ids.lb_no_antrian.text = str(dt_no_antrian)
-            screen_control.ids.lb_no_reg.text = str(dt_no_reg)
-            screen_control.ids.lb_no_uji.text = str(dt_no_uji)
-            screen_control.ids.lb_nama.text = str(dt_nama)
-            screen_control.ids.lb_jenis_kendaraan.text = str(dt_jenis_kendaraan)
+            screen_gate_control.ids.lb_no_antrian.text = str(dt_no_antrian)
+            screen_gate_control.ids.lb_no_reg.text = str(dt_no_reg)
+            screen_gate_control.ids.lb_no_uji.text = str(dt_no_uji)
+            screen_gate_control.ids.lb_nama.text = str(dt_nama)
+            screen_gate_control.ids.lb_jenis_kendaraan.text = str(dt_jenis_kendaraan)
 
-            screen_control.ids.lb_side_slip_val.text = str(side_slip_val)
-            screen_control.ids.lb_axle_load_l_val.text = str(axle_load_l_val)
-            screen_control.ids.lb_axle_load_r_val.text = str(axle_load_r_val)
-            screen_control.ids.lb_speed_val.text = str(speed_val)
-
+            screen_play_detect.ids.lb_no_antrian.text = str(dt_no_antrian)
+            screen_play_detect.ids.lb_no_reg.text = str(dt_no_reg)
+            screen_play_detect.ids.lb_no_uji.text = str(dt_no_uji)
+            screen_play_detect.ids.lb_nama.text = str(dt_nama)
+            screen_play_detect.ids.lb_jenis_kendaraan.text = str(dt_jenis_kendaraan)
 
             if(dt_wtm_flag == "Belum Tes"):
                 self.ids.bt_start.disabled = False
@@ -339,7 +342,7 @@ class ScreenMain(MDScreen):
 
             self.ids.lb_operator.text = dt_user
             screen_login.ids.lb_operator.text = dt_user
-            screen_control.ids.lb_operator.text = dt_user
+            screen_gate_control.ids.lb_operator.text = dt_user
 
         except Exception as e:
             toast_msg = f'error update display: {e}'
@@ -366,21 +369,126 @@ class ScreenMain(MDScreen):
 
         if(not flag_play):
             Clock.schedule_interval(self.regular_get_data, 1)
-            self.open_screen_control()
+            self.open_screen_gate_control()
             flag_play = True
 
             # stream.close()
             # audio.terminate()  
 
-    def open_screen_control(self):
-        self.screen_manager.current = 'screen_control'
+    def open_screen_gate_control(self):
+        self.screen_manager.current = 'screen_gate_control'
 
     def exec_logout(self):
         self.screen_manager.current = 'screen_login'
 
-class ScreenControl(MDScreen):        
+class ScreenGateControl(MDScreen):        
     def __init__(self, **kwargs):
-        super(ScreenControl, self).__init__(**kwargs)
+        super(ScreenGateControl, self).__init__(**kwargs)
+        Clock.schedule_once(self.delayed_init, 2)
+        # Clock.schedule_interval(self.update_frame, 1)
+        
+    def delayed_init(self, dt):
+        pass
+
+    def exec_gate_open(self):
+        global flag_conn_stat
+        global flag_gate
+
+        if(not flag_gate):
+            flag_gate = True
+
+        try:
+            if flag_conn_stat:
+                modbus_client.connect()
+                modbus_client.write_coil(3072, flag_gate, slave=1) #M0
+                modbus_client.close()
+        except:
+            toast("error send exec_gate_open data to PLC Slave") 
+
+    def exec_gate_close(self):
+        global flag_conn_stat
+        global flag_gate
+
+        if(flag_gate):
+            flag_gate = False
+
+        try:
+            if flag_conn_stat:
+                modbus_client.connect()
+                modbus_client.write_coil(3073, not flag_gate, slave=1) #M1
+                modbus_client.close()
+        except:
+            toast("error send exec_gate_close data to PLC Slave") 
+
+    def exec_gate_stop(self):
+        global flag_conn_stat
+
+        try:
+            if flag_conn_stat:
+                modbus_client.connect()
+                modbus_client.write_coil(3072, False, slave=1) #M0
+                modbus_client.write_coil(3073, False, slave=1) #M1
+                modbus_client.close()
+        except:
+            toast("error send exec_gate_stop data to PLC Slave") 
+
+    def update_frame(self, dt):
+        global rtsp_url_cam1
+        try:
+            # Membaca frame dari stream
+            self.capture = cv2.VideoCapture(rtsp_url_cam1)
+            ret, frame = self.capture.read()
+
+            if ret:
+                # Membalik frame secara vertikal
+                frame = cv2.flip(frame, 0)  # 0 untuk membalik secara vertikal
+
+                # OpenCV menggunakan format BGR, ubah ke RGB
+                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+                # Konversi frame menjadi texture untuk ditampilkan di Kivy
+                buf = frame_rgb.tobytes()
+                texture = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt='rgb')
+                texture.blit_buffer(buf, colorfmt='rgb', bufferfmt='ubyte')
+
+                # Update widget Image dengan texture baru
+                # self.img_widget.texture = texture
+                self.ids.image_view_front.texture = texture
+
+        except Exception as e:
+            toast_msg = f'error update frame: {e}'
+            print(toast_msg)
+
+    def exec_save(self):
+        global flag_play
+        global count_starting, count_get_data
+        global mydb, db_antrian
+        global dt_no_antrian, dt_no_reg, dt_no_uji, dt_nama, dt_jenis_kendaraan
+        global dt_wtm_flag, dt_wtm_value, dt_wtm_user, dt_wtm_post
+
+        self.open_screen_main()
+
+    def open_screen_main(self):
+        global flag_play        
+        global count_starting, count_get_data
+
+        screen_main = self.screen_manager.get_screen('screen_main')
+
+        count_starting = 3
+        count_get_data = 10
+        flag_play = False   
+        screen_main.exec_reload_table()
+        self.screen_manager.current = 'screen_main'
+
+    def exec_start(self):
+        self.screen_manager.current = 'screen_play_detect'
+
+    def exec_logout(self):
+        self.screen_manager.current = 'screen_login'
+
+class ScreenPlayDetect(MDScreen):        
+    def __init__(self, **kwargs):
+        super(ScreenPlayDetect, self).__init__(**kwargs)
         Clock.schedule_once(self.delayed_init, 2)
         # Clock.schedule_interval(self.update_frame, 1)
         
@@ -483,7 +591,7 @@ class ScreenControl(MDScreen):
 class RootScreen(ScreenManager):
     pass             
 
-class SoundLevelMeterApp(MDApp):
+class PlayDetectorApp(MDApp):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -512,4 +620,4 @@ class SoundLevelMeterApp(MDApp):
         return RootScreen()
 
 if __name__ == '__main__':
-    SoundLevelMeterApp().run()
+    PlayDetectorApp().run()
