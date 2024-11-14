@@ -80,16 +80,33 @@ DB_NAME = config['mysql']['DB_NAME']
 TB_WTM = config['mysql']['TB_WTM']
 TB_USER = config['mysql']['TB_USER']
 
-COM_PORT_PRINTER = config['device']['COM_PORT_PRINTER']
-COM_PORT_WTM = config['device']['COM_PORT_WTM']
+COUNT_STARTING = 3
+COUNT_ACQUISITION = 4
 TIME_OUT = 500
 
 rtsp_url_cam1 = 'rtsp://admin:TRBintegrated202@192.168.1.64:554/Streaming/Channels/101'
 
-dt_wtm_value = 0
-dt_wtm_flag = 0
-dt_wtm_user = 1
-dt_wtm_post = str(time.strftime("%Y/%m/%d %H:%M:%S", time.localtime()))
+dt_check_flag = 0
+dt_check_user = 1
+dt_check_post = str(time.strftime("%Y/%m/%d %H:%M:%S", time.localtime()))
+
+dt_check_body_flag = 0
+dt_check_body_image = ""
+dt_check_chassis_flag = 0
+dt_check_chassis_image = ""
+dt_check_engine_flag = 0
+dt_check_engine_image = ""
+dt_check_handle_flag = 0
+dt_check_handle_image = ""
+dt_check_wiper_flag = 0
+dt_check_wiper_image = ""
+dt_check_windshield_flag = 0
+dt_check_windshield_image = ""
+dt_check_headlight_flag = 0
+dt_check_headlight_image = ""
+dt_check_signallight_flag = 0
+dt_check_signallight_image = ""
+
 dt_user = "SILAHKAN LOGIN"
 dt_no_antrian = ""
 dt_no_reg = ""
@@ -100,10 +117,7 @@ dt_jenis_kendaraan = ""
 modbus_client = ModbusTcpClient('192.168.1.111')
 
 flag_gate = False
-side_slip_val = 0
-axle_load_l_val = 0
-axle_load_r_val = 0
-speed_val = 0
+
 
 class ScreenLogin(MDScreen):
     def __init__(self, **kwargs):
@@ -119,7 +133,7 @@ class ScreenLogin(MDScreen):
 
     def exec_login(self):
         global mydb, db_users
-        global dt_wtm_user, dt_user
+        global dt_check_user, dt_user
 
         try:
             input_username = self.ids.tx_username.text
@@ -140,7 +154,7 @@ class ScreenLogin(MDScreen):
             else:
                 toast_msg = f'Berhasil Masuk, Selamat Datang {myresult[1]}'
                 toast(toast_msg)
-                dt_wtm_user = myresult[0]
+                dt_check_user = myresult[0]
                 dt_user = myresult[1]
                 self.ids.tx_username.text = ""
                 self.ids.tx_password.text = "" 
@@ -181,7 +195,7 @@ class ScreenMain(MDScreen):
         Clock.schedule_interval(self.regular_update_connection, 5)
         Clock.schedule_interval(self.regular_get_data, 0.5)
         Clock.schedule_interval(self.regular_update_display, 0.5)
-        # Clock.schedule_interval(self.regular_highspeed_display, 0.5)
+        
         layout = self.ids.layout_table
         
         self.data_tables = MDDataTable(
@@ -195,7 +209,7 @@ class ScreenMain(MDScreen):
                 ("No. Uji", dp(35)),
                 ("Nama", dp(35)),
                 ("Jenis", dp(50)),
-                ("Status", dp(20)),
+                ("Status", dp(40)),
             ],
         )
         self.data_tables.bind(on_row_press=self.on_row_press)
@@ -209,27 +223,7 @@ class ScreenMain(MDScreen):
         try:
             modbus_client.connect()
             flag_conn_stat = modbus_client.connected
-            modbus_client.close()
-
-            # com_ports = list(ports.comports()) # create a list of com ['COM1','COM2'] 
-            # for i in com_ports:
-            #     if i.name == COM_PORT_PRINTER:
-            #         flag_conn_stat = True
-
-            # printer = printerSerial(devfile = COM_PORT_PRINTER,
-            #         baudrate = 38400,
-            #         bytesize = 8,
-            #         parity = 'N',
-            #         stopbits = 1,
-            #         timeout = 1.00,
-            #         dsrdtr = True)    
-
-            # wtm_device = serial.Serial()
-            # wtm_device.baudrate = 115200
-            # wtm_device.port = COM_PORT_WTM
-            # parity=serial.PARITY_NONE,
-            # stopbits=serial.STOPBITS_ONE,
-            # bytesize=serial.EIGHTBITS        
+            modbus_client.close()     
             
         except Exception as e:
             toast_msg = f'{e}'
@@ -254,14 +248,6 @@ class ScreenMain(MDScreen):
         except Exception as e:
             Logger.error(e)
 
-    # def regular_highspeed_display(self, dt):
-    #     try:
-    #         pass           
-
-    #     except Exception as e:
-    #         Logger.error(e)
-
-
     def sort_on_num(self, data):
         try:
             return zip(*sorted(enumerate(data),key=lambda l: l[0][0]))
@@ -270,7 +256,7 @@ class ScreenMain(MDScreen):
 
     def on_row_press(self, table, row):
         global dt_no_antrian, dt_no_reg, dt_no_uji, dt_nama, dt_jenis_kendaraan
-        global dt_wtm_flag, dt_wtm_value, dt_wtm_user, dt_wtm_post
+        global dt_check_flag, dt_check_user, dt_check_post
 
         try:
             start_index, end_index  = row.table.recycle_data[row.index]["range"]
@@ -279,7 +265,7 @@ class ScreenMain(MDScreen):
             dt_no_uji               = row.table.recycle_data[start_index + 3]["text"]
             dt_nama                 = row.table.recycle_data[start_index + 4]["text"]
             dt_jenis_kendaraan      = row.table.recycle_data[start_index + 5]["text"]
-            dt_wtm_flag             = row.table.recycle_data[start_index + 6]["text"]
+            dt_check_flag             = row.table.recycle_data[start_index + 6]["text"]
 
         except Exception as e:
             toast_msg = f'error update table: {e}'
@@ -287,10 +273,9 @@ class ScreenMain(MDScreen):
 
     def regular_update_display(self, dt):
         global flag_conn_stat
-        global dt_wtm_value, count_starting, count_get_data
+        global count_starting, count_get_data
         global dt_user, dt_no_antrian, dt_no_reg, dt_no_uji, dt_nama, dt_jenis_kendaraan
-        global dt_wtm_flag, dt_wtm_value, dt_wtm_user, dt_wtm_post
-        global side_slip_val, axle_load_l_val, axle_load_r_val, speed_val
+        global dt_check_flag, dt_check_user, dt_check_post
         try:
             screen_login = self.screen_manager.get_screen('screen_login')
             screen_gate_control = self.screen_manager.get_screen('screen_gate_control')
@@ -323,7 +308,7 @@ class ScreenMain(MDScreen):
             screen_play_detect.ids.lb_nama.text = str(dt_nama)
             screen_play_detect.ids.lb_jenis_kendaraan.text = str(dt_jenis_kendaraan)
 
-            if(dt_wtm_flag == "Belum Tes"):
+            if(dt_check_flag == "Belum Tes"):
                 self.ids.bt_start.disabled = False
             else:
                 self.ids.bt_start.disabled = True
@@ -371,9 +356,6 @@ class ScreenMain(MDScreen):
             Clock.schedule_interval(self.regular_get_data, 1)
             self.open_screen_gate_control()
             flag_play = True
-
-            # stream.close()
-            # audio.terminate()  
 
     def open_screen_gate_control(self):
         self.screen_manager.current = 'screen_gate_control'
@@ -464,7 +446,7 @@ class ScreenGateControl(MDScreen):
         global count_starting, count_get_data
         global mydb, db_antrian
         global dt_no_antrian, dt_no_reg, dt_no_uji, dt_nama, dt_jenis_kendaraan
-        global dt_wtm_flag, dt_wtm_value, dt_wtm_user, dt_wtm_post
+        global dt_check_flag, dt_check_user, dt_check_post
 
         self.open_screen_main()
 
@@ -482,6 +464,9 @@ class ScreenGateControl(MDScreen):
 
     def exec_start(self):
         self.screen_manager.current = 'screen_play_detect'
+
+    def exec_back(self):
+        self.open_screen_main()
 
     def exec_logout(self):
         self.screen_manager.current = 'screen_login'
@@ -569,7 +554,7 @@ class ScreenPlayDetect(MDScreen):
         global count_starting, count_get_data
         global mydb, db_antrian
         global dt_no_antrian, dt_no_reg, dt_no_uji, dt_nama, dt_jenis_kendaraan
-        global dt_wtm_flag, dt_wtm_value, dt_wtm_user, dt_wtm_post
+        global dt_check_flag, dt_check_user, dt_check_post
 
         self.open_screen_main()
 
