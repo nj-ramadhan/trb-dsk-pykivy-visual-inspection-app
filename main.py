@@ -77,7 +77,7 @@ DB_HOST = config['mysql']['DB_HOST']
 DB_USER = config['mysql']['DB_USER']
 DB_PASSWORD = config['mysql']['DB_PASSWORD']
 DB_NAME = config['mysql']['DB_NAME']
-TB_WTM = config['mysql']['TB_WTM']
+TB_DATA = config['mysql']['TB_DATA']
 TB_USER = config['mysql']['TB_USER']
 
 COUNT_STARTING = 3
@@ -337,8 +337,9 @@ class ScreenMain(MDScreen):
         global mydb, db_antrian
         try:
             mycursor = mydb.cursor()
-            mycursor.execute("SELECT noantrian, nopol, nouji, user, idjeniskendaraan, wtm_flag FROM tb_cekident")
+            mycursor.execute(f"SELECT noantrian, nopol, nouji, user, idjeniskendaraan, wtm_flag FROM {TB_DATA}")
             myresult = mycursor.fetchall()
+            mydb.commit()
             db_antrian = np.array(myresult).T
 
             self.data_tables.row_data=[(f"{i+1}", f"{db_antrian[0, i]}", f"{db_antrian[1, i]}", f"{db_antrian[2, i]}", f"{db_antrian[3, i]}" ,f"{db_antrian[4, i]}", 
