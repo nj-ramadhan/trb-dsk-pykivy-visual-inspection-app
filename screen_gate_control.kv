@@ -227,45 +227,33 @@
 								valign: "middle"
 								font_style: 'H6'
 
-					MDLabel:
-						id: lb_test_result
-						halign: "center"
-						valign: "middle"
-						theme_text_color: "Custom"
-						font_style: 'H3'
-						size_hint_y: 0.25
-
-				MDBoxLayout:
-					orientation: "vertical"
-					size_hint_x: 0.15
-					padding: 50
-					spacing: 50
-
-					MDRectangleFlatIconButton:
-					# MDFloatingActionButton:
-						id: bt_gate_open
-						text: "BUKA PORTAL"
-						icon: "door-open"
-						theme_text_color: "Custom"
-						text_color: "#EEEEEE"
-						md_bg_color: "#2CA02C"
+					MDBoxLayout:
+						orientation: "horizontal"
 						size_hint_x: 1
 						size_hint_y: 0.2
-						on_press: root.exec_gate_open()
-						on_release: root.exec_gate_stop()
+						spacing: 10
 
-					MDRectangleFlatIconButton:
-					# MDFloatingActionButton:
-						id: bt_gate_close
-						text: "TUTUP PORTAL"
-						icon: "door-closed"
-						theme_text_color: "Custom"
-						text_color: "#EEEEEE"
-						md_bg_color: "#FF2A2A"
-						size_hint_x: 1
-						size_hint_y: 0.2
-						on_press: root.exec_gate_close()
-						on_release: root.exec_gate_stop()
+						MDRectangleFlatIconButton:
+							id: bt_gate_open
+							text: "BUKA PORTAL"
+							icon: "door-open"
+							theme_text_color: "Custom"
+							text_color: "#EEEEEE"
+							md_bg_color: "#2CA02C"
+							size_hint_x: 0.5
+							on_press: root.exec_gate_open()
+							on_release: root.exec_gate_stop()
+
+						MDRectangleFlatIconButton:
+							id: bt_gate_close
+							text: "TUTUP PORTAL"
+							icon: "door-closed"
+							theme_text_color: "Custom"
+							text_color: "#EEEEEE"
+							md_bg_color: "#FF2A2A"
+							size_hint_x: 0.5
+							on_press: root.exec_gate_close()
+							on_release: root.exec_gate_stop()
 
 					MDRectangleFlatIconButton:
 						id: bt_start
@@ -276,7 +264,7 @@
 						text_color: "#EEEEEE"
 						md_bg_color: "#2CA02C"
 						size_hint_x: 1
-						size_hint_y: 0.2						
+						size_hint_y: 0.1						
 						on_press: root.exec_start()
 
 					MDRectangleFlatIconButton:
@@ -288,36 +276,8 @@
 						text_color: "#EEEEEE"
 						md_bg_color: "#4471C4"
 						size_hint_x: 1
-						size_hint_y: 0.2						
+						size_hint_y: 0.1					
 						on_press: root.exec_back()
-
-					# MDLabel:
-					# 	id: lb_side_slip_val
-					# 	halign: "center"
-					# 	valign: "middle"
-					# 	theme_text_color: "Custom"
-					# 	font_style: 'H3'
-
-					# MDLabel:
-					# 	id: lb_axle_load_l_val
-					# 	halign: "center"
-					# 	valign: "middle"
-					# 	theme_text_color: "Custom"
-					# 	font_style: 'H3'
-
-					# MDLabel:
-					# 	id: lb_axle_load_r_val
-					# 	halign: "center"
-					# 	valign: "middle"
-					# 	theme_text_color: "Custom"
-					# 	font_style: 'H3'
-
-					# MDLabel:
-					# 	id: lb_speed_val
-					# 	halign: "center"
-					# 	valign: "middle"
-					# 	theme_text_color: "Custom"
-					# 	font_style: 'H3'
 
 		# footer layout
         MDBoxLayout:

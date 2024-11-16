@@ -550,15 +550,6 @@ class ScreenPlayDetect(MDScreen):
             toast_msg = f'error update frame: {e}'
             print(toast_msg)
 
-    def exec_save(self):
-        global flag_play
-        global count_starting, count_get_data
-        global mydb, db_antrian
-        global dt_no_antrian, dt_no_reg, dt_no_uji, dt_nama, dt_jenis_kendaraan
-        global dt_check_flag, dt_check_user, dt_check_post
-
-        self.open_screen_main()
-
     def open_screen_main(self):
         global flag_play        
         global count_starting, count_get_data
@@ -570,6 +561,21 @@ class ScreenPlayDetect(MDScreen):
         flag_play = False   
         screen_main.exec_reload_table()
         self.screen_manager.current = 'screen_main'
+
+    def exec_save(self):
+        global flag_play
+        global count_starting, count_get_data
+        global mydb, db_antrian
+        global dt_no_antrian, dt_no_reg, dt_no_uji, dt_nama, dt_jenis_kendaraan
+        global dt_check_flag, dt_check_user, dt_check_post
+
+        self.open_screen_main()
+
+    def open_screen_gate_control(self):
+        self.screen_manager.current = 'screen_gate_control'
+
+    def exec_back(self):
+        self.open_screen_gate_control()
 
     def exec_logout(self):
         self.screen_manager.current = 'screen_login'

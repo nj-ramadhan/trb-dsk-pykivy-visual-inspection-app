@@ -221,26 +221,28 @@
 								valign: "middle"
 								font_style: 'H6'
 
-					MDLabel:
-						id: lb_test_result
-						halign: "center"
-						valign: "middle"
-						theme_text_color: "Custom"
-						font_style: 'H3'
-						size_hint_y: 0.25
-
 					MDRectangleFlatIconButton:
-					# MDFloatingActionButton:
 						id: bt_save
 						text: "SIMPAN HASIL"
 						icon: "floppy"
 						theme_text_color: "Custom"
 						text_color: "#EEEEEE"
-						md_bg_color: "#19A56B"
+						md_bg_color: "#2CA02C"
 						size_hint_x: 1
-						size_hint_y: 0.5
+						size_hint_y: 0.1
 						on_press: root.exec_save()
 
+					MDRectangleFlatIconButton:
+						id: bt_back
+						icon: "arrow-left"
+						text: "KEMBALI"
+						halign: "center"
+						theme_text_color: "Custom"
+						text_color: "#EEEEEE"
+						md_bg_color: "#4471C4"
+						size_hint_x: 1
+						size_hint_y: 0.1					
+						on_press: root.exec_back()
 
 		# footer layout
         MDBoxLayout:
