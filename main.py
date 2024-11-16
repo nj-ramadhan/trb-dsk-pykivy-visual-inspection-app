@@ -177,8 +177,8 @@ class ScreenMain(MDScreen):
         flag_conn_stat = False
         flag_play = False
 
-        count_starting = 3
-        count_get_data = 4
+        count_starting = COUNT_STARTING
+        count_get_data = COUNT_ACQUISITION
         try:
             mydb = mysql.connector.connect(
             host = DB_HOST,
@@ -457,8 +457,8 @@ class ScreenGateControl(MDScreen):
 
         screen_main = self.screen_manager.get_screen('screen_main')
 
-        count_starting = 3
-        count_get_data = 10
+        count_starting = COUNT_STARTING
+        count_get_data = COUNT_ACQUISITION
         flag_play = False   
         screen_main.exec_reload_table()
         self.screen_manager.current = 'screen_main'
@@ -556,8 +556,8 @@ class ScreenPlayDetect(MDScreen):
 
         screen_main = self.screen_manager.get_screen('screen_main')
 
-        count_starting = 3
-        count_get_data = 10
+        count_starting = COUNT_STARTING
+        count_get_data = COUNT_ACQUISITION
         flag_play = False   
         screen_main.exec_reload_table()
         self.screen_manager.current = 'screen_main'
