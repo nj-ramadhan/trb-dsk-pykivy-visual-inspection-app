@@ -15,7 +15,7 @@
                     
             Image:
                 id: logo
-                source:'assets/logo-trb-dark.png'
+                source:'assets/images/logo-trb.png'
                 size_hint_x: 0.15
                 allow_stretch: True 
 
@@ -25,17 +25,17 @@
 
 				MDLabel:
 					id: title            
-					text: "VEHICLE INSPECTION INTEGRATION SYSTEM"
+					text: "VEHICLE INSPECTION INTEGRATION MANAGEMENT SYSTEM"
 					halign: "left"
 					valign: "middle"
-					font_style: 'H3'
+					font_style: 'H4'
 					theme_text_color: "Custom"
 					text_color: "#FFFFFF"
 
 
 				MDLabel:
 					id: subtitle            
-					text: "ENTRY GATE & PLAY DETECTOR"
+					text: "VISUAL INSPECTION"
 					halign: "left"
 					valign: "middle"
 					font_style: 'H5'
@@ -104,131 +104,177 @@
 
 				MDBoxLayout:
 					orientation: "vertical"
-					size_hint_x: 0.7
+					size_hint_x: 0.1
 					spacing: 20
 
-					MDBoxLayout:
-						orientation: "horizontal"
-						size_hint_y: 0.1
+					MDCard:
+						ripple_behavior: True
+                        on_press: root.exec_navigate_home()
+						md_bg_color: "#EEEEEE"
+                        padding: 10
+						Image:
+							source:'assets/images/icon-home.png'
+							size_hint_x: 0.15
+							allow_stretch: True 
 
-						MDRectangleFlatIconButton:
-							text: "RELOAD TABLE"
-							icon: "reload"
-							theme_text_color: "Custom"
-							text_color: "#EEEEEE"
-							md_bg_color: "4471C4"
-							on_press: root.exec_reload_table()
+					MDCard:
+						ripple_behavior: True
+                        on_press: root.exec_navigate_login()
+						md_bg_color: "#EEEEEE"
+                        padding: 10
+						Image:
+							source:'assets/images/icon-login.png'
+							size_hint_x: 0.15
+							allow_stretch: True 
+
+					MDCard:
+						ripple_behavior: True
+                        on_press: root.exec_navigate_realtime()
+						md_bg_color: "#EEEEEE"
+                        padding: 10
+						Image:
+							source:'assets/images/icon-realtime.png'
+							size_hint_x: 0.15
+							allow_stretch: True 
+
+				MDBoxLayout:
+					orientation: "horizontal"
+					size_hint_x: 0.9
+					spacing: 20
+					
+					MDBoxLayout:
+						orientation: "vertical"
+						size_hint_x: 0.6
+						spacing: 20
+
+						MDBoxLayout:
+							orientation: "horizontal"
+							size_hint_y: 0.1
+
+							MDRectangleFlatIconButton:
+								text: "RELOAD TABLE"
+								icon: "reload"
+								theme_text_color: "Custom"
+								text_color: "#EEEEEE"
+								md_bg_color: "4471C4"
+								on_press: root.exec_reload_table()
+
+							MDLabel:
+								text: "ANTRIAN KENDARAAN"
+								halign: "center"
+								valign: "middle"
+								font_style: 'H6'
+
+						MDBoxLayout:
+							id: layout_table
+							orientation: "vertical"
+							MDScrollView:
+								id: layout_scroll
+								scroll_timeout:100
+								MDList:
+									id: layout_list
+
+					MDBoxLayout:
+						orientation: "vertical"
+						size_hint_x: 0.4
+						spacing: 10
 
 						MDLabel:
-							text: "ANTRIAN KENDARAAN"
+							text: "IDENTITAS KENDARAAN"
 							halign: "center"
 							valign: "middle"
 							font_style: 'H6'
 
-					MDBoxLayout:
-						id: layout_table
+						MDBoxLayout:
+							orientation: "horizontal"
+							MDLabel:
+								text: "No. Antrian"
+								halign: "left"
+								valign: "middle"
+								font_style: 'H6'
 
-				MDBoxLayout:
-					orientation: "vertical"
-					size_hint_x: 0.3
-					spacing: 10
+							MDLabel:
+								id: lb_no_antrian
+								halign: "left"
+								valign: "middle"
+								font_style: 'H6'
 
-					MDLabel:
-						text: "IDENTITAS KENDARAAN"
-						halign: "center"
-						valign: "middle"
-						font_style: 'H6'
+						MDBoxLayout:
+							orientation: "horizontal"
+							MDLabel:
+								text: "No. Reg"
+								halign: "left"
+								valign: "middle"
+								font_style: 'H6'
 
-					MDBoxLayout:
-						orientation: "horizontal"
-						MDLabel:
-							text: "No. Antrian"
-							halign: "left"
-							valign: "middle"
-							font_style: 'H6'
+							MDLabel:
+								id: lb_no_reg
+								halign: "left"
+								valign: "middle"
+								font_style: 'H6'
 
-						MDLabel:
-							id: lb_no_antrian
-							halign: "left"
-							valign: "middle"
-							font_style: 'H6'
+						MDBoxLayout:
+							orientation: "horizontal"
+							MDLabel:
+								text: "No. Uji"
+								halign: "left"
+								valign: "middle"
+								font_style: 'H6'
 
-					MDBoxLayout:
-						orientation: "horizontal"
-						MDLabel:
-							text: "No. Reg"
-							halign: "left"
-							valign: "middle"
-							font_style: 'H6'
-
-						MDLabel:
-							id: lb_no_reg
-							halign: "left"
-							valign: "middle"
-							font_style: 'H6'
-
-					MDBoxLayout:
-						orientation: "horizontal"
-						MDLabel:
-							text: "No. Uji"
-							halign: "left"
-							valign: "middle"
-							font_style: 'H6'
-
-						MDLabel:
-							id: lb_no_uji
-							halign: "left"
-							valign: "middle"
-							font_style: 'H6'
+							MDLabel:
+								id: lb_no_uji
+								halign: "left"
+								valign: "middle"
+								font_style: 'H6'
 
 
-					MDBoxLayout:
-						orientation: "horizontal"
-						MDLabel:
-							text: "Nama"
-							halign: "left"
-							valign: "middle"
-							font_style: 'H6'
+						MDBoxLayout:
+							orientation: "horizontal"
+							MDLabel:
+								text: "Nama"
+								halign: "left"
+								valign: "middle"
+								font_style: 'H6'
 
-						MDLabel:
-							id: lb_nama
-							halign: "left"
-							valign: "middle"
-							font_style: 'H6'
+							MDLabel:
+								id: lb_nama
+								halign: "left"
+								valign: "middle"
+								font_style: 'H6'
 
-					MDBoxLayout:
-						orientation: "horizontal"
-						MDLabel:
-							text: "Jenis Kendaraan"
-							halign: "left"
-							valign: "middle"
-							font_style: 'H6'
+						MDBoxLayout:
+							orientation: "horizontal"
+							MDLabel:
+								text: "Jenis Kendaraan"
+								halign: "left"
+								valign: "middle"
+								font_style: 'H6'
 
-						MDLabel:
-							id: lb_jenis_kendaraan
-							halign: "left"
-							valign: "middle"
-							font_style: 'H6'
+							MDLabel:
+								id: lb_jenis_kendaraan
+								halign: "left"
+								valign: "middle"
+								font_style: 'H6'
 
-					MDBoxLayout:
-						orientation: "horizontal"
-						MDLabel:
-							id: lb_status
-							halign: "left"
-							valign: "middle"
-							font_style: 'H6'
+						MDBoxLayout:
+							orientation: "horizontal"
+							MDLabel:
+								id: lb_status
+								halign: "left"
+								valign: "middle"
+								font_style: 'H6'
 
-					MDRectangleFlatIconButton:
-						id: bt_start
-						icon: "play"
-						text: "MULAI TEST"
-						halign: "center"
-						theme_text_color: "Custom"
-						text_color: "#EEEEEE"
-						md_bg_color: "#2CA02C"	
-						size_hint_x: 1						
-						disabled: True
-						on_press: root.exec_start()
+						MDRectangleFlatIconButton:
+							id: bt_start
+							icon: "play"
+							text: "MULAI TEST"
+							halign: "center"
+							theme_text_color: "Custom"
+							text_color: "#EEEEEE"
+							md_bg_color: "#2CA02C"	
+							size_hint_x: 1						
+							disabled: True
+							on_press: root.exec_start()
 
 		# footer layout
         MDBoxLayout:
@@ -243,12 +289,12 @@
 				size_hint_x: 0.4
 				
 				Image:
-					source:'assets/logo-sorong.png'
+					source:'assets/images/logo-sorong.png'
 					size_hint_x: 0.1
 					allow_stretch: True  
 
 				Image:
-					source:'assets/logo-dishub.png'
+					source:'assets/images/logo-dishub.png'
 					size_hint_x: 0.1
 					allow_stretch: True  
 

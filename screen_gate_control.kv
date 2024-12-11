@@ -15,7 +15,7 @@
                     
             Image:
                 id: logo
-                source:'assets/logo-trb-dark.png'
+                source:'assets/images/logo-trb.png'
                 size_hint_x: 0.15
                 allow_stretch: True 
 
@@ -25,16 +25,16 @@
 
 				MDLabel:
 					id: title            
-					text: "VEHICLE INSPECTION INTEGRATION SYSTEM"
+					text: "VEHICLE INSPECTION INTEGRATION MANAGEMENT SYSTEM"
 					halign: "left"
 					valign: "middle"
-					font_style: 'H3'
+					font_style: 'H4'
 					theme_text_color: "Custom"
 					text_color: "#FFFFFF"
 
 				MDLabel:
 					id: subtitle            
-					text: "ENTRY GATE & PLAY DETECTOR"
+					text: "VISUAL INSPECTION"
 					halign: "left"
 					valign: "middle"
 					font_style: 'H5'
@@ -96,188 +96,227 @@
 			orientation: "horizontal"
 			size_hint_y: 0.7
 			padding:20
-			spacing:20
 
 			MDBoxLayout:
-				id: layout_display
 				orientation: "horizontal"
+				spacing:50
 
 				MDBoxLayout:
 					orientation: "vertical"
-					size_hint_x: 0.2
-					spacing:5
+					size_hint_x: 0.1
+					spacing: 20
 
-					Image:
-						id: image_view_front
-						source:'assets/tampak-depan.png'
-						allow_stretch: True 
+					MDCard:
+						ripple_behavior: True
+                        on_press: root.exec_navigate_home()
+						md_bg_color: "#EEEEEE"
+                        padding: 10
+						Image:
+							source:'assets/images/icon-home.png'
+							size_hint_x: 0.15
+							allow_stretch: True 
 
-					Image:
-						id: image_view_back
-						source:'assets/tampak-belakang.png'
-						allow_stretch: True 
+					MDCard:
+						ripple_behavior: True
+                        on_press: root.exec_navigate_login()
+						md_bg_color: "#EEEEEE"
+                        padding: 10
+						Image:
+							source:'assets/images/icon-login.png'
+							size_hint_x: 0.15
+							allow_stretch: True 
+
+					MDCard:
+						ripple_behavior: True
+                        on_press: root.exec_navigate_realtime()
+						md_bg_color: "#EEEEEE"
+                        padding: 10
+						Image:
+							source:'assets/images/icon-realtime.png'
+							size_hint_x: 0.15
+							allow_stretch: True 
 
 				MDBoxLayout:
-					orientation: "vertical"
-					size_hint_x: 0.25
-					spacing:5
-
-					Image:
-						id: image_view_left
-						source:'assets/tampak-kiri.png'
-						allow_stretch: True 
-
-					Image:
-						id: image_view_right
-						source:'assets/tampak-kanan.png'
-						allow_stretch: True 
-
-				MDBoxLayout:
-					orientation: "vertical"
-					size_hint_x: 0.4
-					padding:20
-					spacing:20
+					id: layout_display
+					orientation: "horizontal"
+					size_hint_x: 0.9
 
 					MDBoxLayout:
 						orientation: "vertical"
-						size_hint_y: 0.75
-						spacing:10
+						size_hint_x: 0.2
+						spacing:5
 
-						MDLabel:
-							text: "IDENTITAS KENDARAAN"
-							halign: "center"
-							valign: "middle"
-							font_style: 'H6'
+						Image:
+							id: image_view_front
+							source:'assets/images/tampak-depan.png'
+							allow_stretch: True 
 
-						MDBoxLayout:
-							orientation: "horizontal"
-							MDLabel:
-								text: "No. Antrian"
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-
-							MDLabel:
-								id: lb_no_antrian
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-
-						MDBoxLayout:
-							orientation: "horizontal"
-							MDLabel:
-								text: "No. Reg"
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-
-							MDLabel:
-								id: lb_no_reg
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-
-						MDBoxLayout:
-							orientation: "horizontal"
-							MDLabel:
-								text: "No. Uji"
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-
-							MDLabel:
-								id: lb_no_uji
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-
-						MDBoxLayout:
-							orientation: "horizontal"
-							MDLabel:
-								text: "Nama"
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-
-							MDLabel:
-								id: lb_nama
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-
-						MDBoxLayout:
-							orientation: "horizontal"
-							MDLabel:
-								text: "Jenis Kendaraan"
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-
-							MDLabel:
-								id: lb_jenis_kendaraan
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-
-						MDBoxLayout:
-							orientation: "horizontal"
-							MDLabel:
-								id: lb_status
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
+						Image:
+							id: image_view_back
+							source:'assets/images/tampak-belakang.png'
+							allow_stretch: True 
 
 					MDBoxLayout:
-						orientation: "horizontal"
-						size_hint_x: 1
-						size_hint_y: 0.2
-						spacing: 10
+						orientation: "vertical"
+						size_hint_x: 0.25
+						spacing:5
+
+						Image:
+							id: image_view_left
+							source:'assets/images/tampak-kiri.png'
+							allow_stretch: True 
+
+						Image:
+							id: image_view_right
+							source:'assets/images/tampak-kanan.png'
+							allow_stretch: True 
+
+					MDBoxLayout:
+						orientation: "vertical"
+						size_hint_x: 0.4
+						padding:20
+						spacing:20
+
+						MDBoxLayout:
+							orientation: "vertical"
+							size_hint_y: 0.75
+							spacing:10
+
+							MDLabel:
+								text: "IDENTITAS KENDARAAN"
+								halign: "center"
+								valign: "middle"
+								font_style: 'H6'
+
+							MDBoxLayout:
+								orientation: "horizontal"
+								MDLabel:
+									text: "No. Antrian"
+									halign: "left"
+									valign: "middle"
+									font_style: 'H6'
+
+								MDLabel:
+									id: lb_no_antrian
+									halign: "left"
+									valign: "middle"
+									font_style: 'H6'
+
+							MDBoxLayout:
+								orientation: "horizontal"
+								MDLabel:
+									text: "No. Reg"
+									halign: "left"
+									valign: "middle"
+									font_style: 'H6'
+
+								MDLabel:
+									id: lb_no_reg
+									halign: "left"
+									valign: "middle"
+									font_style: 'H6'
+
+							MDBoxLayout:
+								orientation: "horizontal"
+								MDLabel:
+									text: "No. Uji"
+									halign: "left"
+									valign: "middle"
+									font_style: 'H6'
+
+								MDLabel:
+									id: lb_no_uji
+									halign: "left"
+									valign: "middle"
+									font_style: 'H6'
+
+							MDBoxLayout:
+								orientation: "horizontal"
+								MDLabel:
+									text: "Nama"
+									halign: "left"
+									valign: "middle"
+									font_style: 'H6'
+
+								MDLabel:
+									id: lb_nama
+									halign: "left"
+									valign: "middle"
+									font_style: 'H6'
+
+							MDBoxLayout:
+								orientation: "horizontal"
+								MDLabel:
+									text: "Jenis Kendaraan"
+									halign: "left"
+									valign: "middle"
+									font_style: 'H6'
+
+								MDLabel:
+									id: lb_jenis_kendaraan
+									halign: "left"
+									valign: "middle"
+									font_style: 'H6'
+
+							MDBoxLayout:
+								orientation: "horizontal"
+								MDLabel:
+									id: lb_status
+									halign: "left"
+									valign: "middle"
+									font_style: 'H6'
+
+						MDBoxLayout:
+							orientation: "horizontal"
+							size_hint_x: 1
+							size_hint_y: 0.2
+							spacing: 10
+
+							MDRectangleFlatIconButton:
+								id: bt_gate_open
+								text: "BUKA PORTAL"
+								icon: "door-open"
+								theme_text_color: "Custom"
+								text_color: "#EEEEEE"
+								md_bg_color: "#2CA02C"
+								size_hint_x: 0.5
+								on_press: root.exec_gate_open()
+								on_release: root.exec_gate_stop()
+
+							MDRectangleFlatIconButton:
+								id: bt_gate_close
+								text: "TUTUP PORTAL"
+								icon: "door-closed"
+								theme_text_color: "Custom"
+								text_color: "#EEEEEE"
+								md_bg_color: "#FF2A2A"
+								size_hint_x: 0.5
+								on_press: root.exec_gate_close()
+								on_release: root.exec_gate_stop()
 
 						MDRectangleFlatIconButton:
-							id: bt_gate_open
-							text: "BUKA PORTAL"
-							icon: "door-open"
+							id: bt_start
+							icon: "play"
+							text: "MULAI PERIKSA"
+							halign: "center"
 							theme_text_color: "Custom"
 							text_color: "#EEEEEE"
 							md_bg_color: "#2CA02C"
-							size_hint_x: 0.5
-							on_press: root.exec_gate_open()
-							on_release: root.exec_gate_stop()
+							size_hint_x: 1
+							size_hint_y: 0.1						
+							on_press: root.exec_start()
 
 						MDRectangleFlatIconButton:
-							id: bt_gate_close
-							text: "TUTUP PORTAL"
-							icon: "door-closed"
+							id: bt_back
+							icon: "arrow-left"
+							text: "KEMBALI"
+							halign: "center"
 							theme_text_color: "Custom"
 							text_color: "#EEEEEE"
-							md_bg_color: "#FF2A2A"
-							size_hint_x: 0.5
-							on_press: root.exec_gate_close()
-							on_release: root.exec_gate_stop()
-
-					MDRectangleFlatIconButton:
-						id: bt_start
-						icon: "play"
-						text: "MULAI PERIKSA"
-						halign: "center"
-						theme_text_color: "Custom"
-						text_color: "#EEEEEE"
-						md_bg_color: "#2CA02C"
-						size_hint_x: 1
-						size_hint_y: 0.1						
-						on_press: root.exec_start()
-
-					MDRectangleFlatIconButton:
-						id: bt_back
-						icon: "arrow-left"
-						text: "KEMBALI"
-						halign: "center"
-						theme_text_color: "Custom"
-						text_color: "#EEEEEE"
-						md_bg_color: "#4471C4"
-						size_hint_x: 1
-						size_hint_y: 0.1					
-						on_press: root.exec_back()
+							md_bg_color: "#4471C4"
+							size_hint_x: 1
+							size_hint_y: 0.1					
+							on_press: root.exec_back()
 
 		# footer layout
         MDBoxLayout:
@@ -292,12 +331,12 @@
 				size_hint_x: 0.4
 				
 				Image:
-					source:'assets/logo-sorong.png'
+					source:'assets/images/logo-sorong.png'
 					size_hint_x: 0.1
 					allow_stretch: True  
 
 				Image:
-					source:'assets/logo-dishub.png'
+					source:'assets/images/logo-dishub.png'
 					size_hint_x: 0.1
 					allow_stretch: True  
 
