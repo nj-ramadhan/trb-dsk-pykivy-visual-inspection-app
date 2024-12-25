@@ -1,6 +1,6 @@
 #:kivy 2.1.0
 
-<ScreenMain>:
+<ScreenMenu>:
     MDBoxLayout:
         orientation: "vertical"
 
@@ -31,7 +31,6 @@
 					font_style: 'H4'
 					theme_text_color: "Custom"
 					text_color: "#FFFFFF"
-
 
 				MDLabel:
 					id: subtitle            
@@ -94,187 +93,181 @@
 		# main layout
 		MDBoxLayout:
 			id: layout_main
-			orientation: "horizontal"
+			orientation: "vertical"
 			size_hint_y: 0.7
 			padding:20
 
 			MDBoxLayout:
-				orientation: "horizontal"
-				spacing:50
+				orientation: "vertical"
+				spacing: 10
+				size_hint_y: 0.2
 
 				MDBoxLayout:
 					orientation: "vertical"
-					size_hint_x: 0.1
-					spacing: 20
 
-					MDCard:
-						ripple_behavior: True
-                        on_press: root.exec_navigate_home()
-						md_bg_color: "#EEEEEE"
-                        padding: 10
-						Image:
-							source:'assets/images/icon-home.png'
-							size_hint_x: 0.15
-							allow_stretch: True 
-
-					MDCard:
-						ripple_behavior: True
-                        on_press: root.exec_navigate_login()
-						md_bg_color: "#EEEEEE"
-                        padding: 10
-						Image:
-							source:'assets/images/icon-login.png'
-							size_hint_x: 0.15
-							allow_stretch: True 
-
-					MDCard:
-						ripple_behavior: True
-                        on_press: root.exec_navigate_realtime()
-						md_bg_color: "#EEEEEE"
-                        padding: 10
-						Image:
-							source:'assets/images/icon-realtime.png'
-							size_hint_x: 0.15
-							allow_stretch: True 
-
-				MDBoxLayout:
-					orientation: "horizontal"
-					size_hint_x: 0.9
-					spacing: 20
-					
-					MDBoxLayout:
-						orientation: "vertical"
-						size_hint_x: 0.6
-						spacing: 20
-
-						MDBoxLayout:
-							orientation: "horizontal"
-							size_hint_y: 0.1
-
-							MDRectangleFlatIconButton:
-								text: "RELOAD TABLE"
-								icon: "reload"
-								theme_text_color: "Custom"
-								text_color: "#EEEEEE"
-								md_bg_color: "4471C4"
-								on_press: root.exec_reload_table()
-
-							MDLabel:
-								text: "ANTRIAN KENDARAAN"
-								halign: "center"
-								valign: "middle"
-								font_style: 'H6'
-
-						MDBoxLayout:
-							id: layout_table
-							orientation: "vertical"
-							MDScrollView:
-								id: layout_scroll
-								scroll_timeout:100
-								MDList:
-									id: layout_list
+					MDLabel:
+						text: "FORM PEMERIKSAAN VISUAL KENDARAAN"
+						halign: "center"
+						valign: "middle"
+						font_style: 'H6'
 
 					MDBoxLayout:
-						orientation: "vertical"
-						size_hint_x: 0.4
-						spacing: 10
+						orientation: "horizontal"
 
 						MDLabel:
-							text: "IDENTITAS KENDARAAN"
+							text: "ANTRIAN KENDARAAN NO:"
 							halign: "center"
 							valign: "middle"
-							font_style: 'H6'
+							font_style: 'Subtitle1'
 
-						MDBoxLayout:
-							orientation: "horizontal"
-							MDLabel:
-								text: "No. Antrian"
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-
-							MDLabel:
-								id: lb_no_antrian
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-
-						MDBoxLayout:
-							orientation: "horizontal"
-							MDLabel:
-								text: "No. Reg"
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-
-							MDLabel:
-								id: lb_no_reg
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-
-						MDBoxLayout:
-							orientation: "horizontal"
-							MDLabel:
-								text: "No. Uji"
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-
-							MDLabel:
-								id: lb_no_uji
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-
-
-						MDBoxLayout:
-							orientation: "horizontal"
-							MDLabel:
-								text: "Nama"
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-
-							MDLabel:
-								id: lb_nama
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-
-						MDBoxLayout:
-							orientation: "horizontal"
-							MDLabel:
-								text: "Jenis Kendaraan"
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-
-							MDLabel:
-								id: lb_jenis_kendaraan
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-
-						MDBoxLayout:
-							orientation: "horizontal"
-							MDLabel:
-								id: lb_status
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-
-						MDRectangleFlatIconButton:
-							id: bt_start
-							icon: "play"
-							text: "MULAI INSPEKSI"
+						MDLabel:
+							id: lb_no_antrian
 							halign: "center"
-							theme_text_color: "Custom"
-							text_color: "#EEEEEE"
-							md_bg_color: "#2CA02C"	
-							size_hint_x: 1						
-							disabled: True
-							on_press: root.exec_start()
+							valign: "middle"
+							font_style: 'Subtitle1'
+
+					MDBoxLayout:
+						orientation: "horizontal"
+						md_bg_color: "#DDDDDD"
+
+						MDLabel:
+							id: lb_no_reg
+							halign: "center"
+							valign: "middle"
+							font_style: 'H4'
+
+						MDLabel:
+							id: lb_no_uji
+							halign: "center"
+							valign: "middle"
+							font_style: 'H4'
+
+			MDBoxLayout:
+				orientation: "horizontal"
+				padding: 350, 10
+				size_hint_y: 0.7
+				
+				MDBoxLayout:
+					orientation: "vertical"
+					size_hint_x: 0.3
+					spacing: 20
+
+					MDCard:
+						orientation: "vertical"
+						ripple_behavior: True
+						on_press: root.exec_barrier_open()
+						on_release: root.exec_barrier_stop()
+						md_bg_color: "#EEEEEE"
+						padding: 10
+						Image:
+							source:'assets/images/icon-barrier-open.png'
+							size_hint_y: 0.9
+							allow_stretch: True 
+						MDLabel:
+							size_hint_y: 0.1
+							halign: "center"
+							text: "Buka Gate"	
+
+					MDCard:
+						orientation: "vertical"
+						ripple_behavior: True
+						on_press: root.exec_inspect_visual()
+						md_bg_color: "#EEEEEE"
+						padding: 10
+						Image:
+							source:'assets/images/icon-inspect-visual.png'
+							size_hint_y: 0.9
+							allow_stretch: True 
+						MDLabel:
+							size_hint_y: 0.1
+							halign: "center"
+							text: "Inspeksi Visual"
+
+				MDBoxLayout:
+					orientation: "vertical"
+					size_hint_x: 0.3
+					spacing: 20
+
+					MDCard:
+						orientation: "vertical"
+						ripple_behavior: True
+						on_press: root.exec_inspect_id()
+						md_bg_color: "#EEEEEE"
+						padding: 10
+						Image:
+							source:'assets/images/icon-inspect-id.png'
+							size_hint_y: 0.9
+							allow_stretch: True 
+						MDLabel:
+							size_hint_y: 0.1
+							halign: "center"
+							text: "Inspeksi Identitas Kendaraan"
+
+					MDCard:
+						orientation: "vertical"
+						ripple_behavior: True
+						on_press: root.exec_inspect_pit()
+						md_bg_color: "#EEEEEE"
+						padding: 10
+						Image:
+							source:'assets/images/icon-inspect-pit.png'
+							size_hint_y: 0.9
+							allow_stretch: True 
+						MDLabel:
+							size_hint_y: 0.1
+							halign: "center"
+							text: "Inspeksi Pit Kendaraan"
+
+				MDBoxLayout:
+					orientation: "vertical"
+					size_hint_x: 0.3
+					spacing: 20
+
+					MDCard:
+						orientation: "vertical"
+						ripple_behavior: True
+						on_press: root.exec_capture()
+						md_bg_color: "#EEEEEE"
+						padding: 10
+						Image:
+							source:'assets/images/icon-capture.png'
+							size_hint_y: 0.9
+							allow_stretch: True 
+						MDLabel:
+							size_hint_y: 0.1
+							halign: "center"
+							text: "Photo Visual"
+
+					MDCard:
+						orientation: "vertical"
+						ripple_behavior: True
+						on_press: root.exec_barrier_close()
+						on_release: root.exec_barrier_stop()
+						md_bg_color: "#EEEEEE"
+						padding: 10
+						Image:
+							source:'assets/images/icon-barrier-close.png'
+							size_hint_y: 0.9
+							allow_stretch: True 
+						MDLabel:
+							size_hint_y: 0.1
+							halign: "center"
+							text: "Tutup Gate"
+
+			MDBoxLayout:
+				orientation: "vertical"
+				size_hint_y: 0.1
+				padding: 300, 0
+
+				MDRectangleFlatIconButton:
+					id: bt_back
+					icon: "cancel"
+					text: "BATALKAN INSPEKSI"
+					md_bg_color: "#FF2A2A"
+					theme_text_color: "Custom"
+					text_color: "#EEEEEE"
+					size_hint_x: 1
+					on_press: root.exec_back()
 
 		# footer layout
         MDBoxLayout:
@@ -344,7 +337,7 @@
 
 				MDLabel:
 					id: lb_info
-					text: "Silahkan Pilih Kendaraan yang akan diuji dari Tabel yang Tersedia"
+					text: "Silahkan tekan tombol untuk mengendalikan Portal, kemudian tekan tombol PERIKSA untuk melanjutkan pemeriksaan"
 					halign: "left"
 					valign: "middle"
 					font_style: 'H6'

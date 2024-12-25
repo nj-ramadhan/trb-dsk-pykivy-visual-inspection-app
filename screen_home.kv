@@ -32,7 +32,6 @@
 					theme_text_color: "Custom"
 					text_color: "#FFFFFF"
 
-
 				MDLabel:
 					id: subtitle            
 					text: "VISUAL INSPECTION"
@@ -129,7 +128,7 @@
 
 					MDCard:
 						ripple_behavior: True
-                        on_press: root.exec_navigate_login()
+                        on_press: root.exec_navigate_realtime()
 						md_bg_color: "#EEEEEE"
                         padding: 10
 						Image:
@@ -140,17 +139,14 @@
 				MDBoxLayout:
 					orientation: "vertical"
 					size_hint_x: 0.9
-					spacing: 20
+					spacing: 10
 
-					MDBoxLayout:
-						orientation: "horizontal"
+					MDLabel:
+						text: "HOME"
+						halign: "center"
+						valign: "middle"
+						font_style: 'H6'
 						size_hint_y: 0.1
-
-						MDLabel:
-							text: "IMAGE CAROUSEL SLIDE SHOW"
-							halign: "center"
-							valign: "middle"
-							font_style: 'H6'
 
 					MDCarousel:
 						id: carousel
@@ -174,6 +170,12 @@
 						MDCard:
 							Image:
 								source:'assets/images/3.jpg'
+								allow_stretch: True 
+								fit_mode: "cover"
+
+						MDCard:
+							Image:
+								source:'assets/images/4.jpg'
 								allow_stretch: True 
 								fit_mode: "cover"
 

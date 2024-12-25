@@ -1,0 +1,453 @@
+#:kivy 2.1.0
+
+<ScreenInspectId>:
+    MDBoxLayout:
+        orientation: "vertical"
+
+		# header layout
+        MDBoxLayout:
+            id: header_layout
+            orientation: "horizontal"
+            padding: 20
+			spacing: 20
+			size_hint_y: 0.2
+			md_bg_color: "#111111"
+                    
+            Image:
+                id: logo
+                source:'assets/images/logo-trb.png'
+                size_hint_x: 0.15
+                allow_stretch: True 
+
+			MDBoxLayout:
+				orientation: "vertical"
+				size_hint_x: 0.7
+
+				MDLabel:
+					id: title            
+					text: "VEHICLE INSPECTION INTEGRATION MANAGEMENT SYSTEM"
+					halign: "left"
+					valign: "middle"
+					font_style: 'H4'
+					theme_text_color: "Custom"
+					text_color: "#FFFFFF"
+
+
+				MDLabel:
+					id: subtitle            
+					text: "VEHICLE IDENTITY INSPECTION"
+					halign: "left"
+					valign: "middle"
+					font_style: 'H5'
+					theme_text_color: "Custom"
+					text_color: "#FFFFFF"
+
+			MDBoxLayout:
+				orientation: "vertical"
+				size_hint_x: 0.15
+
+				MDRectangleFlatIconButton:
+					id: bt_logout
+					icon: "logout"
+					text: "LOGOUT"
+					md_bg_color: "#FF2A2A"
+					theme_text_color: "Custom"
+					text_color: "#EEEEEE"
+					size_hint_x: 1
+					on_press: root.exec_logout()
+
+				MDLabel:
+					id: lb_time
+					text: "12:34:00"
+					halign: "center"
+					valign: "middle"
+					font_style: 'H6'
+					theme_text_color: "Custom"
+					text_color: "#FFFFFF"
+
+				MDLabel:
+					id: lb_date
+					text: "17/08/2024"
+					halign: "center"
+					valign: "middle"
+					font_style: 'H6'
+					theme_text_color: "Custom"
+					text_color: "#FFFFFF"
+
+				MDLabel:
+					id: lb_operator
+					text: "Nama Operator"
+					halign: "center"
+					valign: "middle"
+					font_style: 'H6'
+					theme_text_color: "Custom"
+					text_color: "#FFFFFF"
+
+				MDLabel:
+					id: lb_comm
+					text: "Status : Disconnected"
+					halign: "center"
+					valign: "middle"
+					font_style: 'H6'
+					theme_text_color: "Custom"
+
+		# main layout
+		MDBoxLayout:
+			id: layout_main
+			orientation: "horizontal"
+			size_hint_y: 0.6
+			padding:20
+
+			MDBoxLayout:
+				orientation: "horizontal"
+				spacing:50
+
+				MDBoxLayout:
+					orientation: "vertical"
+					size_hint_x: 0.7
+					spacing: 10
+
+					MDLabel:
+						text: "PEMERIKSAAN IDENTITAS KENDARAAN"
+						halign: "center"
+						valign: "middle"
+						font_style: 'H6'
+
+					MDBoxLayout:
+						orientation: "horizontal"
+						MDLabel:
+							text: "No. Uji"
+							halign: "left"
+							valign: "middle"
+							font_style: 'H6'
+
+						MDLabel:
+							id: lb_no_uji
+							halign: "left"
+							valign: "middle"
+							font_style: 'H6'
+
+					MDBoxLayout:
+						orientation: "horizontal"
+						MDLabel:
+							text: "No. Polisi"
+							halign: "left"
+							valign: "middle"
+							font_style: 'H6'
+
+						MDLabel:
+							id: lb_no_pol
+							halign: "left"
+							valign: "middle"
+							font_style: 'H6'
+
+					MDBoxLayout:
+						orientation: "horizontal"
+						MDLabel:
+							text: "Chasis"
+							halign: "left"
+							valign: "middle"
+							font_style: 'H6'
+
+						MDLabel:
+							id: lb_chasis
+							halign: "left"
+							valign: "middle"
+							font_style: 'H6'
+
+
+					MDBoxLayout:
+						orientation: "horizontal"
+						MDLabel:
+							text: "No. Mesin"
+							halign: "left"
+							valign: "middle"
+							font_style: 'H6'
+
+						MDLabel:
+							id: lb_no_mesin
+							halign: "left"
+							valign: "middle"
+							font_style: 'H6'
+
+					MDBoxLayout:
+						orientation: "horizontal"
+						MDLabel:
+							text: "Jenis Kendaraan"
+							halign: "left"
+							valign: "middle"
+							font_style: 'H6'
+
+						MDLabel:
+							id: lb_jenis_kendaraan
+							halign: "left"
+							valign: "middle"
+							font_style: 'H6'
+
+					MDBoxLayout:
+						orientation: "horizontal"
+						MDLabel:
+							text: "Merk"
+							halign: "left"
+							valign: "middle"
+							font_style: 'H6'
+
+						MDLabel:
+							id: lb_merk
+							halign: "left"
+							valign: "middle"
+							font_style: 'H6'
+
+					MDBoxLayout:
+						orientation: "horizontal"
+						MDLabel:
+							text: "Nama"
+							halign: "left"
+							valign: "middle"
+							font_style: 'H6'
+
+						MDLabel:
+							id: lb_nama
+							halign: "left"
+							valign: "middle"
+							font_style: 'H6'
+
+					MDBoxLayout:
+						orientation: "horizontal"
+						MDLabel:
+							text: "Alamat"
+							halign: "left"
+							valign: "middle"
+							font_style: 'H6'
+
+						MDLabel:
+							id: lb_alamat
+							halign: "left"
+							valign: "middle"
+							font_style: 'H6'
+
+				MDBoxLayout:
+					orientation: "vertical"
+					size_hint_x: 0.3
+					spacing: 10
+
+					MDLabel:
+						text: "ITEM CEK LIST PEMERIKSAAN IDENTITAS"
+						halign: "center"
+						valign: "middle"
+						font_style: 'H6'
+
+					MDBoxLayout:
+						orientation: "horizontal"
+						MDLabel:
+							text: "No. Uji"
+							halign: "left"
+							valign: "middle"
+							font_style: 'H6'
+
+						MDIconButton:
+							id: bt_no_uji
+							icon: "check-bold"
+							md_bg_color: "#2CA02C"
+							size_hint_x: 0.2
+							on_press: root.exec_no_uji()
+
+					MDBoxLayout:
+						orientation: "horizontal"
+						MDLabel:
+							text: "No. Polisi"
+							halign: "left"
+							valign: "middle"
+							font_style: 'H6'
+
+						MDIconButton:
+							id: bt_no_pol
+							icon: "check-bold"
+							md_bg_color: "#2CA02C"
+							size_hint_x: 0.2
+							on_press: root.exec_no_pol()
+
+					MDBoxLayout:
+						orientation: "horizontal"
+						MDLabel:
+							text: "Chasis"
+							halign: "left"
+							valign: "middle"
+							font_style: 'H6'
+
+						MDIconButton:
+							id: bt_chasis
+							icon: "check-bold"
+							md_bg_color: "#2CA02C"
+							size_hint_x: 0.2
+							on_press: root.exec_chasis()
+
+
+					MDBoxLayout:
+						orientation: "horizontal"
+						MDLabel:
+							text: "No. Mesin"
+							halign: "left"
+							valign: "middle"
+							font_style: 'H6'
+
+						MDIconButton:
+							id: bt_no_mesin
+							icon: "check-bold"
+							md_bg_color: "#2CA02C"
+							size_hint_x: 0.2
+							on_press: root.exec_no_mesin()
+
+					MDBoxLayout:
+						orientation: "horizontal"
+						MDLabel:
+							text: "Jenis Kendaraan"
+							halign: "left"
+							valign: "middle"
+							font_style: 'H6'
+
+						MDIconButton:
+							id: bt_jenis_kendaraan
+							icon: "check-bold"
+							md_bg_color: "#2CA02C"
+							size_hint_x: 0.2
+							on_press: root.exec_jenis_kendaraan()
+
+					MDBoxLayout:
+						orientation: "horizontal"
+						MDLabel:
+							text: "Merk"
+							halign: "left"
+							valign: "middle"
+							font_style: 'H6'
+
+						MDIconButton:
+							id: bt_merk
+							icon: "check-bold"
+							md_bg_color: "#2CA02C"
+							size_hint_x: 0.2
+							on_press: root.exec_merk()
+
+					MDBoxLayout:
+						orientation: "horizontal"
+						MDLabel:
+							text: "Nama"
+							halign: "left"
+							valign: "middle"
+							font_style: 'H6'
+
+						MDIconButton:
+							id: bt_nama
+							icon: "check-bold"
+							md_bg_color: "#2CA02C"
+							size_hint_x: 0.2
+							on_press: root.exec_nama()
+
+					MDBoxLayout:
+						orientation: "horizontal"
+						MDLabel:
+							text: "Alamat"
+							halign: "left"
+							valign: "middle"
+							font_style: 'H6'
+
+						MDIconButton:
+							id: bt_alamat
+							icon: "check-bold"
+							md_bg_color: "#2CA02C"
+							size_hint_x: 0.2
+							on_press: root.exec_alamat()
+
+        MDBoxLayout:
+            orientation: "horizontal"
+			size_hint_y: 0.1
+			padding: 20
+
+			MDRectangleFlatIconButton:
+				id: bt_save
+				text: "SIMPAN"
+				icon: "floppy"
+				md_bg_color: "#2CA02C"
+				size_hint_x: 0.5
+				on_press: root.exec_save()
+
+			MDRectangleFlatIconButton:
+				id: bt_cancel
+				text: "BATAL"
+				icon: "cancel"
+				md_bg_color: "#FF2A2A"
+				size_hint_x: 0.5
+				on_press: root.exec_cancel()
+
+		# footer layout
+        MDBoxLayout:
+            orientation: "horizontal"
+			size_hint_y: 0.1
+
+			MDBoxLayout:
+				orientation: "horizontal"
+				padding: 20
+				spacing: 20
+				md_bg_color: "#4471C4"
+				size_hint_x: 0.4
+				
+				Image:
+					source:'assets/images/logo-sorong.png'
+					size_hint_x: 0.1
+					allow_stretch: True  
+
+				Image:
+					source:'assets/images/logo-dishub.png'
+					size_hint_x: 0.1
+					allow_stretch: True  
+
+				MDBoxLayout:
+					orientation: "vertical"
+					size_hint_x: 0.8
+
+					MDLabel:			
+						text: "PEMERINTAH KABUPATEN SORONG"
+						halign: "left"
+						valign: "middle"
+						font_style: 'Subtitle1'
+
+					MDLabel:			
+						text: "DINAS PERHUBUNGAN"
+						halign: "left"
+						valign: "middle"
+						font_style: 'Subtitle1'
+
+					MDLabel:			
+						text: "UNIT PELAKSANA UJI BERKALA KENDARAAN BERMOTOR"
+						halign: "left"
+						valign: "middle"
+						font_style: 'Subtitle1'
+
+					MDLabel:
+						text: " Klamasen, Distrik Mariat, Kabupaten Sorong, Papua Barat Daya. 98416"
+						halign: "left"
+						valign: "middle"
+						md_bg_color: "#EEEEEE"
+						theme_text_color: "Custom"
+						text_color: "#000000"
+						font_style: 'Subtitle1'
+
+			MDBoxLayout:
+				orientation: "vertical"
+				padding: 20
+				spacing: 20
+				md_bg_color: "#FFC000"
+				size_hint_x: 0.6
+
+				MDLabel:			
+					text: "INFORMASI"
+					halign: "left"
+					valign: "middle"
+					font_style: 'H5'
+
+				MDLabel:
+					id: lb_info
+					text: "Silahkan Pilih Kendaraan yang akan diuji dari Tabel yang Tersedia"
+					halign: "left"
+					valign: "middle"
+					font_style: 'H6'

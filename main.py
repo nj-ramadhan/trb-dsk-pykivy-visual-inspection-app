@@ -71,12 +71,47 @@ dt_check_headlight_image = ""
 dt_check_signallight_flag = 0
 dt_check_signallight_image = ""
 
+flag_no_uji = True
+flag_no_pol = True
+flag_chasis = True
+flag_no_mesin = True
+flag_jenis_kendaraan = True
+flag_merk = True
+flag_nama = True
+flag_alamat = True
+
+flag_body = True
+flag_roda = True
+flag_spion = True
+flag_penyapu = True
+flag_sabuk = True
+flag_bumper = True
+flag_lampu = True
+flag_kaca = True
+flag_motor = True
+flag_spakbor = True
+
+flag_body_sub = np.array([True,True,True,True,True,True,True])
+flag_roda_sub = np.array([True,True,True,True,True,True,True])
+flag_spion_sub = np.array([True,True,True,True,True,True,True])
+flag_penyapu_sub = np.array([True,True,True,True,True,True,True])
+flag_sabuk_sub = np.array([True,True,True,True,True,True,True])
+flag_bumper_sub = np.array([True,True,True,True,True,True,True])
+
+flag_kaca_sub = np.array([True,True,True,True,True,True,True])
+flag_motor_sub = np.array([True,True,True,True,True,True,True])
+flag_spakbor_sub = np.array([True,True,True,True,True,True,True])
+
 dt_user = ""
 dt_no_antrian = ""
 dt_no_reg = ""
 dt_no_uji = ""
 dt_nama = ""
 dt_jenis_kendaraan = ""
+dt_no_pol = ""
+dt_chasis = ""
+dt_no_mesin = ""
+dt_merk = ""
 
 modbus_client = ModbusTcpClient('192.168.1.111')
 
@@ -85,7 +120,6 @@ flag_gate = False
 class ScreenHome(MDScreen):
     def __init__(self, **kwargs):
         super(ScreenHome, self).__init__(**kwargs)
-
         Clock.schedule_once(self.delayed_init, 1)
 
     def delayed_init(self, dt):
@@ -117,7 +151,7 @@ class ScreenHome(MDScreen):
 
     def exec_navigate_realtime(self):
         try:
-            self.screen_manager.current = 'screen_main'
+            self.screen_manager.current = 'screen_realtime'
 
         except Exception as e:
             toast_msg = f'Error Navigate to Realtime CCTV Streaming Screen: {e}'
@@ -139,7 +173,10 @@ class ScreenLogin(MDScreen):
         global mydb, db_users
         global dt_check_user, dt_user
 
+        screen_main = self.screen_manager.get_screen('screen_main')
+
         try:
+            screen_main.exec_reload_database()
             input_username = self.ids.tx_username.text
             input_password = self.ids.tx_password.text        
             # Adding salt at the last of the password
@@ -187,36 +224,29 @@ class ScreenLogin(MDScreen):
 
     def exec_navigate_realtime(self):
         try:
-            self.screen_manager.current = 'screen_main'
+            self.screen_manager.current = 'screen_realtime'
 
         except Exception as e:
             toast_msg = f'Error Navigate to Realtime CCTV Streaming Screen: {e}'
-            toast(toast_msg)   
+            toast(toast_msg)    
 
 class ScreenMain(MDScreen):   
     def __init__(self, **kwargs):
         super(ScreenMain, self).__init__(**kwargs)
-        global mydb, db_antrian
+        Clock.schedule_once(self.delayed_init, 1)                 
+
+    def delayed_init(self, dt):
         global flag_conn_stat, flag_play
         global count_starting, count_get_data
-
-        Clock.schedule_once(self.delayed_init, 1)
 
         flag_conn_stat = False
         flag_play = False
 
         count_starting = COUNT_STARTING
         count_get_data = COUNT_ACQUISITION
-
-        try:
-            mydb = mysql.connector.connect(host = DB_HOST,user = DB_USER,password = DB_PASSWORD,database = DB_NAME)
-
-        except Exception as e:
-            toast_msg = f'Error Initiate Database: {e}'
-            toast(toast_msg)                      
-
-    def delayed_init(self, dt):
+        
         Clock.schedule_interval(self.regular_update_display, 1)
+        self.exec_reload_database()
         self.exec_reload_table()
 
     def on_row_press(self, instance):
@@ -245,8 +275,11 @@ class ScreenMain(MDScreen):
         try:
             screen_home = self.screen_manager.get_screen('screen_home')
             screen_login = self.screen_manager.get_screen('screen_login')
-            screen_gate_control = self.screen_manager.get_screen('screen_gate_control')
+            screen_realtime = self.screen_manager.get_screen('screen_realtime')
+            screen_menu = self.screen_manager.get_screen('screen_menu')
             screen_play_detect = self.screen_manager.get_screen('screen_play_detect')
+            screen_inspect_id = self.screen_manager.get_screen('screen_inspect_id')
+            screen_inspect_visual = self.screen_manager.get_screen('screen_inspect_visual')
 
             self.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
             self.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
@@ -254,10 +287,16 @@ class ScreenMain(MDScreen):
             screen_home.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
             screen_login.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
             screen_login.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
-            screen_gate_control.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
-            screen_gate_control.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
+            screen_realtime.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
+            screen_realtime.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
+            screen_menu.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
+            screen_menu.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
             screen_play_detect.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
             screen_play_detect.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
+            screen_inspect_id.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
+            screen_inspect_id.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
+            screen_inspect_visual.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
+            screen_inspect_visual.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
 
             self.ids.lb_no_antrian.text = str(dt_no_antrian)
             self.ids.lb_no_reg.text = str(dt_no_reg)
@@ -265,17 +304,23 @@ class ScreenMain(MDScreen):
             self.ids.lb_nama.text = str(dt_nama)
             self.ids.lb_jenis_kendaraan.text = str(dt_jenis_kendaraan)
 
-            screen_gate_control.ids.lb_no_antrian.text = str(dt_no_antrian)
-            screen_gate_control.ids.lb_no_reg.text = str(dt_no_reg)
-            screen_gate_control.ids.lb_no_uji.text = str(dt_no_uji)
-            screen_gate_control.ids.lb_nama.text = str(dt_nama)
-            screen_gate_control.ids.lb_jenis_kendaraan.text = str(dt_jenis_kendaraan)
+            screen_menu.ids.lb_no_antrian.text = str(dt_no_antrian)
+            screen_menu.ids.lb_no_reg.text = str(dt_no_reg)
+            screen_menu.ids.lb_no_uji.text = str(dt_no_uji)
 
             screen_play_detect.ids.lb_no_antrian.text = str(dt_no_antrian)
             screen_play_detect.ids.lb_no_reg.text = str(dt_no_reg)
             screen_play_detect.ids.lb_no_uji.text = str(dt_no_uji)
             screen_play_detect.ids.lb_nama.text = str(dt_nama)
             screen_play_detect.ids.lb_jenis_kendaraan.text = str(dt_jenis_kendaraan)
+
+            screen_inspect_id.ids.lb_no_uji.text = str(dt_no_uji)
+            screen_inspect_id.ids.lb_no_pol.text = str(dt_no_reg)
+            screen_inspect_id.ids.lb_chasis.text = str(dt_chasis)
+            screen_inspect_id.ids.lb_no_mesin.text = str(dt_no_mesin)
+            screen_inspect_id.ids.lb_merk.text = str(dt_merk)
+            screen_inspect_id.ids.lb_nama.text = str(dt_nama)
+            screen_inspect_id.ids.lb_jenis_kendaraan.text = str(dt_jenis_kendaraan)
 
             if(dt_check_flag == "Belum Tes"):
                 self.ids.bt_start.disabled = False
@@ -297,8 +342,11 @@ class ScreenMain(MDScreen):
             self.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
             screen_home.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
             screen_login.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
-            screen_gate_control.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
+            screen_realtime.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
+            screen_menu.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
             screen_play_detect.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
+            screen_inspect_id.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
+            screen_inspect_visual.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
 
         except Exception as e:
             toast_msg = f'Error Update Display: {e}'
@@ -335,6 +383,14 @@ class ScreenMain(MDScreen):
         except Exception as e:
             toast_msg = f'Error GEt Data: {e}'
             toast(toast_msg)     
+
+    def exec_reload_database(self):
+        global mydb
+        try:
+            mydb = mysql.connector.connect(host = DB_HOST,user = DB_USER,password = DB_PASSWORD,database = DB_NAME)
+        except Exception as e:
+            toast_msg = f'Error Initiate Database: {e}'
+            toast(toast_msg)   
 
     def exec_reload_table(self):
         global mydb, db_antrian
@@ -380,15 +436,11 @@ class ScreenMain(MDScreen):
             print(toast_msg)
 
     def exec_start(self):
-        global flag_play
+        self.open_screen_menu()
+        print("button start selected")
 
-        if(not flag_play):
-            Clock.schedule_interval(self.regular_get_data, 1)
-            self.open_screen_gate_control()
-            flag_play = True
-
-    def open_screen_gate_control(self):
-        self.screen_manager.current = 'screen_gate_control'
+    def open_screen_menu(self):
+        self.screen_manager.current = 'screen_menu'
 
     def exec_logout(self):
         self.screen_manager.current = 'screen_login'
@@ -411,62 +463,20 @@ class ScreenMain(MDScreen):
 
     def exec_navigate_realtime(self):
         try:
-            self.screen_manager.current = 'screen_main'
+            self.screen_manager.current = 'screen_realtime'
 
         except Exception as e:
             toast_msg = f'Error Navigate to Realtime CCTV Streaming Screen: {e}'
             toast(toast_msg)   
 
-class ScreenGateControl(MDScreen):        
+class ScreenRealtime(MDScreen):        
     def __init__(self, **kwargs):
-        super(ScreenGateControl, self).__init__(**kwargs)
+        super(ScreenRealtime, self).__init__(**kwargs)
         Clock.schedule_once(self.delayed_init, 2)
         # Clock.schedule_interval(self.update_frame, 1)
         
     def delayed_init(self, dt):
         pass
-
-    def exec_gate_open(self):
-        global flag_conn_stat
-        global flag_gate
-
-        if(not flag_gate):
-            flag_gate = True
-
-        try:
-            if flag_conn_stat:
-                modbus_client.connect()
-                modbus_client.write_coil(3072, flag_gate, slave=1) #M0
-                modbus_client.close()
-        except:
-            toast("error send exec_gate_open data to PLC Slave") 
-
-    def exec_gate_close(self):
-        global flag_conn_stat
-        global flag_gate
-
-        if(flag_gate):
-            flag_gate = False
-
-        try:
-            if flag_conn_stat:
-                modbus_client.connect()
-                modbus_client.write_coil(3073, not flag_gate, slave=1) #M1
-                modbus_client.close()
-        except:
-            toast("error send exec_gate_close data to PLC Slave") 
-
-    def exec_gate_stop(self):
-        global flag_conn_stat
-
-        try:
-            if flag_conn_stat:
-                modbus_client.connect()
-                modbus_client.write_coil(3072, False, slave=1) #M0
-                modbus_client.write_coil(3073, False, slave=1) #M1
-                modbus_client.close()
-        except:
-            toast("error send exec_gate_stop data to PLC Slave") 
 
     def update_frame(self, dt):
         global rtsp_url_cam1
@@ -513,6 +523,7 @@ class ScreenGateControl(MDScreen):
         count_starting = COUNT_STARTING
         count_get_data = COUNT_ACQUISITION
         flag_play = False   
+        screen_main.exec_reload_database()
         screen_main.exec_reload_table()
         self.screen_manager.current = 'screen_main'
 
@@ -543,22 +554,17 @@ class ScreenGateControl(MDScreen):
 
     def exec_navigate_realtime(self):
         try:
-            self.screen_manager.current = 'screen_main'
+            self.screen_manager.current = 'screen_realtime'
 
         except Exception as e:
             toast_msg = f'Error Navigate to Realtime CCTV Streaming Screen: {e}'
             toast(toast_msg)   
 
-class ScreenPlayDetect(MDScreen):        
+class ScreenMenu(MDScreen):
     def __init__(self, **kwargs):
-        super(ScreenPlayDetect, self).__init__(**kwargs)
-        Clock.schedule_once(self.delayed_init, 2)
-        # Clock.schedule_interval(self.update_frame, 1)
-        
-    def delayed_init(self, dt):
-        pass
+        super(ScreenMenu, self).__init__(**kwargs)
 
-    def exec_gate_open(self):
+    def exec_barrier_open(self):
         global flag_conn_stat
         global flag_gate
 
@@ -573,7 +579,7 @@ class ScreenPlayDetect(MDScreen):
         except:
             toast("error send exec_gate_open data to PLC Slave") 
 
-    def exec_gate_close(self):
+    def exec_barrier_close(self):
         global flag_conn_stat
         global flag_gate
 
@@ -588,7 +594,7 @@ class ScreenPlayDetect(MDScreen):
         except:
             toast("error send exec_gate_close data to PLC Slave") 
 
-    def exec_gate_stop(self):
+    def exec_barrier_stop(self):
         global flag_conn_stat
 
         try:
@@ -599,6 +605,50 @@ class ScreenPlayDetect(MDScreen):
                 modbus_client.close()
         except:
             toast("error send exec_gate_stop data to PLC Slave") 
+
+    def exec_capture(self):
+        try:
+            self.screen_manager.current = 'screen_play_detect'
+
+        except Exception as e:
+            toast_msg = f'Error Navigate to Play Detect: {e}'
+            toast(toast_msg)    
+
+    def exec_inspect_visual(self):
+        try:
+            self.screen_manager.current = 'screen_inspect_visual'
+
+        except Exception as e:
+            toast_msg = f'Error Navigate to Visual Inspection Screen: {e}'
+            toast(toast_msg)    
+
+    def exec_inspect_id(self):
+        try:
+            self.screen_manager.current = 'screen_inspect_id'
+
+        except Exception as e:
+            toast_msg = f'Error Navigate to Visual Inspection Screen: {e}'
+            toast(toast_msg) 
+
+    def exec_inspect_pit(self):
+        try:
+            self.screen_manager.current = 'screen_visual'
+
+        except Exception as e:
+            toast_msg = f'Error Navigate to Visual Inspection Screen: {e}'
+            toast(toast_msg) 
+
+    def exec_back(self):
+        self.screen_manager.current = 'screen_main'
+
+class ScreenPlayDetect(MDScreen):        
+    def __init__(self, **kwargs):
+        super(ScreenPlayDetect, self).__init__(**kwargs)
+        Clock.schedule_once(self.delayed_init, 2)
+        # Clock.schedule_interval(self.update_frame, 1)
+        
+    def delayed_init(self, dt):
+        pass
 
     def update_frame(self, dt):
         global rtsp_url_cam1
@@ -648,11 +698,11 @@ class ScreenPlayDetect(MDScreen):
 
         self.open_screen_main()
 
-    def open_screen_gate_control(self):
-        self.screen_manager.current = 'screen_gate_control'
+    def open_screen_realtime(self):
+        self.screen_manager.current = 'screen_realtime'
 
     def exec_back(self):
-        self.open_screen_gate_control()
+        self.screen_manager.current = 'screen_menu'
 
     def exec_logout(self):
         self.screen_manager.current = 'screen_login'
@@ -675,11 +725,827 @@ class ScreenPlayDetect(MDScreen):
 
     def exec_navigate_realtime(self):
         try:
-            self.screen_manager.current = 'screen_main'
+            self.screen_manager.current = 'screen_realtime'
 
         except Exception as e:
             toast_msg = f'Error Navigate to Realtime CCTV Streaming Screen: {e}'
             toast(toast_msg)   
+
+class ScreenInspectId(MDScreen):        
+    def __init__(self, **kwargs):
+        super(ScreenInspectId, self).__init__(**kwargs)
+        Clock.schedule_once(self.delayed_init, 2)
+        
+    def delayed_init(self, dt):
+        pass
+
+    def open_screen_menu(self):
+        global flag_play        
+        global count_starting, count_get_data
+
+        count_starting = COUNT_STARTING
+        count_get_data = COUNT_ACQUISITION
+        flag_play = False   
+        self.screen_manager.current = 'screen_menu'
+
+    def exec_save(self):
+        global flag_play
+        global count_starting, count_get_data
+        global mydb, db_antrian
+        global dt_no_antrian, dt_no_reg, dt_no_uji, dt_nama, dt_jenis_kendaraan
+        global dt_check_flag, dt_check_user, dt_check_post
+
+        self.open_screen_menu()
+
+    def exec_cancel(self):
+        self.open_screen_menu()
+
+    def exec_no_uji(self):
+        global flag_no_uji
+
+        try:
+            if(flag_no_uji):
+                flag_no_uji = False
+                self.ids.bt_no_uji.icon = "cancel"
+                self.ids.bt_no_uji.md_bg_color = "#FF2A2A"
+            else:
+                flag_no_uji = True
+                self.ids.bt_no_uji.icon = "check-bold"
+                self.ids.bt_no_uji.md_bg_color = "#2CA02C"
+
+        except Exception as e:
+            toast_msg = f'Error ID Inspect: {e}'
+            toast(toast_msg)  
+
+    def exec_no_pol(self):
+        global flag_no_pol
+
+        try:
+            if(flag_no_pol):
+                flag_no_pol = False
+                self.ids.bt_no_pol.icon = "cancel"
+                self.ids.bt_no_pol.md_bg_color = "#FF2A2A"
+            else:
+                flag_no_pol = True
+                self.ids.bt_no_pol.icon = "check-bold"
+                self.ids.bt_no_pol.md_bg_color = "#2CA02C"
+
+        except Exception as e:
+            toast_msg = f'Error ID Inspect: {e}'
+            toast(toast_msg)  
+
+    def exec_chasis(self):
+        global flag_chasis
+
+        try:
+            if(flag_chasis):
+                flag_chasis = False
+                self.ids.bt_chasis.icon = "cancel"
+                self.ids.bt_chasis.md_bg_color = "#FF2A2A"
+            else:
+                flag_chasis = True
+                self.ids.bt_chasis.icon = "check-bold"
+                self.ids.bt_chasis.md_bg_color = "#2CA02C"
+
+        except Exception as e:
+            toast_msg = f'Error ID Inspect: {e}'
+            toast(toast_msg)  
+
+    def exec_no_mesin(self):
+        global flag_no_mesin
+
+        try:
+            if(flag_no_mesin):
+                flag_no_mesin = False
+                self.ids.bt_no_mesin.icon = "cancel"
+                self.ids.bt_no_mesin.md_bg_color = "#FF2A2A"
+            else:
+                flag_no_mesin = True
+                self.ids.bt_no_mesin.icon = "check-bold"
+                self.ids.bt_no_mesin.md_bg_color = "#2CA02C"
+
+        except Exception as e:
+            toast_msg = f'Error ID Inspect: {e}'
+            toast(toast_msg)  
+
+    def exec_jenis_kendaraan(self):
+        global flag_jenis_kendaraan
+
+        try:
+            if(flag_jenis_kendaraan):
+                flag_jenis_kendaraan = False
+                self.ids.bt_jenis_kendaraan.icon = "cancel"
+                self.ids.bt_jenis_kendaraan.md_bg_color = "#FF2A2A"
+            else:
+                flag_jenis_kendaraan = True
+                self.ids.bt_jenis_kendaraan.icon = "check-bold"
+                self.ids.bt_jenis_kendaraan.md_bg_color = "#2CA02C"
+
+        except Exception as e:
+            toast_msg = f'Error ID Inspect: {e}'
+            toast(toast_msg)  
+
+    def exec_merk(self):
+        global flag_merk
+
+        try:
+            if(flag_merk):
+                flag_merk = False
+                self.ids.bt_merk.icon = "cancel"
+                self.ids.bt_merk.md_bg_color = "#FF2A2A"
+            else:
+                flag_merk = True
+                self.ids.bt_merk.icon = "check-bold"
+                self.ids.bt_merk.md_bg_color = "#2CA02C"
+
+        except Exception as e:
+            toast_msg = f'Error ID Inspect: {e}'
+            toast(toast_msg)  
+
+    def exec_nama(self):
+        global flag_nama
+
+        try:
+            if(flag_nama):
+                flag_nama = False
+                self.ids.bt_nama.icon = "cancel"
+                self.ids.bt_nama.md_bg_color = "#FF2A2A"
+            else:
+                flag_nama = True
+                self.ids.bt_nama.icon = "check-bold"
+                self.ids.bt_nama.md_bg_color = "#2CA02C"
+
+        except Exception as e:
+            toast_msg = f'Error ID Inspect: {e}'
+            toast(toast_msg)  
+
+    def exec_alamat(self):
+        global flag_alamat
+
+        try:
+            if(flag_alamat):
+                flag_alamat = False
+                self.ids.bt_alamat.icon = "cancel"
+                self.ids.bt_alamat.md_bg_color = "#FF2A2A"
+            else:
+                flag_alamat = True
+                self.ids.bt_alamat.icon = "check-bold"
+                self.ids.bt_alamat.md_bg_color = "#2CA02C"
+
+        except Exception as e:
+            toast_msg = f'Error ID Inspect: {e}'
+            toast(toast_msg)  
+
+class ScreenInspectVisual(MDScreen):        
+    def __init__(self, **kwargs):
+        super(ScreenInspectVisual, self).__init__(**kwargs)
+        Clock.schedule_once(self.delayed_init, 2)
+        
+    def delayed_init(self, dt):
+        pass
+
+    def open_screen_menu(self):
+        global flag_play        
+        global count_starting, count_get_data
+
+        count_starting = COUNT_STARTING
+        count_get_data = COUNT_ACQUISITION
+        flag_play = False   
+        self.screen_manager.current = 'screen_menu'
+
+    def exec_save(self):
+        global flag_play
+        global count_starting, count_get_data
+        global mydb, db_antrian
+        global dt_no_antrian, dt_no_reg, dt_no_uji, dt_nama, dt_jenis_kendaraan
+        global dt_check_flag, dt_check_user, dt_check_post
+
+        self.open_screen_menu()
+
+    def exec_cancel(self):
+        self.open_screen_menu()
+
+    def exec_body(self):
+        global flag_body
+
+        try:
+            if(flag_body):
+                flag_body = False
+                self.ids.bt_body.icon = "cancel"
+                self.ids.bt_body.md_bg_color = "#FF2A2A"
+            else:
+                flag_body = True
+                self.ids.bt_body.icon = "check-bold"
+                self.ids.bt_body.md_bg_color = "#2CA02C"
+
+        except Exception as e:
+            toast_msg = f'Error Visual Inspect: {e}'
+            toast(toast_msg)  
+
+    def exec_roda(self):
+        global flag_roda
+
+        try:
+            if(flag_roda):
+                flag_roda = False
+                self.ids.bt_roda.icon = "cancel"
+                self.ids.bt_roda.md_bg_color = "#FF2A2A"
+            else:
+                flag_roda = True
+                self.ids.bt_roda.icon = "check-bold"
+                self.ids.bt_roda.md_bg_color = "#2CA02C"
+
+        except Exception as e:
+            toast_msg = f'Error Visual Inspect: {e}'
+            toast(toast_msg)  
+
+    def exec_spion(self):
+        global flag_spion
+
+        try:
+            if(flag_spion):
+                flag_spion = False
+                self.ids.bt_spion.icon = "cancel"
+                self.ids.bt_spion.md_bg_color = "#FF2A2A"
+            else:
+                flag_spion = True
+                self.ids.bt_spion.icon = "check-bold"
+                self.ids.bt_spion.md_bg_color = "#2CA02C"
+
+        except Exception as e:
+            toast_msg = f'Error Visual Inspect: {e}'
+            toast(toast_msg)  
+
+    def exec_penyapu(self):
+        global flag_penyapu
+
+        try:
+            if(flag_penyapu):
+                flag_penyapu = False
+                self.ids.bt_penyapu.icon = "cancel"
+                self.ids.bt_penyapu.md_bg_color = "#FF2A2A"
+            else:
+                flag_penyapu = True
+                self.ids.bt_penyapu.icon = "check-bold"
+                self.ids.bt_penyapu.md_bg_color = "#2CA02C"
+
+        except Exception as e:
+            toast_msg = f'Error Visual Inspect: {e}'
+            toast(toast_msg)  
+
+    def exec_sabuk(self):
+        global flag_sabuk
+
+        try:
+            if(flag_sabuk):
+                flag_sabuk = False
+                self.ids.bt_sabuk.icon = "cancel"
+                self.ids.bt_sabuk.md_bg_color = "#FF2A2A"
+            else:
+                flag_sabuk = True
+                self.ids.bt_sabuk.icon = "check-bold"
+                self.ids.bt_sabuk.md_bg_color = "#2CA02C"
+
+        except Exception as e:
+            toast_msg = f'Error Visual Inspect: {e}'
+            toast(toast_msg)  
+
+    def exec_bumper(self):
+        global flag_bumper
+
+        try:
+            if(flag_bumper):
+                flag_bumper = False
+                self.ids.bt_bumper.icon = "cancel"
+                self.ids.bt_bumper.md_bg_color = "#FF2A2A"
+            else:
+                flag_bumper = True
+                self.ids.bt_bumper.icon = "check-bold"
+                self.ids.bt_bumper.md_bg_color = "#2CA02C"
+
+        except Exception as e:
+            toast_msg = f'Error Visual Inspect: {e}'
+            toast(toast_msg)  
+
+    def exec_lampu(self):
+        global flag_lampu
+
+        try:
+            if(flag_lampu):
+                flag_lampu = False
+                self.ids.bt_lampu.icon = "cancel"
+                self.ids.bt_lampu.md_bg_color = "#FF2A2A"
+            else:
+                flag_lampu = True
+                self.ids.bt_lampu.icon = "check-bold"
+                self.ids.bt_lampu.md_bg_color = "#2CA02C"
+
+        except Exception as e:
+            toast_msg = f'Error Visual Inspect: {e}'
+            toast(toast_msg)  
+
+    def exec_kaca(self):
+        global flag_kaca
+
+        try:
+            if(flag_kaca):
+                flag_kaca = False
+                self.ids.bt_kaca.icon = "cancel"
+                self.ids.bt_kaca.md_bg_color = "#FF2A2A"
+            else:
+                flag_kaca = True
+                self.ids.bt_kaca.icon = "check-bold"
+                self.ids.bt_kaca.md_bg_color = "#2CA02C"
+
+        except Exception as e:
+            toast_msg = f'Error Visual Inspect: {e}'
+            toast(toast_msg)  
+
+    def exec_motor(self):
+        global flag_motor
+
+        try:
+            if(flag_motor):
+                flag_motor = False
+                self.ids.bt_motor.icon = "cancel"
+                self.ids.bt_motor.md_bg_color = "#FF2A2A"
+            else:
+                flag_motor = True
+                self.ids.bt_motor.icon = "check-bold"
+                self.ids.bt_motor.md_bg_color = "#2CA02C"
+
+        except Exception as e:
+            toast_msg = f'Error Visual Inspect: {e}'
+            toast(toast_msg)  
+
+    def exec_spakbor(self):
+        global flag_spakbor
+
+        try:
+            if(flag_spakbor):
+                flag_spakbor = False
+                self.ids.bt_spakbor.icon = "cancel"
+                self.ids.bt_spakbor.md_bg_color = "#FF2A2A"
+            else:
+                flag_spakbor = True
+                self.ids.bt_spakbor.icon = "check-bold"
+                self.ids.bt_spakbor.md_bg_color = "#2CA02C"
+
+        except Exception as e:
+            toast_msg = f'Error Visual Inspect: {e}'
+            toast(toast_msg)  
+
+    def exec_body_sub(self, num):
+        global flag_body_sub
+
+        try:
+            for i in range(flag_body_sub.size):
+                if(flag_body_sub[num]):
+                    flag_body_sub[num] = False
+                    self.ids[f'bt_body_sub{num}'].icon = "cancel"
+                    self.ids[f'bt_body_sub{num}'].md_bg_color = "#FF2A2A"
+                else:
+                    flag_body_sub[num] = True
+                    self.ids[f'bt_body_sub{num}'].icon = "check-bold"
+                    self.ids[f'bt_body_sub{num}'].md_bg_color = "#2CA02C"
+
+        except Exception as e:
+            toast_msg = f'Error Visual Inspect: {e}'
+            toast(toast_msg)  
+
+    def exec_roda_sub(self, num):
+        global flag_roda_sub
+
+        try:
+            for i in range(flag_roda_sub.size):
+                if(flag_roda_sub[num]):
+                    flag_roda_sub[num] = False
+                    self.ids[f'bt_roda_sub{num}'].icon = "cancel"
+                    self.ids[f'bt_roda_sub{num}'].md_bg_color = "#FF2A2A"
+                else:
+                    flag_roda_sub[num] = True
+                    self.ids[f'bt_roda_sub{num}'].icon = "check-bold"
+                    self.ids[f'bt_roda_sub{num}'].md_bg_color = "#2CA02C"
+
+        except Exception as e:
+            toast_msg = f'Error Visual Inspect: {e}'
+            toast(toast_msg)  
+
+    def exec_spion_sub(self, num):
+        global flag_spion_sub
+
+        try:
+            for i in range(flag_spion_sub.size):
+                if(flag_spion_sub[num]):
+                    flag_spion_sub[num] = False
+                    self.ids[f'bt_spion_sub{num}'].icon = "cancel"
+                    self.ids[f'bt_spion_sub{num}'].md_bg_color = "#FF2A2A"
+                else:
+                    flag_spion_sub[num] = True
+                    self.ids[f'bt_spion_sub{num}'].icon = "check-bold"
+                    self.ids[f'bt_spion_sub{num}'].md_bg_color = "#2CA02C"
+
+        except Exception as e:
+            toast_msg = f'Error Visual Inspect: {e}'
+            toast(toast_msg)  
+
+    def exec_penyapu_sub(self, num):
+        global flag_penyapu_sub
+
+        try:
+            for i in range(flag_penyapu_sub.size):
+                if(flag_penyapu_sub[num]):
+                    flag_penyapu_sub[num] = False
+                    self.ids[f'bt_penyapu_sub{num}'].icon = "cancel"
+                    self.ids[f'bt_penyapu_sub{num}'].md_bg_color = "#FF2A2A"
+                else:
+                    flag_penyapu_sub[num] = True
+                    self.ids[f'bt_penyapu_sub{num}'].icon = "check-bold"
+                    self.ids[f'bt_penyapu_sub{num}'].md_bg_color = "#2CA02C"
+
+        except Exception as e:
+            toast_msg = f'Error Visual Inspect: {e}'
+            toast(toast_msg)  
+
+    def exec_sabuk_sub(self, num):
+        global flag_sabuk_sub
+
+        try:
+            for i in range(flag_sabuk_sub.size):
+                if(flag_sabuk_sub[num]):
+                    flag_sabuk_sub[num] = False
+                    self.ids[f'bt_sabuk_sub{num}'].icon = "cancel"
+                    self.ids[f'bt_sabuk_sub{num}'].md_bg_color = "#FF2A2A"
+                else:
+                    flag_sabuk_sub[num] = True
+                    self.ids[f'bt_sabuk_sub{num}'].icon = "check-bold"
+                    self.ids[f'bt_sabuk_sub{num}'].md_bg_color = "#2CA02C"
+
+        except Exception as e:
+            toast_msg = f'Error Visual Inspect: {e}'
+            toast(toast_msg)  
+
+    def exec_bumper_sub(self, num):
+        global flag_bumper_sub
+
+        try:
+            for i in range(flag_bumper_sub.size):
+                if(flag_bumper_sub[num]):
+                    flag_bumper_sub[num] = False
+                    self.ids[f'bt_bumper_sub{num}'].icon = "cancel"
+                    self.ids[f'bt_bumper_sub{num}'].md_bg_color = "#FF2A2A"
+                else:
+                    flag_bumper_sub[num] = True
+                    self.ids[f'bt_bumper_sub{num}'].icon = "check-bold"
+                    self.ids[f'bt_bumper_sub{num}'].md_bg_color = "#2CA02C"
+
+        except Exception as e:
+            toast_msg = f'Error Visual Inspect: {e}'
+            toast(toast_msg)  
+
+    def exec_kaca_sub(self, num):
+        global flag_kaca_sub
+
+        try:
+            for i in range(flag_kaca_sub.size):
+                if(flag_kaca_sub[num]):
+                    flag_kaca_sub[num] = False
+                    self.ids[f'bt_kaca_sub{num}'].icon = "cancel"
+                    self.ids[f'bt_kaca_sub{num}'].md_bg_color = "#FF2A2A"
+                else:
+                    flag_kaca_sub[num] = True
+                    self.ids[f'bt_kaca_sub{num}'].icon = "check-bold"
+                    self.ids[f'bt_kaca_sub{num}'].md_bg_color = "#2CA02C"
+
+        except Exception as e:
+            toast_msg = f'Error Visual Inspect: {e}'
+            toast(toast_msg)  
+
+    def exec_motor_sub(self, num):
+        global flag_motor_sub
+
+        try:
+            for i in range(flag_motor_sub.size):
+                if(flag_motor_sub[num]):
+                    flag_motor_sub[num] = False
+                    self.ids[f'bt_motor_sub{num}'].icon = "cancel"
+                    self.ids[f'bt_motor_sub{num}'].md_bg_color = "#FF2A2A"
+                else:
+                    flag_motor_sub[num] = True
+                    self.ids[f'bt_motor_sub{num}'].icon = "check-bold"
+                    self.ids[f'bt_motor_sub{num}'].md_bg_color = "#2CA02C"
+
+        except Exception as e:
+            toast_msg = f'Error Visual Inspect: {e}'
+            toast(toast_msg)  
+
+    def exec_spakbor_sub(self, num):
+        global flag_spakbor_sub
+
+        try:
+            for i in range(flag_spakbor_sub.size):
+                if(flag_spakbor_sub[num]):
+                    flag_spakbor_sub[num] = False
+                    self.ids[f'bt_spakbor_sub{num}'].icon = "cancel"
+                    self.ids[f'bt_spakbor_sub{num}'].md_bg_color = "#FF2A2A"
+                else:
+                    flag_spakbor_sub[num] = True
+                    self.ids[f'bt_spakbor_sub{num}'].icon = "check-bold"
+                    self.ids[f'bt_spakbor_sub{num}'].md_bg_color = "#2CA02C"
+
+        except Exception as e:
+            toast_msg = f'Error Visual Inspect: {e}'
+            toast(toast_msg)  
+
+    def open_sub_body(self):
+        self.ids.layout_sub_body.opacity = 1
+        self.ids.layout_sub_body.height = '560dp'
+        self.ids.layout_sub_roda.disabled = False
+        self.ids.layout_sub_roda.opacity = 0
+        self.ids.layout_sub_roda.height = 0.0
+        self.ids.layout_sub_roda.disabled = True
+        self.ids.layout_sub_spion.opacity = 0
+        self.ids.layout_sub_spion.height = 0.0
+        self.ids.layout_sub_spion.disabled = True
+        self.ids.layout_sub_penyapu.opacity = 0
+        self.ids.layout_sub_penyapu.height = 0.0
+        self.ids.layout_sub_penyapu.disabled = True
+        self.ids.layout_sub_sabuk.opacity = 0
+        self.ids.layout_sub_sabuk.height = 0.0
+        self.ids.layout_sub_sabuk.disabled = True
+        self.ids.layout_sub_bumper.opacity = 0
+        self.ids.layout_sub_bumper.height = 0.0
+        self.ids.layout_sub_bumper.disabled = True
+        self.ids.layout_sub_kaca.opacity = 0
+        self.ids.layout_sub_kaca.height = 0.0
+        self.ids.layout_sub_kaca.disabled = True
+        self.ids.layout_sub_motor.opacity = 0
+        self.ids.layout_sub_motor.height = 0.0
+        self.ids.layout_sub_motor.disabled = True
+        self.ids.layout_sub_spakbor.opacity = 0
+        self.ids.layout_sub_spakbor.height = 0.0
+        self.ids.layout_sub_spakbor.disabled = True
+
+    def open_sub_roda(self):
+        self.ids.layout_sub_body.opacity = 0
+        self.ids.layout_sub_body.height = 0
+        self.ids.layout_sub_roda.disabled = True
+        self.ids.layout_sub_roda.opacity = 1
+        self.ids.layout_sub_roda.height = '560dp'
+        self.ids.layout_sub_roda.disabled = False
+        self.ids.layout_sub_spion.opacity = 0
+        self.ids.layout_sub_spion.height = 0.0
+        self.ids.layout_sub_spion.disabled = True
+        self.ids.layout_sub_penyapu.opacity = 0
+        self.ids.layout_sub_penyapu.height = 0.0
+        self.ids.layout_sub_penyapu.disabled = True
+        self.ids.layout_sub_sabuk.opacity = 0
+        self.ids.layout_sub_sabuk.height = 0.0
+        self.ids.layout_sub_sabuk.disabled = True
+        self.ids.layout_sub_bumper.opacity = 0
+        self.ids.layout_sub_bumper.height = 0.0
+        self.ids.layout_sub_bumper.disabled = True
+        self.ids.layout_sub_kaca.opacity = 0
+        self.ids.layout_sub_kaca.height = 0.0
+        self.ids.layout_sub_kaca.disabled = True
+        self.ids.layout_sub_motor.opacity = 0
+        self.ids.layout_sub_motor.height = 0.0
+        self.ids.layout_sub_motor.disabled = True
+        self.ids.layout_sub_spakbor.opacity = 0
+        self.ids.layout_sub_spakbor.height = 0.0
+        self.ids.layout_sub_spakbor.disabled = True
+
+    def open_sub_spion(self):
+        self.ids.layout_sub_body.opacity = 0
+        self.ids.layout_sub_body.height = 0
+        self.ids.layout_sub_roda.disabled = True
+        self.ids.layout_sub_roda.opacity = 0
+        self.ids.layout_sub_roda.height = 0
+        self.ids.layout_sub_roda.disabled = True
+        self.ids.layout_sub_spion.opacity = 1
+        self.ids.layout_sub_spion.height = '560dp'
+        self.ids.layout_sub_spion.disabled = False
+        self.ids.layout_sub_penyapu.opacity = 0
+        self.ids.layout_sub_penyapu.height = 0.0
+        self.ids.layout_sub_penyapu.disabled = True
+        self.ids.layout_sub_sabuk.opacity = 0
+        self.ids.layout_sub_sabuk.height = 0.0
+        self.ids.layout_sub_sabuk.disabled = True
+        self.ids.layout_sub_bumper.opacity = 0
+        self.ids.layout_sub_bumper.height = 0.0
+        self.ids.layout_sub_bumper.disabled = True
+        self.ids.layout_sub_kaca.opacity = 0
+        self.ids.layout_sub_kaca.height = 0.0
+        self.ids.layout_sub_kaca.disabled = True
+        self.ids.layout_sub_motor.opacity = 0
+        self.ids.layout_sub_motor.height = 0.0
+        self.ids.layout_sub_motor.disabled = True
+        self.ids.layout_sub_spakbor.opacity = 0
+        self.ids.layout_sub_spakbor.height = 0.0
+        self.ids.layout_sub_spakbor.disabled = True
+
+    def open_sub_penyapu(self):
+        self.ids.layout_sub_body.opacity = 0
+        self.ids.layout_sub_body.height = 0
+        self.ids.layout_sub_roda.disabled = True
+        self.ids.layout_sub_roda.opacity = 0
+        self.ids.layout_sub_roda.height = 0
+        self.ids.layout_sub_roda.disabled = True
+        self.ids.layout_sub_spion.opacity = 0
+        self.ids.layout_sub_spion.height = 0
+        self.ids.layout_sub_spion.disabled = True
+        self.ids.layout_sub_penyapu.opacity = 1
+        self.ids.layout_sub_penyapu.height = '560dp'
+        self.ids.layout_sub_penyapu.disabled = False
+        self.ids.layout_sub_sabuk.opacity = 0
+        self.ids.layout_sub_sabuk.height = 0.0
+        self.ids.layout_sub_sabuk.disabled = True
+        self.ids.layout_sub_bumper.opacity = 0
+        self.ids.layout_sub_bumper.height = 0.0
+        self.ids.layout_sub_bumper.disabled = True
+        self.ids.layout_sub_kaca.opacity = 0
+        self.ids.layout_sub_kaca.height = 0.0
+        self.ids.layout_sub_kaca.disabled = True
+        self.ids.layout_sub_motor.opacity = 0
+        self.ids.layout_sub_motor.height = 0.0
+        self.ids.layout_sub_motor.disabled = True
+        self.ids.layout_sub_spakbor.opacity = 0
+        self.ids.layout_sub_spakbor.height = 0.0
+        self.ids.layout_sub_spakbor.disabled = True
+
+    def open_sub_sabuk(self):
+        self.ids.layout_sub_body.opacity = 0
+        self.ids.layout_sub_body.height = 0
+        self.ids.layout_sub_roda.disabled = True
+        self.ids.layout_sub_roda.opacity = 0
+        self.ids.layout_sub_roda.height = 0
+        self.ids.layout_sub_roda.disabled = True
+        self.ids.layout_sub_spion.opacity = 0
+        self.ids.layout_sub_spion.height = 0
+        self.ids.layout_sub_spion.disabled = True
+        self.ids.layout_sub_penyapu.opacity = 0
+        self.ids.layout_sub_penyapu.height = 0
+        self.ids.layout_sub_penyapu.disabled = True
+        self.ids.layout_sub_sabuk.opacity = 1
+        self.ids.layout_sub_sabuk.height = '560dp'
+        self.ids.layout_sub_sabuk.disabled = False
+        self.ids.layout_sub_bumper.opacity = 0
+        self.ids.layout_sub_bumper.height = 0.0
+        self.ids.layout_sub_bumper.disabled = True
+        self.ids.layout_sub_kaca.opacity = 0
+        self.ids.layout_sub_kaca.height = 0.0
+        self.ids.layout_sub_kaca.disabled = True
+        self.ids.layout_sub_motor.opacity = 0
+        self.ids.layout_sub_motor.height = 0.0
+        self.ids.layout_sub_motor.disabled = True
+        self.ids.layout_sub_spakbor.opacity = 0
+        self.ids.layout_sub_spakbor.height = 0.0
+        self.ids.layout_sub_spakbor.disabled = True
+
+    def open_sub_bumper(self):
+        self.ids.layout_sub_body.opacity = 0
+        self.ids.layout_sub_body.height = 0
+        self.ids.layout_sub_roda.disabled = True
+        self.ids.layout_sub_roda.opacity = 0
+        self.ids.layout_sub_roda.height = 0
+        self.ids.layout_sub_roda.disabled = True
+        self.ids.layout_sub_spion.opacity = 0
+        self.ids.layout_sub_spion.height = 0
+        self.ids.layout_sub_spion.disabled = True
+        self.ids.layout_sub_penyapu.opacity = 0
+        self.ids.layout_sub_penyapu.height = 0
+        self.ids.layout_sub_penyapu.disabled = True
+        self.ids.layout_sub_sabuk.opacity = 0
+        self.ids.layout_sub_sabuk.height = 0
+        self.ids.layout_sub_sabuk.disabled = True
+        self.ids.layout_sub_bumper.opacity = 1
+        self.ids.layout_sub_bumper.height = '560dp'
+        self.ids.layout_sub_bumper.disabled = False
+        self.ids.layout_sub_kaca.opacity = 0
+        self.ids.layout_sub_kaca.height = 0.0
+        self.ids.layout_sub_kaca.disabled = True
+        self.ids.layout_sub_motor.opacity = 0
+        self.ids.layout_sub_motor.height = 0.0
+        self.ids.layout_sub_motor.disabled = True
+        self.ids.layout_sub_spakbor.opacity = 0
+        self.ids.layout_sub_spakbor.height = 0.0
+        self.ids.layout_sub_spakbor.disabled = True
+
+    def open_sub_lampu(self):
+        self.ids.layout_sub_body.opacity = 0
+        self.ids.layout_sub_body.height = 0
+        self.ids.layout_sub_roda.disabled = True
+        self.ids.layout_sub_roda.opacity = 0
+        self.ids.layout_sub_roda.height = 0
+        self.ids.layout_sub_roda.disabled = True
+        self.ids.layout_sub_spion.opacity = 0
+        self.ids.layout_sub_spion.height = 0
+        self.ids.layout_sub_spion.disabled = True
+        self.ids.layout_sub_penyapu.opacity = 0
+        self.ids.layout_sub_penyapu.height = 0
+        self.ids.layout_sub_penyapu.disabled = True
+        self.ids.layout_sub_sabuk.opacity = 0
+        self.ids.layout_sub_sabuk.height = 0
+        self.ids.layout_sub_sabuk.disabled = True
+        self.ids.layout_sub_bumper.opacity = 0
+        self.ids.layout_sub_bumper.height = 0
+        self.ids.layout_sub_bumper.disabled = True
+        self.ids.layout_sub_kaca.opacity = 0
+        self.ids.layout_sub_kaca.height = 0.0
+        self.ids.layout_sub_kaca.disabled = True
+        self.ids.layout_sub_motor.opacity = 0
+        self.ids.layout_sub_motor.height = 0.0
+        self.ids.layout_sub_motor.disabled = True
+        self.ids.layout_sub_spakbor.opacity = 0
+        self.ids.layout_sub_spakbor.height = 0.0
+        self.ids.layout_sub_spakbor.disabled = True
+
+    def open_sub_kaca(self):
+        self.ids.layout_sub_body.opacity = 0
+        self.ids.layout_sub_body.height = 0
+        self.ids.layout_sub_roda.disabled = True
+        self.ids.layout_sub_roda.opacity = 0
+        self.ids.layout_sub_roda.height = 0
+        self.ids.layout_sub_roda.disabled = True
+        self.ids.layout_sub_spion.opacity = 0
+        self.ids.layout_sub_spion.height = 0
+        self.ids.layout_sub_spion.disabled = True
+        self.ids.layout_sub_penyapu.opacity = 0
+        self.ids.layout_sub_penyapu.height = 0
+        self.ids.layout_sub_penyapu.disabled = True
+        self.ids.layout_sub_sabuk.opacity = 0
+        self.ids.layout_sub_sabuk.height = 0
+        self.ids.layout_sub_sabuk.disabled = True
+        self.ids.layout_sub_bumper.opacity = 0
+        self.ids.layout_sub_bumper.height = 0
+        self.ids.layout_sub_bumper.disabled = True
+        self.ids.layout_sub_kaca.opacity = 1
+        self.ids.layout_sub_kaca.height = '560dp'
+        self.ids.layout_sub_kaca.disabled = False
+        self.ids.layout_sub_motor.opacity = 0
+        self.ids.layout_sub_motor.height = 0.0
+        self.ids.layout_sub_motor.disabled = True
+        self.ids.layout_sub_spakbor.opacity = 0
+        self.ids.layout_sub_spakbor.height = 0.0
+        self.ids.layout_sub_spakbor.disabled = True
+
+    def open_sub_motor(self):
+        self.ids.layout_sub_body.opacity = 0
+        self.ids.layout_sub_body.height = 0
+        self.ids.layout_sub_roda.disabled = True
+        self.ids.layout_sub_roda.opacity = 0
+        self.ids.layout_sub_roda.height = 0
+        self.ids.layout_sub_roda.disabled = True
+        self.ids.layout_sub_spion.opacity = 0
+        self.ids.layout_sub_spion.height = 0
+        self.ids.layout_sub_spion.disabled = True
+        self.ids.layout_sub_penyapu.opacity = 0
+        self.ids.layout_sub_penyapu.height = 0
+        self.ids.layout_sub_penyapu.disabled = True
+        self.ids.layout_sub_sabuk.opacity = 0
+        self.ids.layout_sub_sabuk.height = 0
+        self.ids.layout_sub_sabuk.disabled = True
+        self.ids.layout_sub_bumper.opacity = 0
+        self.ids.layout_sub_bumper.height = 0
+        self.ids.layout_sub_bumper.disabled = True
+        self.ids.layout_sub_kaca.opacity = 0
+        self.ids.layout_sub_kaca.height = 0
+        self.ids.layout_sub_kaca.disabled = True
+        self.ids.layout_sub_motor.opacity = 1
+        self.ids.layout_sub_motor.height = '560dp'
+        self.ids.layout_sub_motor.disabled = False
+        self.ids.layout_sub_spakbor.opacity = 0
+        self.ids.layout_sub_spakbor.height = 0.0
+        self.ids.layout_sub_spakbor.disabled = True
+
+    def open_sub_spakbor(self):
+        self.ids.layout_sub_body.opacity = 0
+        self.ids.layout_sub_body.height = 0
+        self.ids.layout_sub_roda.disabled = True
+        self.ids.layout_sub_roda.opacity = 0
+        self.ids.layout_sub_roda.height = 0
+        self.ids.layout_sub_roda.disabled = True
+        self.ids.layout_sub_spion.opacity = 0
+        self.ids.layout_sub_spion.height = 0
+        self.ids.layout_sub_spion.disabled = True
+        self.ids.layout_sub_penyapu.opacity = 0
+        self.ids.layout_sub_penyapu.height = 0
+        self.ids.layout_sub_penyapu.disabled = True
+        self.ids.layout_sub_sabuk.opacity = 0
+        self.ids.layout_sub_sabuk.height = 0
+        self.ids.layout_sub_sabuk.disabled = True
+        self.ids.layout_sub_bumper.opacity = 0
+        self.ids.layout_sub_bumper.height = 0
+        self.ids.layout_sub_bumper.disabled = True
+        self.ids.layout_sub_kaca.opacity = 0
+        self.ids.layout_sub_kaca.height = 0.0
+        self.ids.layout_sub_kaca.disabled = True
+        self.ids.layout_sub_motor.opacity = 0
+        self.ids.layout_sub_motor.height = 0.0
+        self.ids.layout_sub_motor.disabled = True
+        self.ids.layout_sub_spakbor.opacity = 1
+        self.ids.layout_sub_spakbor.height = '560dp'
+        self.ids.layout_sub_spakbor.disabled = False
 
 class RootScreen(ScreenManager):
     pass             
@@ -698,11 +1564,47 @@ class PlayDetectorApp(MDApp):
         LabelBase.register(
             name="Orbitron-Regular",
             fn_regular="assets/fonts/Orbitron-Regular.ttf")
+        
+        LabelBase.register(
+            name="Draco",
+            fn_regular="assets/fonts/Draco.otf")        
 
+        LabelBase.register(
+            name="Recharge",
+            fn_regular="assets/fonts/Recharge.otf") 
+        
         theme_font_styles.append('Display')
         self.theme_cls.font_styles["Display"] = [
             "Orbitron-Regular", 72, False, 0.15]       
+
+        theme_font_styles.append('H4')
+        self.theme_cls.font_styles["H4"] = [
+            "Recharge", 30, False, 0.15] 
+
+        theme_font_styles.append('H5')
+        self.theme_cls.font_styles["H5"] = [
+            "Recharge", 20, False, 0.15] 
+
+        theme_font_styles.append('H6')
+        self.theme_cls.font_styles["H6"] = [
+            "Recharge", 16, False, 0.15] 
+
+        theme_font_styles.append('Subtitle1')
+        self.theme_cls.font_styles["Subtitle1"] = [
+            "Recharge", 12, False, 0.15] 
+
+        theme_font_styles.append('Body1')
+        self.theme_cls.font_styles["Body1"] = [
+            "Recharge", 12, False, 0.15] 
         
+        theme_font_styles.append('Button')
+        self.theme_cls.font_styles["Button"] = [
+            "Recharge", 10, False, 0.15] 
+
+        theme_font_styles.append('Caption')
+        self.theme_cls.font_styles["Caption"] = [
+            "Recharge", 8, False, 0.15]                                 
+            
         Window.fullscreen = 'auto'
         # Window.borderless = False
         # Window.size = 900, 1440

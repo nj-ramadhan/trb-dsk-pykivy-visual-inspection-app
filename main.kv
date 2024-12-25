@@ -4,8 +4,11 @@
 #:include screen_home.kv
 #:include screen_login.kv
 #:include screen_main.kv
-#:include screen_gate_control.kv
+#:include screen_realtime.kv
+#:include screen_menu.kv
 #:include screen_play_detect.kv
+#:include screen_inspect_id.kv
+#:include screen_inspect_visual.kv
 
 # ScreenManager:
 <RootScreen>:
@@ -27,13 +30,27 @@
         name: 'screen_main'
         screen_manager: screen_manager
 
-    ScreenGateControl:
-        id: screen_gate_control
-        name: 'screen_gate_control'
+    ScreenRealtime:
+        id: screen_realtime
+        name: 'screen_realtime'
         screen_manager: screen_manager   
+
+    ScreenMenu:
+        id: screen_menu
+        name: 'screen_menu'
+        screen_manager: screen_manager
 
     ScreenPlayDetect:
         id: screen_play_detect
         name: 'screen_play_detect'
         screen_manager: screen_manager   
 
+    ScreenInspectId:
+        id: screen_inspect_id
+        name: 'screen_inspect_id'
+        screen_manager: screen_manager   
+
+    ScreenInspectVisual:
+        id: screen_inspect_visual
+        name: 'screen_inspect_visual'
+        screen_manager: screen_manager   
