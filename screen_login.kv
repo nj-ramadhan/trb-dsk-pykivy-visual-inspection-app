@@ -119,7 +119,7 @@
 
 					MDCard:
 						ripple_behavior: True
-                        on_press: root.exec_navigate_realtime()
+                        on_press: root.exec_navigate_main()
 						md_bg_color: "#EEEEEE"
                         padding: 10
 						Image:
@@ -152,6 +152,7 @@
 						line_color_focus: "#4471C4"	
 						icon_left_color_focus: "#4471C4"				
 						mode: "rectangle"
+						on_text_validate: root.exec_login()
 
 					MDTextField:
 						id: tx_password
@@ -166,6 +167,7 @@
 						icon_left_color_focus: "#4471C4"
 						mode: "rectangle"
 						password: True
+						on_text_validate: root.exec_login()
 
 					MDBoxLayout:
 						orientation: "horizontal"

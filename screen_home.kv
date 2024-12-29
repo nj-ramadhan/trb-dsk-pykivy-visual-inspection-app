@@ -45,16 +45,6 @@
 				orientation: "vertical"
 				size_hint_x: 0.15
 
-				MDRectangleFlatIconButton:
-					id: bt_logout
-					icon: "logout"
-					text: "LOGOUT"
-					md_bg_color: "#FF2A2A"
-					theme_text_color: "Custom"
-					text_color: "#EEEEEE"
-					size_hint_x: 1
-					on_press: root.exec_logout()
-
 				MDLabel:
 					id: lb_time
 					text: "12:34:00"
@@ -128,7 +118,7 @@
 
 					MDCard:
 						ripple_behavior: True
-                        on_press: root.exec_navigate_realtime()
+                        on_press: root.exec_navigate_main()
 						md_bg_color: "#EEEEEE"
                         padding: 10
 						Image:
@@ -139,19 +129,19 @@
 				MDBoxLayout:
 					orientation: "vertical"
 					size_hint_x: 0.9
-					spacing: 10
+					spacing: 20
 
 					MDLabel:
 						text: "HOME"
 						halign: "center"
 						valign: "middle"
 						font_style: 'H6'
-						size_hint_y: 0.1
+						size_hint_y: 0.05
 
 					MDCarousel:
 						id: carousel
 						orientation: "horizontal"
-						size_hint_y: 0.9
+						size_hint_y: 0.95
 						loop: True
 						spacing: 50
 

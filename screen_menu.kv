@@ -45,16 +45,6 @@
 				orientation: "vertical"
 				size_hint_x: 0.15
 
-				MDRectangleFlatIconButton:
-					id: bt_logout
-					icon: "logout"
-					text: "LOGOUT"
-					md_bg_color: "#FF2A2A"
-					theme_text_color: "Custom"
-					text_color: "#EEEEEE"
-					size_hint_x: 1
-					on_press: root.exec_logout()
-
 				MDLabel:
 					id: lb_time
 					text: "12:34:00"
@@ -94,7 +84,7 @@
 		MDBoxLayout:
 			id: layout_main
 			orientation: "vertical"
-			size_hint_y: 0.7
+			size_hint_y: 0.6
 			padding:20
 
 			MDBoxLayout:
@@ -131,7 +121,7 @@
 						md_bg_color: "#DDDDDD"
 
 						MDLabel:
-							id: lb_no_reg
+							id: lb_no_pol
 							halign: "center"
 							valign: "middle"
 							font_style: 'H4'
@@ -254,20 +244,22 @@
 							halign: "center"
 							text: "Tutup Gate"
 
-			MDBoxLayout:
-				orientation: "vertical"
-				size_hint_y: 0.1
-				padding: 300, 0
+		# button layout
+        MDBoxLayout:
+            orientation: "horizontal"
+			size_hint_y: 0.1
+			padding: 20, 20
+			spacing: 50
 
-				MDRectangleFlatIconButton:
-					id: bt_back
-					icon: "cancel"
-					text: "BATALKAN INSPEKSI"
-					md_bg_color: "#FF2A2A"
-					theme_text_color: "Custom"
-					text_color: "#EEEEEE"
-					size_hint_x: 1
-					on_press: root.exec_back()
+			MDRectangleFlatIconButton:
+				id: bt_back
+				icon: "cancel"
+				text: "BATALKAN INSPEKSI"
+				md_bg_color: "#FF2A2A"
+				theme_text_color: "Custom"
+				text_color: "#EEEEEE"
+				size_hint_x: 1
+				on_press: root.exec_cancel()
 
 		# footer layout
         MDBoxLayout:

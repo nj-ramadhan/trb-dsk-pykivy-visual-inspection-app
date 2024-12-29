@@ -4,10 +4,10 @@
 #:include screen_home.kv
 #:include screen_login.kv
 #:include screen_main.kv
-#:include screen_realtime.kv
 #:include screen_menu.kv
-#:include screen_play_detect.kv
+#:include screen_inspect_pit.kv
 #:include screen_inspect_id.kv
+#:include screen_inspect_cctv.kv
 #:include screen_inspect_visual.kv
 
 # ScreenManager:
@@ -28,29 +28,29 @@
     ScreenMain:
         id: screen_main
         name: 'screen_main'
-        screen_manager: screen_manager
-
-    ScreenRealtime:
-        id: screen_realtime
-        name: 'screen_realtime'
-        screen_manager: screen_manager   
+        screen_manager: screen_manager 
 
     ScreenMenu:
         id: screen_menu
         name: 'screen_menu'
         screen_manager: screen_manager
 
-    ScreenPlayDetect:
-        id: screen_play_detect
-        name: 'screen_play_detect'
-        screen_manager: screen_manager   
-
     ScreenInspectId:
         id: screen_inspect_id
         name: 'screen_inspect_id'
         screen_manager: screen_manager   
 
+    ScreenInspectCctv:
+        id: screen_inspect_cctv
+        name: 'screen_inspect_cctv'
+        screen_manager: screen_manager  
+
     ScreenInspectVisual:
         id: screen_inspect_visual
         name: 'screen_inspect_visual'
+        screen_manager: screen_manager   
+
+    ScreenInspectPit:
+        id: screen_inspect_pit
+        name: 'screen_inspect_pit'
         screen_manager: screen_manager   

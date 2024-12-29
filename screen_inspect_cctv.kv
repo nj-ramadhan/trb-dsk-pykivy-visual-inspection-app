@@ -1,6 +1,6 @@
 #:kivy 2.1.0
 
-<ScreenRealtime>:
+<ScreenInspectCctv>:
     MDBoxLayout:
         orientation: "vertical"
 
@@ -34,7 +34,7 @@
 
 				MDLabel:
 					id: subtitle            
-					text: "VISUAL INSPECTION"
+					text: "VEHICLE VISUAL INSPECTION BY CCTV CAMERA"
 					halign: "left"
 					valign: "middle"
 					font_style: 'H5'
@@ -44,16 +44,6 @@
 			MDBoxLayout:
 				orientation: "vertical"
 				size_hint_x: 0.15
-
-				MDRectangleFlatIconButton:
-					id: bt_logout
-					icon: "logout"
-					text: "LOGOUT"
-					md_bg_color: "#FF2A2A"
-					theme_text_color: "Custom"
-					text_color: "#EEEEEE"
-					size_hint_x: 1
-					on_press: root.exec_logout()
 
 				MDLabel:
 					id: lb_time
@@ -94,94 +84,77 @@
 		MDBoxLayout:
 			id: layout_main
 			orientation: "horizontal"
-			size_hint_y: 0.7
+			size_hint_y: 0.6
 			padding:20
 
 			MDBoxLayout:
-				orientation: "horizontal"
+				orientation: "vertical"
 				spacing:50
 
-				MDBoxLayout:
-					orientation: "vertical"
-					size_hint_x: 0.1
-					spacing: 20
-
-					MDCard:
-						ripple_behavior: True
-                        on_press: root.exec_navigate_home()
-						md_bg_color: "#EEEEEE"
-                        padding: 10
-						Image:
-							source:'assets/images/icon-home.png'
-							size_hint_x: 0.15
-							allow_stretch: True 
-
-					MDCard:
-						ripple_behavior: True
-                        on_press: root.exec_navigate_login()
-						md_bg_color: "#EEEEEE"
-                        padding: 10
-						Image:
-							source:'assets/images/icon-login.png'
-							size_hint_x: 0.15
-							allow_stretch: True 
-
-					MDCard:
-						ripple_behavior: True
-                        on_press: root.exec_navigate_realtime()
-						md_bg_color: "#EEEEEE"
-                        padding: 10
-						Image:
-							source:'assets/images/icon-realtime.png'
-							size_hint_x: 0.15
-							allow_stretch: True 
+				MDLabel:
+					text: "REALTIME CCTV"
+					halign: "center"
+					valign: "middle"
+					font_style: 'H6'
+					size_hint_y: 0.1
 
 				MDBoxLayout:
-					orientation: "vertical"
+					orientation: "horizontal"
 					size_hint_x: 0.9
 					spacing: 10
 
-					MDLabel:
-						text: "REALTIME CCTV"
-						halign: "center"
-						valign: "middle"
-						font_style: 'H6'
-						size_hint_y: 0.1
+					MDBoxLayout:
+						orientation: "vertical"
+						size_hint_x: 0.5
+						spacing:5
+
+						Image:
+							id: image_view_front
+							source:'assets/images/tampak-depan.png'
+							allow_stretch: True 
+
+						Image:
+							id: image_view_back
+							source:'assets/images/tampak-belakang.png'
+							allow_stretch: True 
 
 					MDBoxLayout:
-						orientation: "horizontal"
-						size_hint_x: 0.9
-						spacing: 10
+						orientation: "vertical"
+						size_hint_x: 0.5
+						spacing:5
 
-						MDBoxLayout:
-							orientation: "vertical"
-							size_hint_x: 0.5
-							spacing:5
+						Image:
+							id: image_view_left
+							source:'assets/images/tampak-kiri.png'
+							allow_stretch: True 
 
-							Image:
-								id: image_view_front
-								source:'assets/images/tampak-depan.png'
-								allow_stretch: True 
+						Image:
+							id: image_view_right
+							source:'assets/images/tampak-kanan.png'
+							allow_stretch: True 
 
-							Image:
-								id: image_view_back
-								source:'assets/images/tampak-belakang.png'
-								allow_stretch: True 
+		# button layout
+        MDBoxLayout:
+            orientation: "horizontal"
+			size_hint_y: 0.1
+			padding: 20, 20
+			spacing: 50
 
-						MDBoxLayout:
-							orientation: "vertical"
-							size_hint_x: 0.5
-							spacing:5
+			MDRectangleFlatIconButton:
+				id: bt_save
+				text: "SIMPAN"
+				icon: "floppy"
+				md_bg_color: "#2CA02C"
+				size_hint_x: 0.5
+				on_press: root.exec_save()
 
-							Image:
-								id: image_view_left
-								source:'assets/images/tampak-kiri.png'
-								allow_stretch: True 
-
-							Image:
-								id: image_view_right
-								source:'assets/images/tampak-kanan.png'
-								allow_stretch: True 
+			MDRectangleFlatIconButton:
+				id: bt_cancel
+				text: "BATAL"
+				icon: "cancel"
+				md_bg_color: "#FF2A2A"
+				size_hint_x: 0.5
+				on_press: root.exec_cancel()
 
 		# footer layout
         MDBoxLayout:

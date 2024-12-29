@@ -46,16 +46,6 @@
 				orientation: "vertical"
 				size_hint_x: 0.15
 
-				MDRectangleFlatIconButton:
-					id: bt_logout
-					icon: "logout"
-					text: "LOGOUT"
-					md_bg_color: "#FF2A2A"
-					theme_text_color: "Custom"
-					text_color: "#EEEEEE"
-					size_hint_x: 1
-					on_press: root.exec_logout()
-
 				MDLabel:
 					id: lb_time
 					text: "12:34:00"
@@ -358,10 +348,12 @@
 							size_hint_x: 0.2
 							on_press: root.exec_alamat()
 
+		# button layout
         MDBoxLayout:
             orientation: "horizontal"
 			size_hint_y: 0.1
-			padding: 20
+			padding: 20, 20
+			spacing: 50
 
 			MDRectangleFlatIconButton:
 				id: bt_save

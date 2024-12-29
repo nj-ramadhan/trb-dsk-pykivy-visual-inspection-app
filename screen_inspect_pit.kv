@@ -1,6 +1,6 @@
 #:kivy 2.1.0
 
-<ScreenPlayDetect>:
+<ScreenInspectPit>:
     MDBoxLayout:
         orientation: "vertical"
 
@@ -34,7 +34,7 @@
 
 				MDLabel:
 					id: subtitle            
-					text: "VISUAL INSPECTION"
+					text: "VEHICLE PIT INSPECTION"
 					halign: "left"
 					valign: "middle"
 					font_style: 'H5'
@@ -44,16 +44,6 @@
 			MDBoxLayout:
 				orientation: "vertical"
 				size_hint_x: 0.15
-
-				MDRectangleFlatIconButton:
-					id: bt_logout
-					icon: "logout"
-					text: "LOGOUT"
-					md_bg_color: "#FF2A2A"
-					theme_text_color: "Custom"
-					text_color: "#EEEEEE"
-					size_hint_x: 1
-					on_press: root.exec_logout()
 
 				MDLabel:
 					id: lb_time
@@ -89,160 +79,62 @@
 					valign: "middle"
 					font_style: 'H6'
 					theme_text_color: "Custom"
-
+					
 		# main layout
 		MDBoxLayout:
 			id: layout_main
 			orientation: "horizontal"
-			size_hint_y: 0.7
+			size_hint_y: 0.6
 			padding:20
 			spacing:20
 
 			MDBoxLayout:
 				id: layout_display
 				orientation: "horizontal"
+				spacing:20
 
-				MDBoxLayout:
-					orientation: "horizontal"
-					spacing:5
+				Image:
+					id: image_view_under_front
+					source:'assets/images/tampak-kolong-depan.png'
+					allow_stretch: True 
 
-					Image:
-						id: image_view_under_front
-						source:'assets/images/tampak-kolong-depan.png'
-						allow_stretch: True 
+				Image:
+					id: image_view_under_back
+					source:'assets/images/tampak-kolong-belakang.png'
+					allow_stretch: True 
 
-					Image:
-						id: image_view_under_back
-						source:'assets/images/tampak-kolong-belakang.png'
-						allow_stretch: True 
+				# Image:
+				# 	id: image_view_left
+				# 	source:'assets/images/tampak-kiri.png'
+				# 	allow_stretch: True 
 
-					# Image:
-					# 	id: image_view_left
-					# 	source:'assets/images/tampak-kiri.png'
-					# 	allow_stretch: True 
+				# Image:
+				# 	id: image_view_right
+				# 	source:'assets/images/tampak-kanan.png'
+				# 	allow_stretch: True 
 
-					# Image:
-					# 	id: image_view_right
-					# 	source:'assets/images/tampak-kanan.png'
-					# 	allow_stretch: True 
+		# button layout
+        MDBoxLayout:
+            orientation: "horizontal"
+			size_hint_y: 0.1
+			padding: 20, 20
+			spacing: 50
 
-				MDBoxLayout:
-					orientation: "vertical"
-					size_hint_x: 0.4
-					padding:20
-					spacing:20
+			MDRectangleFlatIconButton:
+				id: bt_save
+				text: "SIMPAN"
+				icon: "floppy"
+				md_bg_color: "#2CA02C"
+				size_hint_x: 0.5
+				on_press: root.exec_save()
 
-					MDBoxLayout:
-						orientation: "vertical"
-						size_hint_y: 0.75
-						spacing:10
-
-						MDLabel:
-							text: "IDENTITAS KENDARAAN"
-							halign: "center"
-							valign: "middle"
-							font_style: 'H6'
-
-						MDBoxLayout:
-							orientation: "horizontal"
-							MDLabel:
-								text: "No. Antrian"
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-
-							MDLabel:
-								id: lb_no_antrian
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-
-						MDBoxLayout:
-							orientation: "horizontal"
-							MDLabel:
-								text: "No. Reg"
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-
-							MDLabel:
-								id: lb_no_reg
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-
-						MDBoxLayout:
-							orientation: "horizontal"
-							MDLabel:
-								text: "No. Uji"
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-
-							MDLabel:
-								id: lb_no_uji
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-
-						MDBoxLayout:
-							orientation: "horizontal"
-							MDLabel:
-								text: "Nama"
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-
-							MDLabel:
-								id: lb_nama
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-
-						MDBoxLayout:
-							orientation: "horizontal"
-							MDLabel:
-								text: "Jenis Kendaraan"
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-
-							MDLabel:
-								id: lb_jenis_kendaraan
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-
-						MDBoxLayout:
-							orientation: "horizontal"
-							MDLabel:
-								id: lb_status
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-
-					MDRectangleFlatIconButton:
-						id: bt_save
-						text: "SIMPAN HASIL"
-						icon: "floppy"
-						theme_text_color: "Custom"
-						text_color: "#EEEEEE"
-						md_bg_color: "#2CA02C"
-						size_hint_x: 1
-						size_hint_y: 0.1
-						on_press: root.exec_save()
-
-					MDRectangleFlatIconButton:
-						id: bt_back
-						icon: "arrow-left"
-						text: "KEMBALI"
-						halign: "center"
-						theme_text_color: "Custom"
-						text_color: "#EEEEEE"
-						md_bg_color: "#4471C4"
-						size_hint_x: 1
-						size_hint_y: 0.1					
-						on_press: root.exec_back()
+			MDRectangleFlatIconButton:
+				id: bt_cancel
+				text: "BATAL"
+				icon: "cancel"
+				md_bg_color: "#FF2A2A"
+				size_hint_x: 0.5
+				on_press: root.exec_cancel()
 
 		# footer layout
         MDBoxLayout:
