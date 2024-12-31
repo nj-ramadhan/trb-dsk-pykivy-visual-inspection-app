@@ -8,7 +8,13 @@ from kivymd.font_definitions import theme_font_styles
 from kivymd.uix.screen import MDScreen
 from kivymd.uix.label import MDLabel
 from kivymd.uix.card import MDCard
-from kivymd.uix.button import MDIconButton
+from kivymd.uix.textfield import MDTextField
+from kivymd.uix.menu import MDDropdownMenu
+from kivymd.uix.button import MDIconButton, MDRectangleFlatIconButton
+from kivymd.uix.boxlayout import MDBoxLayout
+from kivymd.uix.list import IRightBodyTouch, OneLineAvatarIconListItem
+from kivy.properties import StringProperty
+from kivy.metrics import dp
 from kivymd.toast import toast
 from kivymd.app import MDApp
 import os, sys, time, numpy as np
@@ -48,6 +54,9 @@ TB_USER = config['mysql']['TB_USER']
 TB_MERK = config['mysql']['TB_MERK']
 TB_KOMPONEN_UJI = config['mysql']['TB_KOMPONEN_UJI']
 TB_SUBKOMPONEN_UJI = config['mysql']['TB_SUBKOMPONEN_UJI']
+TB_KOMENTAR_UJI = config['mysql']['TB_KOMENTAR_UJI']
+TB_UJI = config['mysql']['TB_UJI']
+TB_UJI_DETAIL = config['mysql']['TB_UJI_DETAIL']
 
 COUNT_STARTING = 3
 COUNT_ACQUISITION = 4
@@ -852,7 +861,16 @@ class ScreenInspectVisual(MDScreen):
     def __init__(self, **kwargs):
         super(ScreenInspectVisual, self).__init__(**kwargs)
         Clock.schedule_once(self.delayed_init, 2)
-        
+
+    def menu_komentar_callback(self, text_item):
+        global selected_row_subkomponen_uji
+
+        try:
+            self.ids[f'tx_comment{selected_row_subkomponen_uji}'].text = text_item
+        except Exception as e:
+            toast_msg = f'Error Execute Command from Table Row: {e}'
+            toast(toast_msg)  
+
     def delayed_init(self, dt):
         self.exec_reload_komponen_uji()
 
@@ -862,6 +880,7 @@ class ScreenInspectVisual(MDScreen):
         global db_komponen_uji
 
         try:
+            self.ids.bt_dropdown_caller.disabled = True
             row = int(str(instance.id).replace("card_komponen_uji",""))
             self.exec_reload_subkomponen_uji(db_komponen_uji[1, row])
 
@@ -872,11 +891,15 @@ class ScreenInspectVisual(MDScreen):
     def on_subkomponen_uji_row_press(self, instance):
         global dt_no_antrian, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
         global dt_merk, dt_type, dt_jenis_kendaraan, dt_jbb, dt_bahan_bakar, dt_warna
-        global db_komponen_uji
-        global flags_subkomponen_uji
+        global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji
+        global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
 
         try:
+            self.ids.bt_dropdown_caller.disabled = False
             row = int(str(instance.id).replace("card_subkomponen_uji",""))
+            selected_row_subkomponen_uji = row
+            selected_kode_subkomponen_uji = db_subkomponen_uji[0, row]
+            self.reload_menu_komentar_uji(selected_kode_subkomponen_uji)
 
             if(flags_subkomponen_uji[row]):
                 flags_subkomponen_uji[row] = False
@@ -919,7 +942,8 @@ class ScreenInspectVisual(MDScreen):
 
                         ripple_behavior = True,
                         on_press = self.on_komponen_uji_row_press,
-                        padding = 20,
+                        padding = [20, 0],
+                        spacing = 10,
                         id=f'card_komponen_uji{i}',
                         size_hint_y=None,
                         height="60dp",
@@ -953,25 +977,66 @@ class ScreenInspectVisual(MDScreen):
             layout_list = self.ids.layout_list_subkomponen_uji
             for i in range(db_subkomponen_uji[0,:].size):
                 card = MDCard(
-                    MDLabel(text=f"{db_subkomponen_uji[0, i]}", size_hint_x= 0.2),
-                    MDLabel(text=f"{db_subkomponen_uji[1, i]}", size_hint_x= 0.7),
+                    MDLabel(text=f"{db_subkomponen_uji[0, i]}", size_hint_x= 0.1),
+                    MDLabel(text=f"{db_subkomponen_uji[1, i]}", size_hint_x= 0.4),
                     
-                    ripple_behavior = True,
-                    on_press = self.on_subkomponen_uji_row_press,
-                    padding = 20,
+                    ripple_behavior = False,
+                    padding = [20, 0],
+                    spacing = 10,
                     id=f'card_subkomponen_uji{i}',
+                    on_press = self.on_subkomponen_uji_row_press,
                     size_hint_y=None,
                     height="60dp",
                     )
                 self.ids[f'card_subkomponen_uji{i}'] = card
                 layout_list.add_widget(card)
                 
-                icon_button = MDIconButton(size_hint_x= 0.1, icon="check-bold", md_bg_color="#2CA02C")
-                self.ids[f'bt_subkomponen_uji{i}'] = icon_button
-                card.add_widget(icon_button)
+                # tx_comment = MDTextField(size_hint_x= 0.25, hint_text="Komentar",)
+                # bt_comment = MDRectangleFlatIconButton(size_hint_x= 0.05, icon="pen", md_bg_color="#2CA02C")
+                # bt_check = MDRectangleFlatIconButton(size_hint_x= 0.1, icon="check-bold", md_bg_color="#2CA02C")
+                tx_comment = MDTextField(size_hint_x= 0.3, hint_text="Komentar",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
+                bt_check = MDIconButton(size_hint_x= 0.1, icon="check-bold", md_bg_color="#2CA02C",)                
+                self.ids[f'tx_comment{i}'] = tx_comment
+                self.ids[f'bt_subkomponen_uji{i}'] = bt_check
+                card.add_widget(tx_comment)
+                card.add_widget(bt_check)
 
         except Exception as e:
             toast_msg = f'Error Reload Table Sub Komponen Uji: {e}'
+            print(toast_msg)
+
+    def reload_menu_komentar_uji(self, selected_kode_subkomponen_uji=""):
+        try:
+            print(f"reload menu komentar uji {selected_kode_subkomponen_uji}")
+            tb_komentar_uji = mydb.cursor()
+            tb_komentar_uji.execute(f"SELECT id, id_komponen_uji, id_subkomponen_uji, komentar FROM {TB_KOMENTAR_UJI} WHERE id_subkomponen_uji = '{selected_kode_subkomponen_uji}'")
+            result_tb_komentar_uji = tb_komentar_uji.fetchall()
+            mydb.commit()
+            db_komentar_uji = np.array(result_tb_komentar_uji).T
+
+            if(db_komentar_uji.size == 0 ):
+                self.ids.bt_dropdown_caller.disabled = True
+                toast('Tidak ada rekomendasi komentar, silahkan isi komentar sendiri')
+
+            self.menu_komentar_uji_items = [
+                {
+                    "left_icon": "comment",
+                    "text": f"{db_komentar_uji[3,i]}",                   
+                    "viewclass": "Item",
+                    "height": dp(54),
+                    "on_release": lambda x=f"{db_komentar_uji[3,i]}": self.menu_komentar_callback(x),
+                } for i in range(db_komentar_uji[0,:].size)
+            ]
+
+            self.menu_komentar_uji = MDDropdownMenu(
+                # caller=self.ids[f'bt_comment{i}'], 
+                caller=self.ids.bt_dropdown_caller,
+                items=self.menu_komentar_uji_items,
+                width_mult=2,
+            )
+
+        except Exception as e:
+            toast_msg = f'Error Show Komentar: {e}'
             print(toast_msg)
 
     def open_screen_menu(self):
@@ -989,6 +1054,9 @@ class ScreenInspectVisual(MDScreen):
     def exec_cancel(self):
         self.open_screen_menu()
 
+class Item(OneLineAvatarIconListItem):
+    left_icon = StringProperty()
+    right_text = StringProperty()
 
 class ScreenInspectPit(MDScreen):        
     def __init__(self, **kwargs):
@@ -1077,7 +1145,7 @@ class ScreenInspectPit(MDScreen):
 class RootScreen(ScreenManager):
     pass             
 
-class PlayDetectorApp(MDApp):
+class VisualInspectionApp(MDApp):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -1141,4 +1209,4 @@ class PlayDetectorApp(MDApp):
         return RootScreen()
 
 if __name__ == '__main__':
-    PlayDetectorApp().run()
+    VisualInspectionApp().run()

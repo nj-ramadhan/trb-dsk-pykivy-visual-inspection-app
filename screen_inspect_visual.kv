@@ -97,7 +97,7 @@
 					spacing: 10
 
 					MDLabel:
-						text: "PEMERIKSAAN BODY DAN KELISTRIKAN KENDARAAN"
+						text: "PEMERIKSAAN VISUAL KENDARAAN"
 						halign: "center"
 						valign: "middle"
 						font_style: 'H6'
@@ -109,18 +109,32 @@
 						scroll_timeout:100
 						MDList:
 							id: layout_list_komponen_uji
+							spacing: 10
 
 				MDBoxLayout:
 					orientation: "vertical"
 					size_hint_x: 0.6
 					spacing: 10
 
-					MDLabel:
-						text: "SUB MENU PEMERIKSAAN BODY DAN KELISTRIKAN KENDARAAN"
-						halign: "center"
-						valign: "middle"
-						font_style: 'H6'
+					MDBoxLayout:
+						orientation: "horizontal"
 						size_hint_y: 0.05
+
+						MDRectangleFlatIconButton:
+							id: bt_dropdown_caller
+							text: "REKOMENDASI"
+							icon: "comment"
+							md_bg_color: "#4471C4"
+							size_hint_x: 0.2
+							disabled: True
+							on_press: root.menu_komentar_uji.open()
+
+						MDLabel:
+							text: "SUB MENU PEMERIKSAAN"
+							halign: "center"
+							valign: "middle"
+							font_style: 'H6'
+							size_hint_x: 0.8
 
 					MDScrollView:
 						id: layout_scroll_subkomponen_uji
@@ -128,6 +142,7 @@
 						scroll_timeout:100
 						MDList:
 							id: layout_list_subkomponen_uji
+							spacing: 10
 							
 		# button layout
         MDBoxLayout:
@@ -224,3 +239,8 @@
 					halign: "left"
 					valign: "middle"
 					font_style: 'H6'
+
+<Item>
+	IconLeftWidget:
+		icon: root.left_icon
+			
