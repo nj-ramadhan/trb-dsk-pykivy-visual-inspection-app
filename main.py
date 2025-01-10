@@ -298,6 +298,7 @@ class ScreenMain(MDScreen):
         count_get_data = COUNT_ACQUISITION
         
         Clock.schedule_interval(self.regular_update_display, 1)
+        Clock.schedule_interval(self.regular_update_connection, 10)
         self.exec_reload_database()
         self.exec_reload_table()
 
