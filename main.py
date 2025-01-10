@@ -69,6 +69,8 @@ RTSP_IP_PIT_CAM2 = config['setting']['RTSP_IP_PIT_CAM2']
 RTSP_IP_PIT_CAM3 = config['setting']['RTSP_IP_PIT_CAM3']
 RTSP_IP_PIT_CAM4 = config['setting']['RTSP_IP_PIT_CAM4']
 
+MODBUS_IP_PLC = config['setting']['MODBUS_IP_PLC']
+
 COUNT_STARTING = 3
 COUNT_ACQUISITION = 4
 TIME_OUT = 500
@@ -155,7 +157,7 @@ dt_warna = ""
 dt_chasis = ""
 dt_no_mesin = ""
 
-modbus_client = ModbusTcpClient('192.168.1.111')
+modbus_client = ModbusTcpClient(MODBUS_IP_PLC)
 
 flag_gate = False
 
