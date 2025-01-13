@@ -2,6 +2,7 @@ from kivy.clock import Clock
 from kivy.lang import Builder
 from kivy.core.window import Window
 from kivy.core.text import LabelBase
+from kivy.graphics.texture import Texture
 from kivy.resources import resource_add_path
 from kivy.uix.screenmanager import ScreenManager
 from kivymd.font_definitions import theme_font_styles
@@ -21,7 +22,6 @@ import os, sys, time, numpy as np
 import configparser, hashlib, mysql.connector
 import cv2
 from pymodbus.client import ModbusTcpClient
-import weakref
 
 colors = {
     "Red"   : {"A200": "#FF2A2A","A500": "#FF8080","A700": "#FFD5D5",},
@@ -58,11 +58,33 @@ TB_KOMENTAR_UJI = config['mysql']['TB_KOMENTAR_UJI']
 TB_UJI = config['mysql']['TB_UJI']
 TB_UJI_DETAIL = config['mysql']['TB_UJI_DETAIL']
 
+RTSP_USER = config['setting']['RTSP_USER']
+RTSP_PASSWORD = config['setting']['RTSP_PASSWORD']
+RTSP_IP_DISPLAY_CAM1 = config['setting']['RTSP_IP_DISPLAY_CAM1']
+RTSP_IP_DISPLAY_CAM2 = config['setting']['RTSP_IP_DISPLAY_CAM2']
+RTSP_IP_DISPLAY_CAM3 = config['setting']['RTSP_IP_DISPLAY_CAM3']
+RTSP_IP_DISPLAY_CAM4 = config['setting']['RTSP_IP_DISPLAY_CAM4']
+RTSP_IP_PIT_CAM1 = config['setting']['RTSP_IP_PIT_CAM1']
+RTSP_IP_PIT_CAM2 = config['setting']['RTSP_IP_PIT_CAM2']
+RTSP_IP_PIT_CAM3 = config['setting']['RTSP_IP_PIT_CAM3']
+RTSP_IP_PIT_CAM4 = config['setting']['RTSP_IP_PIT_CAM4']
+
+MODBUS_IP_PLC = config['setting']['MODBUS_IP_PLC']
+
 COUNT_STARTING = 3
 COUNT_ACQUISITION = 4
 TIME_OUT = 500
 
-rtsp_url_cam1 = 'rtsp://admin:TRBintegrated202@192.168.1.64:554/Streaming/Channels/101'
+# rtsp_url_cam1 = 'rtsp://admin:TRBintegrated202@192.168.70.64:554/Streaming/Channels/101'
+rtsp_url_cam1 = f'rtsp://{RTSP_USER}:{RTSP_PASSWORD}@{RTSP_IP_DISPLAY_CAM1}:554/Streaming/Channels/101'
+rtsp_url_cam2 = f'rtsp://{RTSP_USER}:{RTSP_PASSWORD}@{RTSP_IP_DISPLAY_CAM2}:554/Streaming/Channels/101'
+rtsp_url_cam3 = f'rtsp://{RTSP_USER}:{RTSP_PASSWORD}@{RTSP_IP_DISPLAY_CAM3}:554/Streaming/Channels/101'
+rtsp_url_cam4 = f'rtsp://{RTSP_USER}:{RTSP_PASSWORD}@{RTSP_IP_DISPLAY_CAM4}:554/Streaming/Channels/101'
+
+rtsp_url_pit1 = f'rtsp://{RTSP_USER}:{RTSP_PASSWORD}@{RTSP_IP_PIT_CAM1}:554/Streaming/Channels/101'
+rtsp_url_pit2 = f'rtsp://{RTSP_USER}:{RTSP_PASSWORD}@{RTSP_IP_PIT_CAM2}:554/Streaming/Channels/101'
+rtsp_url_pit3 = f'rtsp://{RTSP_USER}:{RTSP_PASSWORD}@{RTSP_IP_PIT_CAM3}:554/Streaming/Channels/101'
+rtsp_url_pit4 = f'rtsp://{RTSP_USER}:{RTSP_PASSWORD}@{RTSP_IP_PIT_CAM4}:554/Streaming/Channels/101'
 
 dt_check_flag = 0
 dt_check_user = 1
@@ -135,7 +157,7 @@ dt_warna = ""
 dt_chasis = ""
 dt_no_mesin = ""
 
-modbus_client = ModbusTcpClient('192.168.1.111')
+modbus_client = ModbusTcpClient(MODBUS_IP_PLC)
 
 flag_gate = False
 
@@ -164,12 +186,16 @@ class ScreenHome(MDScreen):
             toast(toast_msg)        
 
     def exec_navigate_login(self):
+        global dt_user
         try:
-            self.screen_manager.current = 'screen_login'
+            if (dt_user == ""):
+                self.screen_manager.current = 'screen_login'
+            else:
+                toast(f"Anda sudah login sebagai {dt_user}")
 
         except Exception as e:
             toast_msg = f'Error Navigate to Login Screen: {e}'
-            toast(toast_msg)    
+            toast(toast_msg)  
 
     def exec_navigate_main(self):
         try:
@@ -237,8 +263,12 @@ class ScreenLogin(MDScreen):
             toast(toast_msg)        
 
     def exec_navigate_login(self):
+        global dt_user
         try:
-            self.screen_manager.current = 'screen_login'
+            if (dt_user == ""):
+                self.screen_manager.current = 'screen_login'
+            else:
+                toast(f"Anda sudah login sebagai {dt_user}")
 
         except Exception as e:
             toast_msg = f'Error Navigate to Login Screen: {e}'
@@ -268,6 +298,7 @@ class ScreenMain(MDScreen):
         count_get_data = COUNT_ACQUISITION
         
         Clock.schedule_interval(self.regular_update_display, 1)
+        Clock.schedule_interval(self.regular_update_connection, 10)
         self.exec_reload_database()
         self.exec_reload_table()
 
@@ -506,12 +537,16 @@ class ScreenMain(MDScreen):
             toast(toast_msg)        
 
     def exec_navigate_login(self):
+        global dt_user
         try:
-            self.screen_manager.current = 'screen_login'
+            if (dt_user == ""):
+                self.screen_manager.current = 'screen_login'
+            else:
+                toast(f"Anda sudah login sebagai {dt_user}")
 
         except Exception as e:
             toast_msg = f'Error Navigate to Login Screen: {e}'
-            toast(toast_msg)    
+            toast(toast_msg)     
 
     def exec_navigate_main(self):
         try:
@@ -764,34 +799,49 @@ class ScreenInspectId(MDScreen):
 class ScreenInspectCctv(MDScreen):        
     def __init__(self, **kwargs):
         super(ScreenInspectCctv, self).__init__(**kwargs)
-        Clock.schedule_once(self.delayed_init, 2)
-        # Clock.schedule_interval(self.update_frame, 1)
+        # Clock.schedule_once(self.delayed_init, 2)
         
-    def delayed_init(self, dt):
-        pass
+    def on_enter(self):
+        Clock.schedule_interval(self.update_frame, 2)
+
+    def on_leave(self):
+        Clock.unschedule(self.update_frame)
 
     def update_frame(self, dt):
-        global rtsp_url_cam1
+        global rtsp_url_cam1, rtsp_url_cam2, rtsp_url_cam3, rtsp_url_cam4
         try:
-            # Membaca frame dari stream
-            self.capture = cv2.VideoCapture(rtsp_url_cam1)
-            ret, frame = self.capture.read()
+            if (self.screen_manager.current == 'screen_inspect_cctv'):
+                texture = Texture.create(size=(600, 600), colorfmt='rgb')
+                rtsp_url = np.array([rtsp_url_cam1, rtsp_url_cam2, rtsp_url_cam3, rtsp_url_cam4])
+                texture_arr = np.array([texture, texture, texture, texture])
 
-            if ret:
-                # Membalik frame secara vertikal
-                frame = cv2.flip(frame, 0)  # 0 untuk membalik secara vertikal
+                for i in range (rtsp_url.size):
+                    # Membaca frame dari stream
+                    self.capture = cv2.VideoCapture(rtsp_url[i])
+                    # self.capture = cv2.VideoCapture(rtsp_url_cam1)
+                    ret, frame = self.capture.read()
 
-                # OpenCV menggunakan format BGR, ubah ke RGB
-                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    if ret:
+                        # Membalik frame secara vertikal
+                        frame = cv2.flip(frame, 0)  # 0 untuk membalik secara vertikal
 
-                # Konversi frame menjadi texture untuk ditampilkan di Kivy
-                buf = frame_rgb.tobytes()
-                texture = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt='rgb')
-                texture.blit_buffer(buf, colorfmt='rgb', bufferfmt='ubyte')
+                        # OpenCV menggunakan format BGR, ubah ke RGB
+                        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-                # Update widget Image dengan texture baru
-                # self.img_widget.texture = texture
-                self.ids.image_view_front.texture = texture
+                        # Konversi frame menjadi texture untuk ditampilkan di Kivy
+                        buf = frame_rgb.tobytes()
+                        # texture = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt='rgb')
+                        texture.blit_buffer(buf, colorfmt='rgb', bufferfmt='ubyte')
+                        texture_arr[i] = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt='rgb')
+                        texture_arr[i].blit_buffer(buf, colorfmt='rgb', bufferfmt='ubyte')
+                        
+
+                        # Update widget Image dengan texture baru
+                        # self.img_widget.texture = texture
+                self.ids.image_view_front.texture = texture_arr[0]
+                self.ids.image_view_back.texture = texture_arr[1]
+                self.ids.image_view_right.texture = texture_arr[2]
+                self.ids.image_view_left.texture = texture_arr[3]
 
         except Exception as e:
             toast_msg = f'error update frame: {e}'
@@ -842,12 +892,16 @@ class ScreenInspectCctv(MDScreen):
             toast(toast_msg)        
 
     def exec_navigate_login(self):
+        global dt_user
         try:
-            self.screen_manager.current = 'screen_login'
+            if (dt_user == ""):
+                self.screen_manager.current = 'screen_login'
+            else:
+                toast(f"Anda sudah login sebagai {dt_user}")
 
         except Exception as e:
             toast_msg = f'Error Navigate to Login Screen: {e}'
-            toast(toast_msg)    
+            toast(toast_msg)      
 
     def exec_navigate_main(self):
         try:
@@ -873,7 +927,6 @@ class ScreenInspectVisual(MDScreen):
 
     def delayed_init(self, dt):
         self.exec_reload_komponen_uji()
-        self.reload_menu_komentar_uji()
 
     def on_komponen_uji_row_press(self, instance):
         global dt_no_antrian, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
@@ -920,7 +973,7 @@ class ScreenInspectVisual(MDScreen):
 
         try:
             tb_komponen_uji = mydb.cursor()
-            tb_komponen_uji.execute(f"SELECT kode_kelompok_uji, kode_komponen_uji, nama, keterangan FROM {TB_KOMPONEN_UJI}")
+            tb_komponen_uji.execute(f"SELECT kode_kelompok_uji, kode_komponen_uji, nama, keterangan FROM {TB_KOMPONEN_UJI} WHERE kode_kelompok_uji = 'V1'")
             result_tb_komponen_uji = tb_komponen_uji.fetchall()
             mydb.commit()
             db_komponen_uji = np.array(result_tb_komponen_uji).T
@@ -937,7 +990,7 @@ class ScreenInspectVisual(MDScreen):
             for i in range(db_komponen_uji[0,:].size):
                 layout_list.add_widget(
                     MDCard(
-                        MDLabel(text=f"{db_komponen_uji[1, i]}", size_hint_x= 0.2),
+                        # MDLabel(text=f"{db_komponen_uji[1, i]}", size_hint_x= 0.2),
                         MDLabel(text=f"{db_komponen_uji[2, i]}", size_hint_x= 0.7),
                         MDIconButton(id=f'bt_komponen_uji{i}', size_hint_x= 0.1, icon="check-bold", md_bg_color="#2CA02C"),
 
@@ -1022,10 +1075,7 @@ class ScreenInspectVisual(MDScreen):
             self.menu_komentar_uji_items = [
                 {
                     "left_icon": "comment",
-                    "text": f"{db_komentar_uji[3,i]}",
-                    # "right_text": f"{db_komentar_uji[3,i]}",
-                    # "right_icon": "comment",
-                    
+                    "text": f"{db_komentar_uji[3,i]}",                   
                     "viewclass": "Item",
                     "height": dp(54),
                     "on_release": lambda x=f"{db_komentar_uji[3,i]}": self.menu_komentar_callback(x),
@@ -1058,45 +1108,53 @@ class ScreenInspectVisual(MDScreen):
     def exec_cancel(self):
         self.open_screen_menu()
 
-class RightContentCls(IRightBodyTouch, MDBoxLayout):
-    icon = StringProperty()
-    text = StringProperty()
-
 class Item(OneLineAvatarIconListItem):
     left_icon = StringProperty()
     right_text = StringProperty()
 
 class ScreenInspectPit(MDScreen):        
     def __init__(self, **kwargs):
-        super(ScreenInspectPit, self).__init__(**kwargs)
-        Clock.schedule_once(self.delayed_init, 2)
-        # Clock.schedule_interval(self.update_frame, 1)
-        
-    def delayed_init(self, dt):
-        pass
+        super(ScreenInspectPit, self).__init__(**kwargs)   
+
+    def on_enter(self):
+        Clock.schedule_interval(self.update_frame, 2)
+
+    def on_leave(self):
+        Clock.unschedule(self.update_frame)
 
     def update_frame(self, dt):
-        global rtsp_url_cam1
+        global rtsp_url_pit1, rtsp_url_pit2, rtsp_url_pit3, rtsp_url_pit4
         try:
-            # Membaca frame dari stream
-            self.capture = cv2.VideoCapture(rtsp_url_cam1)
-            ret, frame = self.capture.read()
+            if (self.screen_manager.current == 'screen_inspect_pit'):
+                texture = Texture.create(size=(600, 600), colorfmt='rgb')
+                rtsp_url = np.array([rtsp_url_pit1, rtsp_url_pit2, rtsp_url_pit3, rtsp_url_pit4])
+                texture_arr = np.array([texture, texture, texture, texture])
 
-            if ret:
-                # Membalik frame secara vertikal
-                frame = cv2.flip(frame, 0)  # 0 untuk membalik secara vertikal
+                for i in range (rtsp_url.size):
+                    # Membaca frame dari stream
+                    self.capture = cv2.VideoCapture(rtsp_url[i])
+                    # self.capture = cv2.VideoCapture(rtsp_url_cam1)
+                    ret, frame = self.capture.read()
 
-                # OpenCV menggunakan format BGR, ubah ke RGB
-                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    if ret:
+                        # Membalik frame secara vertikal
+                        frame = cv2.flip(frame, 0)  # 0 untuk membalik secara vertikal
 
-                # Konversi frame menjadi texture untuk ditampilkan di Kivy
-                buf = frame_rgb.tobytes()
-                texture = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt='rgb')
-                texture.blit_buffer(buf, colorfmt='rgb', bufferfmt='ubyte')
+                        # OpenCV menggunakan format BGR, ubah ke RGB
+                        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-                # Update widget Image dengan texture baru
-                # self.img_widget.texture = texture
-                self.ids.image_view_front.texture = texture
+                        # Konversi frame menjadi texture untuk ditampilkan di Kivy
+                        buf = frame_rgb.tobytes()
+                        # texture = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt='rgb')
+                        texture.blit_buffer(buf, colorfmt='rgb', bufferfmt='ubyte')
+                        texture_arr[i] = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt='rgb')
+                        texture_arr[i].blit_buffer(buf, colorfmt='rgb', bufferfmt='ubyte')
+                        # Update widget Image dengan texture baru
+                        # self.img_widget.texture = texture
+                self.ids.image_view_front_right.texture = texture_arr[0]
+                self.ids.image_view_front_left.texture = texture_arr[1]
+                self.ids.image_view_back_right.texture = texture_arr[2]
+                self.ids.image_view_back_left.texture = texture_arr[3]
 
         except Exception as e:
             toast_msg = f'error update frame: {e}'
@@ -1135,12 +1193,16 @@ class ScreenInspectPit(MDScreen):
             toast(toast_msg)        
 
     def exec_navigate_login(self):
+        global dt_user
         try:
-            self.screen_manager.current = 'screen_login'
+            if (dt_user == ""):
+                self.screen_manager.current = 'screen_login'
+            else:
+                toast(f"Anda sudah login sebagai {dt_user}")
 
         except Exception as e:
             toast_msg = f'Error Navigate to Login Screen: {e}'
-            toast(toast_msg)    
+            toast(toast_msg)     
 
     def exec_navigate_main(self):
         try:

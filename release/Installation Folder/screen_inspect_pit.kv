@@ -79,39 +79,59 @@
 					valign: "middle"
 					font_style: 'H6'
 					theme_text_color: "Custom"
-					
+
 		# main layout
 		MDBoxLayout:
 			id: layout_main
 			orientation: "horizontal"
 			size_hint_y: 0.6
 			padding:20
-			spacing:20
 
 			MDBoxLayout:
-				id: layout_display
-				orientation: "horizontal"
-				spacing:20
+				orientation: "vertical"
+				spacing:50
 
-				Image:
-					id: image_view_under_front
-					source:'assets/images/tampak-kolong-depan.png'
-					allow_stretch: True 
+				MDLabel:
+					text: "REALTIME CCTV"
+					halign: "center"
+					valign: "middle"
+					font_style: 'H6'
+					size_hint_y: 0.1
 
-				Image:
-					id: image_view_under_back
-					source:'assets/images/tampak-kolong-belakang.png'
-					allow_stretch: True 
+				MDBoxLayout:
+					orientation: "horizontal"
+					size_hint_x: 0.9
+					spacing: 10
 
-				# Image:
-				# 	id: image_view_left
-				# 	source:'assets/images/tampak-kiri.png'
-				# 	allow_stretch: True 
+					MDBoxLayout:
+						orientation: "vertical"
+						size_hint_x: 0.5
+						spacing:5
 
-				# Image:
-				# 	id: image_view_right
-				# 	source:'assets/images/tampak-kanan.png'
-				# 	allow_stretch: True 
+						Image:
+							id: image_view_front_right
+							source:'assets/images/tampak-kolong-depan.png'
+							allow_stretch: True 
+
+						Image:
+							id: image_view_back_right
+							source:'assets/images/tampak-kolong-belakang.png'
+							allow_stretch: True 
+
+					MDBoxLayout:
+						orientation: "vertical"
+						size_hint_x: 0.5
+						spacing:5
+
+						Image:
+							id: image_view_front_left
+							source:'assets/images/tampak-kolong-depan.png'
+							allow_stretch: True 
+							
+						Image:
+							id: image_view_back_left
+							source:'assets/images/tampak-kolong-belakang.png'
+							allow_stretch: True 
 
 		# button layout
         MDBoxLayout:
