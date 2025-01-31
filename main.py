@@ -350,7 +350,7 @@ class ScreenMain(MDScreen):
             dt_jbb                  = f"{db_antrian[7, row]}"
             dt_bahan_bakar          = '-' if db_antrian[8, row] == None else f"{db_bahan_bakar[np.where(db_bahan_bakar == db_antrian[8, row])[0][0],1]}" 
             dt_warna                = '-' if db_antrian[9, row] == None else f"{db_warna[np.where(db_warna == db_antrian[9, row])[0][0],1]}" 
-            dt_check_flag           = 'Lulus' if (int(db_antrian[10, i]) == 2) else 'Tidak Lulus' if (int(db_antrian[10, i]) == 1) else 'Belum Tes'
+            dt_check_flag           = 'Lulus' if (int(db_antrian[10, row]) == 2) else 'Tidak Lulus' if (int(db_antrian[10, row]) == 1) else 'Belum Uji'
                       
             self.exec_start()
 
@@ -369,11 +369,13 @@ class ScreenMain(MDScreen):
             screen_home = self.screen_manager.get_screen('screen_home')
             screen_login = self.screen_manager.get_screen('screen_login')
             screen_menu = self.screen_manager.get_screen('screen_menu')
+            screen_inspect_new = self.screen_manager.get_screen('screen_inspect_new')
             screen_inspect_pit = self.screen_manager.get_screen('screen_inspect_pit')
             screen_inspect_id = self.screen_manager.get_screen('screen_inspect_id')
             screen_inspect_visual2 = self.screen_manager.get_screen('screen_inspect_visual2')
             screen_inspect_visual = self.screen_manager.get_screen('screen_inspect_visual')
             screen_realtime_cctv = self.screen_manager.get_screen('screen_realtime_cctv')
+            screen_realtime_pit = self.screen_manager.get_screen('screen_realtime_pit')
 
             self.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
             self.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
@@ -383,6 +385,8 @@ class ScreenMain(MDScreen):
             screen_login.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
             screen_menu.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
             screen_menu.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
+            screen_inspect_new.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
+            screen_inspect_new.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
             screen_inspect_id.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
             screen_inspect_id.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
             screen_inspect_visual2.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
@@ -393,6 +397,8 @@ class ScreenMain(MDScreen):
             screen_inspect_pit.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
             screen_realtime_cctv.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
             screen_realtime_cctv.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
+            screen_realtime_pit.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
+            screen_realtime_pit.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
 
             self.ids.lb_dash_pendaftaran.text = str(dt_dash_pendaftaran)
             self.ids.lb_dash_belum_uji.text = str(dt_dash_belum_uji)
@@ -411,6 +417,8 @@ class ScreenMain(MDScreen):
                 screen_login.ids.lb_comm.text = 'PLC Tidak Terhubung'
                 screen_menu.ids.lb_comm.color = colors['Red']['A200']
                 screen_menu.ids.lb_comm.text = 'PLC Tidak Terhubung'
+                screen_inspect_new.ids.lb_comm.color = colors['Red']['A200']
+                screen_inspect_new.ids.lb_comm.text = 'PLC Tidak Terhubung'
 
             else:
                 self.ids.lb_comm.color = colors['Blue']['200']
@@ -421,6 +429,8 @@ class ScreenMain(MDScreen):
                 screen_login.ids.lb_comm.text = 'PLC Terhubung'
                 screen_menu.ids.lb_comm.color = colors['Blue']['200']
                 screen_menu.ids.lb_comm.text = 'PLC Terhubung'
+                screen_inspect_new.ids.lb_comm.color = colors['Blue']['200']
+                screen_inspect_new.ids.lb_comm.text = 'PLC Terhubung'
             
             self.ids.bt_new_inspect.disabled = False if dt_user != '' else True
             self.ids.bt_logout.disabled = False if dt_user != '' else True
@@ -429,19 +439,23 @@ class ScreenMain(MDScreen):
             screen_home.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
             screen_login.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
             screen_menu.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
+            screen_inspect_new.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
             screen_inspect_id.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
             screen_inspect_visual2.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
             screen_inspect_visual.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
             screen_inspect_pit.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
             screen_realtime_cctv.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
+            screen_realtime_pit.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
 
             if dt_user != '':
                 self.ids.img_user.source = f'https://dishub.sorongkab.go.id/ujikir/foto_user/{dt_foto_user}'
                 screen_home.ids.img_user.source = f'https://dishub.sorongkab.go.id/ujikir/foto_user/{dt_foto_user}'
                 screen_login.ids.img_user.source = f'https://dishub.sorongkab.go.id/ujikir/foto_user/{dt_foto_user}'
+                screen_inspect_new.ids.img_user.source = f'https://dishub.sorongkab.go.id/ujikir/foto_user/{dt_foto_user}'
             else:
                 self.ids.img_user.source = 'assets/images/icon-login.png'
                 screen_home.ids.img_user.source = 'assets/images/icon-login.png'
+                screen_login.ids.img_user.source = 'assets/images/icon-login.png'
                 screen_login.ids.img_user.source = 'assets/images/icon-login.png'               
 
         except Exception as e:
@@ -499,9 +513,10 @@ class ScreenMain(MDScreen):
             mydb.commit()
             db_antrian = np.array(result_tb_antrian).T
             db_pendaftaran = np.array(result_tb_antrian)
+            print(db_pendaftaran)
             dt_dash_pendaftaran = db_pendaftaran[:,10].size
-            dt_dash_belum_uji = np.where(db_pendaftaran[:,10] == 0)[0].size
-            dt_dash_sudah_uji = np.where(db_pendaftaran[:,10] == 1)[0].size
+            dt_dash_belum_uji = np.where(db_pendaftaran[:,10] == '0')[0].size
+            dt_dash_sudah_uji = np.where(db_pendaftaran[:,10] == '1')[0].size
 
             tb_merk = mydb.cursor()
             tb_merk.execute(f"SELECT ID, DESCRIPTION FROM {TB_MERK}")
@@ -546,7 +561,7 @@ class ScreenMain(MDScreen):
                         MDLabel(text=f"{db_antrian[7, i]}", size_hint_x= 0.05),
                         MDLabel(text='-' if db_antrian[8, i] == None else f"{db_bahan_bakar[np.where(db_bahan_bakar == db_antrian[8, i])[0][0],1]}" , size_hint_x= 0.08),
                         MDLabel(text='-' if db_antrian[9, i] == None else f"{db_warna[np.where(db_warna == db_antrian[9, i])[0][0],1]}" , size_hint_x= 0.05),
-                        MDLabel(text='Lulus' if (int(db_antrian[10, i]) == 2) else 'Tidak Lulus' if (int(db_antrian[10, i]) == 1) else 'Belum Tes', size_hint_x= 0.05),
+                        MDLabel(text='Lulus' if (int(db_antrian[10, i]) == 2) else 'Tidak Lulus' if (int(db_antrian[10, i]) == 1) else 'Belum Uji', size_hint_x= 0.05),
 
                         ripple_behavior = True,
                         on_press = self.on_antrian_row_press,
@@ -573,10 +588,10 @@ class ScreenMain(MDScreen):
         global dt_check_flag, dt_no_antrian, dt_user
 
         if (dt_user != ''):
-            if (dt_check_flag == 'Belum Tes'):
+            if (dt_check_flag == 'Belum Uji'):
                 self.open_screen_menu()
             else:
-                toast(f'No. Antrian {dt_no_antrian} Sudah Tes')
+                toast(f'No. Antrian {dt_no_antrian} Sudah Melakukan Pengujian')
         else:
             toast(f'Silahkan Login Untuk Melakukan Pengujian')
             
@@ -718,6 +733,7 @@ class ScreenInspectNew(MDScreen):
     def exec_cancel(self):
         try:
             self.ids.tx_nopol.text = ""  
+            self.exec_navigate_main()
 
         except Exception as e:
             toast_msg = f'Error find data: {e}'
