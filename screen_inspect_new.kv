@@ -140,22 +140,44 @@
 						font_style: 'H4'
 						theme_text_color: "Custom"
 						size_hint_y: 0.05
-						
-					MDTextField:
-						id: tx_nopol
-						font_size: '40sp'
-						font_name: "Recharge"
-						font_name_hint_text:'Recharge'
-						icon_left: "account"
-						hint_text: "Nomor Polisi"
-						text_color_focus: "#4471C4"
-						hint_text_color_focus: "#4471C4"
-						line_color_focus: "#4471C4"	
-						icon_left_color_focus: "#4471C4"				
-						mode: "rectangle"
-						on_text_validate: root.exec_register()
+
+					MDBoxLayout:
+						orientation: "horizontal"
+						spacing: 100
 						size_hint_y: 0.15
 
+						MDTextField:
+							id: tx_nouji
+							font_size: '40sp'
+							font_name: "Recharge"
+							font_name_hint_text:'Recharge'
+							icon_left: "account"
+							hint_text: "Nomor Uji"
+							text_color_focus: "#4471C4"
+							hint_text_color_focus: "#4471C4"
+							line_color_focus: "#4471C4"	
+							icon_left_color_focus: "#4471C4"				
+							mode: "rectangle"
+							on_text_validate: root.exec_register()
+
+						MDTextField:
+							id: tx_nopol
+							font_size: '40sp'
+							font_name: "Recharge"
+							font_name_hint_text:'Recharge'
+							icon_left: "account"
+							hint_text: "Nomor Polisi"
+							text_color_focus: "#4471C4"
+							hint_text_color_focus: "#4471C4"
+							line_color_focus: "#4471C4"	
+							icon_left_color_focus: "#4471C4"				
+							mode: "rectangle"
+							on_text_validate: root.exec_register()
+
+					MDBoxLayout:
+						orientation: "horizontal"
+						size_hint_y: 0.65
+						
 					MDBoxLayout:
 						orientation: "horizontal"
 						spacing: 100
@@ -184,10 +206,6 @@
 							md_bg_color: "#FF2A2A"
 							font_style: 'H6'
 							on_press: root.exec_cancel()
-
-					MDBoxLayout:
-						orientation: "horizontal"
-						size_hint_y: 0.65
 
 		# footer layout
         MDBoxLayout:

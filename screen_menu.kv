@@ -133,13 +133,13 @@
 							font_style: 'H4'
 
 			MDBoxLayout:
-				orientation: "horizontal"
+				orientation: "vertical"
 				padding: 350, 10
 				size_hint_y: 0.7
 				
 				MDBoxLayout:
-					orientation: "vertical"
-					size_hint_x: 0.3
+					orientation: "horizontal"
+					size_hint_y: 0.5
 					spacing: 20
 
 					MDCard:
@@ -161,26 +161,6 @@
 					MDCard:
 						orientation: "vertical"
 						ripple_behavior: True
-						on_press: root.exec_inspect_visual()
-						md_bg_color: "#EEEEEE"
-						padding: 10
-						Image:
-							source:'assets/images/icon-inspect-visual.png'
-							size_hint_y: 0.9
-							allow_stretch: True 
-						MDLabel:
-							size_hint_y: 0.1
-							halign: "center"
-							text: "Inspeksi Visual"
-
-				MDBoxLayout:
-					orientation: "vertical"
-					size_hint_x: 0.3
-					spacing: 20
-
-					MDCard:
-						orientation: "vertical"
-						ripple_behavior: True
 						on_press: root.exec_inspect_id()
 						md_bg_color: "#EEEEEE"
 						padding: 10
@@ -191,27 +171,7 @@
 						MDLabel:
 							size_hint_y: 0.1
 							halign: "center"
-							text: "Inspeksi Identitas Kendaraan"
-
-					MDCard:
-						orientation: "vertical"
-						ripple_behavior: True
-						on_press: root.exec_inspect_pit()
-						md_bg_color: "#EEEEEE"
-						padding: 10
-						Image:
-							source:'assets/images/icon-inspect-pit.png'
-							size_hint_y: 0.9
-							allow_stretch: True 
-						MDLabel:
-							size_hint_y: 0.1
-							halign: "center"
-							text: "Inspeksi Pit Kendaraan"
-
-				MDBoxLayout:
-					orientation: "vertical"
-					size_hint_x: 0.3
-					spacing: 20
+							text: "Pra Uji Identitas Kendaraan"
 
 					MDCard:
 						orientation: "vertical"
@@ -227,6 +187,56 @@
 							size_hint_y: 0.1
 							halign: "center"
 							text: "Photo Visual"
+
+					MDCard:
+						orientation: "vertical"
+						ripple_behavior: True
+						on_press: root.exec_inspect_visual()
+						md_bg_color: "#EEEEEE"
+						padding: 10
+						Image:
+							source:'assets/images/icon-inspect-visual.png'
+							size_hint_y: 0.9
+							allow_stretch: True 
+						MDLabel:
+							size_hint_y: 0.1
+							halign: "center"
+							text: "Inspeksi Visual 1"
+
+				MDBoxLayout:
+					orientation: "horizontal"
+					size_hint_y: 0.5
+					spacing: 20
+
+					MDCard:
+						orientation: "vertical"
+						ripple_behavior: True
+						on_press: root.exec_inspect_visual2()
+						md_bg_color: "#EEEEEE"
+						padding: 10
+						Image:
+							source:'assets/images/icon-inspect-visual.png'
+							size_hint_y: 0.9
+							allow_stretch: True 
+						MDLabel:
+							size_hint_y: 0.1
+							halign: "center"
+							text: "Inspeksi Visual 2"
+
+					MDCard:
+						orientation: "vertical"
+						ripple_behavior: True
+						on_press: root.exec_inspect_pit()
+						md_bg_color: "#EEEEEE"
+						padding: 10
+						Image:
+							source:'assets/images/icon-inspect-pit.png'
+							size_hint_y: 0.9
+							allow_stretch: True 
+						MDLabel:
+							size_hint_y: 0.1
+							halign: "center"
+							text: "Inspeksi Pit Kendaraan"
 
 					MDCard:
 						orientation: "vertical"

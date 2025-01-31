@@ -1,6 +1,6 @@
 #:kivy 2.1.0
 
-<ScreenInspectBody>:
+<ScreenRealtimePit>:
     MDBoxLayout:
         orientation: "vertical"
 
@@ -34,7 +34,7 @@
 
 				MDLabel:
 					id: subtitle            
-					text: "VEHICLE VISUAL INSPECTION"
+					text: "VEHICLE VISUAL INSPECTION BY CCTV CAMERA"
 					halign: "left"
 					valign: "middle"
 					font_style: 'H5'
@@ -88,62 +88,64 @@
 			padding:20
 
 			MDBoxLayout:
-				orientation: "horizontal"
+				orientation: "vertical"
 				spacing:50
 
-				MDBoxLayout:
-					orientation: "vertical"
-					size_hint_x: 0.4
-					spacing: 10
-
-					MDLabel:
-						text: "PEMERIKSAAN VISUAL KENDARAAN"
-						halign: "center"
-						valign: "middle"
-						font_style: 'H6'
-						size_hint_y: 0.05
-
-					MDScrollView:
-						id: layout_scroll_komponen_uji
-						size_hint_y: 0.95
-						scroll_timeout:100
-						MDList:
-							id: layout_list_komponen_uji
-							spacing: 10
+				MDLabel:
+					text: "REALTIME PIT CCTV"
+					halign: "center"
+					valign: "middle"
+					font_style: 'H6'
+					size_hint_y: 0.1
 
 				MDBoxLayout:
-					orientation: "vertical"
-					size_hint_x: 0.6
+					orientation: "horizontal"
+					size_hint_x: 0.9
 					spacing: 10
 
 					MDBoxLayout:
-						orientation: "horizontal"
-						size_hint_y: 0.05
+						orientation: "vertical"
+						spacing:5
 
-						MDRectangleFlatIconButton:
-							id: bt_dropdown_caller
-							text: "REKOMENDASI"
-							icon: "comment"
-							md_bg_color: "#4471C4"
-							size_hint_x: 0.2
-							disabled: True
-							on_press: root.menu_komentar_uji.open()
+						AsyncImage:
+							id: image_view_front
+							source:'assets/images/tampak-depan.png'
+							allow_stretch: True 
+							size_hint_y: 0.8
 
-						MDLabel:
-							text: "SUB MENU PEMERIKSAAN"
-							halign: "center"
-							valign: "middle"
-							font_style: 'H6'
-							size_hint_x: 0.8
+						MDBoxLayout:
+							orientation: "horizontal"
+							size_hint_y: 0.2
 
-					MDScrollView:
-						id: layout_scroll_subkomponen_uji
-						size_hint_y: 0.95
-						scroll_timeout:100
-						MDList:
-							id: layout_list_subkomponen_uji
-							spacing: 10
-							
+							MDRectangleFlatIconButton:
+								id: bt_dropdown_caller
+								text: "Pilih Kamera"
+								icon: "camera"
+								md_bg_color: "#4471C4"
+								size_hint_x: 0.2
+								on_press: root.menu_camera.open()
+
+							MDIconButton:
+								id: bt_play_cctv
+								icon: 'play-circle'
+								size_hint_x: 0.1
+								on_press: root.exec_play_cctv()
+
+
+							MDIconButton:
+								id: bt_stop_cctv
+								icon: 'stop-circle'
+								size_hint_x: 0.1
+								on_press: root.exec_stop_cctv()
+
+							MDSlider:
+								id: sl_cctv_zoom
+								step: 0.5
+								value: 1
+								size_hint_x: 0.6
+								min: 1
+								max: 4
+
 		# button layout
         MDBoxLayout:
             orientation: "horizontal"
@@ -235,11 +237,10 @@
 
 				MDLabel:
 					id: lb_info
-					text: "Silahkan Pilih Kendaraan yang akan diuji dari Tabel yang Tersedia"
+					text: "Silahkan tekan tombol untuk mengendalikan Portal, kemudian tekan tombol PERIKSA untuk melanjutkan pemeriksaan"
 					halign: "left"
 					valign: "middle"
 					font_style: 'H6'
 
-<Item>
-	IconLeftWidget:
-		icon: root.left_icon
+<ListItem>
+	text: root.list_text

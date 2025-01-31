@@ -105,10 +105,9 @@
 
 					MDBoxLayout:
 						orientation: "vertical"
-						# size_hint_x: 0.5
 						spacing:5
 
-						Image:
+						AsyncImage:
 							id: image_view_front
 							source:'assets/images/tampak-depan.png'
 							allow_stretch: True 
@@ -116,7 +115,7 @@
 
 						MDBoxLayout:
 							orientation: "horizontal"
-							size_hint_y: 0.1
+							size_hint_y: 0.2
 
 							MDRectangleFlatIconButton:
 								id: bt_dropdown_caller
@@ -129,39 +128,23 @@
 							MDIconButton:
 								id: bt_play_cctv
 								icon: 'play-circle'
+								size_hint_x: 0.1
 								on_press: root.exec_play_cctv()
+
 
 							MDIconButton:
 								id: bt_stop_cctv
 								icon: 'stop-circle'
+								size_hint_x: 0.1
 								on_press: root.exec_stop_cctv()
 
 							MDSlider:
 								id: sl_cctv_zoom
 								step: 0.5
 								value: 1
-								size_hint_y: 0.1
+								size_hint_x: 0.6
 								min: 1
 								max: 4
-						# Image:
-						# 	id: image_view_back
-						# 	source:'assets/images/tampak-belakang.png'
-						# 	allow_stretch: True 
-
-					# MDBoxLayout:
-					# 	orientation: "vertical"
-					# 	size_hint_x: 0.5
-					# 	spacing:5
-
-					# 	Image:
-					# 		id: image_view_left
-					# 		source:'assets/images/tampak-kiri.png'
-					# 		allow_stretch: True 
-
-					# 	Image:
-					# 		id: image_view_right
-					# 		source:'assets/images/tampak-kanan.png'
-					# 		allow_stretch: True 
 
 		# button layout
         MDBoxLayout:
@@ -258,3 +241,6 @@
 					halign: "left"
 					valign: "middle"
 					font_style: 'H6'
+
+<ListItem>
+	text: root.list_text

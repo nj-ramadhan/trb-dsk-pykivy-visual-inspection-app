@@ -94,259 +94,56 @@
 
 				MDBoxLayout:
 					orientation: "vertical"
-					size_hint_x: 0.7
+					size_hint_x: 0.4
 					spacing: 10
 
 					MDLabel:
-						text: "PEMERIKSAAN IDENTITAS KENDARAAN"
+						text: "PEMERIKSAAN VISUAL KENDARAAN"
 						halign: "center"
 						valign: "middle"
 						font_style: 'H6'
+						size_hint_y: 0.05
 
-					MDBoxLayout:
-						orientation: "horizontal"
-						MDLabel:
-							text: "No. Uji"
-							halign: "left"
-							valign: "middle"
-							font_style: 'H6'
-
-						MDLabel:
-							id: lb_no_uji
-							halign: "left"
-							valign: "middle"
-							font_style: 'H6'
-
-					MDBoxLayout:
-						orientation: "horizontal"
-						MDLabel:
-							text: "No. Polisi"
-							halign: "left"
-							valign: "middle"
-							font_style: 'H6'
-
-						MDLabel:
-							id: lb_no_pol
-							halign: "left"
-							valign: "middle"
-							font_style: 'H6'
-
-					MDBoxLayout:
-						orientation: "horizontal"
-						MDLabel:
-							text: "Chasis"
-							halign: "left"
-							valign: "middle"
-							font_style: 'H6'
-
-						MDLabel:
-							id: lb_chasis
-							halign: "left"
-							valign: "middle"
-							font_style: 'H6'
-
-
-					MDBoxLayout:
-						orientation: "horizontal"
-						MDLabel:
-							text: "No. Mesin"
-							halign: "left"
-							valign: "middle"
-							font_style: 'H6'
-
-						MDLabel:
-							id: lb_no_mesin
-							halign: "left"
-							valign: "middle"
-							font_style: 'H6'
-
-					MDBoxLayout:
-						orientation: "horizontal"
-						MDLabel:
-							text: "Jenis Kendaraan"
-							halign: "left"
-							valign: "middle"
-							font_style: 'H6'
-
-						MDLabel:
-							id: lb_jenis_kendaraan
-							halign: "left"
-							valign: "middle"
-							font_style: 'H6'
-
-					MDBoxLayout:
-						orientation: "horizontal"
-						MDLabel:
-							text: "Merk"
-							halign: "left"
-							valign: "middle"
-							font_style: 'H6'
-
-						MDLabel:
-							id: lb_merk
-							halign: "left"
-							valign: "middle"
-							font_style: 'H6'
-
-					MDBoxLayout:
-						orientation: "horizontal"
-						MDLabel:
-							text: "Nama"
-							halign: "left"
-							valign: "middle"
-							font_style: 'H6'
-
-						MDLabel:
-							id: lb_nama
-							halign: "left"
-							valign: "middle"
-							font_style: 'H6'
-
-					MDBoxLayout:
-						orientation: "horizontal"
-						MDLabel:
-							text: "Alamat"
-							halign: "left"
-							valign: "middle"
-							font_style: 'H6'
-
-						MDLabel:
-							id: lb_alamat
-							halign: "left"
-							valign: "middle"
-							font_style: 'H6'
+					MDScrollView:
+						id: layout_scroll_komponen_uji
+						size_hint_y: 0.95
+						scroll_timeout:100
+						MDList:
+							id: layout_list_komponen_uji
+							spacing: 10
 
 				MDBoxLayout:
 					orientation: "vertical"
-					size_hint_x: 0.3
+					size_hint_x: 0.6
 					spacing: 10
 
-					MDLabel:
-						text: "ITEM CEK LIST PEMERIKSAAN IDENTITAS"
-						halign: "center"
-						valign: "middle"
-						font_style: 'H6'
-
 					MDBoxLayout:
 						orientation: "horizontal"
+						size_hint_y: 0.05
+
+						MDRectangleFlatIconButton:
+							id: bt_dropdown_caller
+							text: "REKOMENDASI"
+							icon: "comment"
+							md_bg_color: "#4471C4"
+							size_hint_x: 0.2
+							disabled: True
+							on_press: root.menu_komentar_uji.open()
+
 						MDLabel:
-							text: "No. Uji"
-							halign: "left"
+							text: "SUB MENU PEMERIKSAAN"
+							halign: "center"
 							valign: "middle"
 							font_style: 'H6'
+							size_hint_x: 0.8
 
-						MDIconButton:
-							id: bt_no_uji
-							icon: "check-bold"
-							md_bg_color: "#2CA02C"
-							size_hint_x: 0.2
-							on_press: root.exec_no_uji()
-
-					MDBoxLayout:
-						orientation: "horizontal"
-						MDLabel:
-							text: "No. Polisi"
-							halign: "left"
-							valign: "middle"
-							font_style: 'H6'
-
-						MDIconButton:
-							id: bt_no_pol
-							icon: "check-bold"
-							md_bg_color: "#2CA02C"
-							size_hint_x: 0.2
-							on_press: root.exec_no_pol()
-
-					MDBoxLayout:
-						orientation: "horizontal"
-						MDLabel:
-							text: "Chasis"
-							halign: "left"
-							valign: "middle"
-							font_style: 'H6'
-
-						MDIconButton:
-							id: bt_chasis
-							icon: "check-bold"
-							md_bg_color: "#2CA02C"
-							size_hint_x: 0.2
-							on_press: root.exec_chasis()
-
-
-					MDBoxLayout:
-						orientation: "horizontal"
-						MDLabel:
-							text: "No. Mesin"
-							halign: "left"
-							valign: "middle"
-							font_style: 'H6'
-
-						MDIconButton:
-							id: bt_no_mesin
-							icon: "check-bold"
-							md_bg_color: "#2CA02C"
-							size_hint_x: 0.2
-							on_press: root.exec_no_mesin()
-
-					MDBoxLayout:
-						orientation: "horizontal"
-						MDLabel:
-							text: "Jenis Kendaraan"
-							halign: "left"
-							valign: "middle"
-							font_style: 'H6'
-
-						MDIconButton:
-							id: bt_jenis_kendaraan
-							icon: "check-bold"
-							md_bg_color: "#2CA02C"
-							size_hint_x: 0.2
-							on_press: root.exec_jenis_kendaraan()
-
-					MDBoxLayout:
-						orientation: "horizontal"
-						MDLabel:
-							text: "Merk"
-							halign: "left"
-							valign: "middle"
-							font_style: 'H6'
-
-						MDIconButton:
-							id: bt_merk
-							icon: "check-bold"
-							md_bg_color: "#2CA02C"
-							size_hint_x: 0.2
-							on_press: root.exec_merk()
-
-					MDBoxLayout:
-						orientation: "horizontal"
-						MDLabel:
-							text: "Nama"
-							halign: "left"
-							valign: "middle"
-							font_style: 'H6'
-
-						MDIconButton:
-							id: bt_nama
-							icon: "check-bold"
-							md_bg_color: "#2CA02C"
-							size_hint_x: 0.2
-							on_press: root.exec_nama()
-
-					MDBoxLayout:
-						orientation: "horizontal"
-						MDLabel:
-							text: "Alamat"
-							halign: "left"
-							valign: "middle"
-							font_style: 'H6'
-
-						MDIconButton:
-							id: bt_alamat
-							icon: "check-bold"
-							md_bg_color: "#2CA02C"
-							size_hint_x: 0.2
-							on_press: root.exec_alamat()
+					MDScrollView:
+						id: layout_scroll_subkomponen_uji
+						size_hint_y: 0.95
+						scroll_timeout:100
+						MDList:
+							id: layout_list_subkomponen_uji
+							spacing: 10
 
 		# button layout
         MDBoxLayout:
@@ -443,3 +240,6 @@
 					halign: "left"
 					valign: "middle"
 					font_style: 'H6'
+
+<ListItem>
+	text: root.list_text

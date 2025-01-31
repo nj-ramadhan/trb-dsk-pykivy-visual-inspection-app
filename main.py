@@ -14,16 +14,15 @@ from kivymd.uix.card import MDCard
 from kivymd.uix.textfield import MDTextField
 from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.button import MDIconButton
-from kivymd.uix.list import OneLineAvatarIconListItem
+from kivymd.uix.list import OneLineListItem, OneLineIconListItem, BaseListItem
 from kivy.properties import StringProperty
 from kivy.metrics import dp
 from kivymd.toast import toast
 from kivymd.app import MDApp
-import os, sys, time, numpy as np
-import configparser, hashlib, mysql.connector
+import os, sys, time, datetime, numpy as np
+import configparser, hashlib, mysql.connector, paramiko
 import cv2
 from pymodbus.client import ModbusTcpClient
-from ftplib import FTP
 
 colors = {
     "Red"   : {"A200": "#FF2A2A","A500": "#FF8080","A700": "#FFD5D5",},
@@ -77,9 +76,9 @@ RTSP_IP_PIT_CAM2 = config['setting']['RTSP_IP_PIT_CAM2']
 RTSP_IP_PIT_CAM3 = config['setting']['RTSP_IP_PIT_CAM3']
 RTSP_IP_PIT_CAM4 = config['setting']['RTSP_IP_PIT_CAM4']
 
-FTP_HOST = config['setting']['FTP_HOST']
-FTP_USER = config['setting']['FTP_USER']
-FTP_PASSWORD = config['setting']['FTP_PASSWORD']
+FTP_HOST = str(config['setting']['FTP_HOST'])
+FTP_USER = str(config['setting']['FTP_USER'])
+FTP_PASSWORD = str(config['setting']['FTP_PASSWORD'])
 
 MODBUS_IP_PLC = config['setting']['MODBUS_IP_PLC']
 
@@ -149,20 +148,22 @@ dt_chasis = ""
 dt_no_mesin = ""
 
 modbus_client = ModbusTcpClient(MODBUS_IP_PLC)
-# ftp = FTP(FTP_HOST, FTP_USER, FTP_PASSWORD)
 
+flag_conn_stat = False
 flag_gate = False
 selected_camera = 0
 
 class ScreenHome(MDScreen):
     def __init__(self, **kwargs):
         super(ScreenHome, self).__init__(**kwargs)
-        Clock.schedule_once(self.delayed_init, 1)
 
-    def delayed_init(self, dt):
-        Clock.schedule_interval(self.regular_update_display, 3)
+    def on_enter(self):
+        Clock.schedule_interval(self.regular_update_carousel, 3)
 
-    def regular_update_display(self, dt):
+    def on_leave(self):
+        Clock.unschedule(self.regular_update_carousel)
+
+    def regular_update_carousel(self, dt):
         try:
             self.ids.carousel.index += 1
             
@@ -208,7 +209,7 @@ class ScreenLogin(MDScreen):
             self.ids.tx_password.text = ""    
 
         except Exception as e:
-            toast_msg = f'error Login: {e}'
+            toast_msg = f'Error Login: {e}'
 
     def exec_login(self):
         global mydb, db_users
@@ -244,7 +245,7 @@ class ScreenLogin(MDScreen):
                 self.screen_manager.current = 'screen_main'
 
         except Exception as e:
-            toast_msg = f'error Login: {e}'
+            toast_msg = f'Error Login: {e}'
             toast(toast_msg)        
             toast('Gagal Masuk, Nama Pengguna atau Password Salah')
 
@@ -279,52 +280,78 @@ class ScreenLogin(MDScreen):
 class ScreenMain(MDScreen):   
     def __init__(self, **kwargs):
         super(ScreenMain, self).__init__(**kwargs)
-        Clock.schedule_once(self.delayed_init, 1)                 
-
-    def delayed_init(self, dt):
-        global flag_conn_stat, flag_play
-        global count_starting, count_get_data
-
-        flag_conn_stat = False
-        flag_play = False
-
-        count_starting = COUNT_STARTING
-        count_get_data = COUNT_ACQUISITION
-        
         Clock.schedule_interval(self.regular_update_display, 1)
-        # Clock.schedule_interval(self.regular_update_connection, 10)
+
+    def on_enter(self):
         self.exec_reload_database()
         self.exec_reload_table()
 
-    def ftp_mkdir(self, currentDir):
-        if currentDir != "":
-            try:
-                ftp.cwd(currentDir)
-            except IOError:
-                self.ftp_mkdir("/".join(currentDir.split("/")[:-1]))
-                ftp.mkd(currentDir)
-                ftp.cwd(currentDir)
+    def sftp_upload_file(local_path, remote_path):
+        # Create an SSH client
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        # Connect to the SFTP server
+        ssh.connect(FTP_HOST, username = FTP_USER, password = FTP_PASSWORD)
+        # Open an SFTP session
+        sftp = ssh.open_sftp()
+        # Upload the file
+        sftp.put(local_path, remote_path)
+        # Close the SFTP session and SSH connection
+        sftp.close()
+        ssh.close()
+
+    def sftp_list_files(remote_path):
+        # Create an SSH client
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        # Connect to the SFTP server
+        ssh.connect(FTP_HOST, username = FTP_USER, password = FTP_PASSWORD)
+        # Open an SFTP session
+        sftp = ssh.open_sftp()
+        # List files in the remote directory
+        files = sftp.listdir(remote_path)
+        # Print the list of files
+        for file in files:
+            print(file)
+        # Close the SFTP session and SSH connection
+        sftp.close()
+        ssh.close()
+        
+    def sftp_make_dir(self, remote_path):
+        # Create an SSH client
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        # Connect to the SFTP server
+        ssh.connect(FTP_HOST, username = FTP_USER, password = FTP_PASSWORD)
+        # Open an SFTP session
+        sftp = ssh.open_sftp()
+        try:
+            sftp.chdir(remote_path)  # Test if remote_path exists
+        except IOError:
+            sftp.mkdir(remote_path)  # Create remote_path
+            sftp.chdir(remote_path)
+        sftp.close()
+        ssh.close()
                 
     def on_antrian_row_press(self, instance):
         global dt_no_antrian, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama, dt_status_uji
         global dt_merk, dt_type, dt_jenis_kendaraan, dt_jbb, dt_bahan_bakar, dt_warna
-        global db_antrian, db_merk
+        global db_antrian, db_merk, db_bahan_bakar, db_warna
 
         try:
             row = int(str(instance.id).replace("card_antrian",""))
             dt_no_antrian           = f"{db_antrian[0, row]}"
             dt_no_pol               = f"{db_antrian[1, row]}"
             dt_no_uji               = f"{db_antrian[2, row]}"
-            dt_check_flag           = 'Belum Tes' if (int(db_antrian[3, row]) == 0) else 'Sudah Tes'
-            dt_nama                 = f"{db_antrian[4, row]}"
-            dt_merk                 = f"{db_merk[np.where(db_merk == db_antrian[5, row])[0][0],1]}"
-            dt_type                 = f"{db_antrian[6, row]}"
-            dt_jenis_kendaraan      = f"{db_antrian[7, row]}"
-            dt_jbb                  = f"{db_antrian[8, row]}"
-            dt_bahan_bakar          = f"{db_antrian[9, row]}"
-            dt_warna                = f"{db_antrian[10, row]}"
-            dt_status_uji           = f"{db_antrian[11, row]}"
-                                            
+            dt_status_uji           = 'Berkala' if db_antrian[3, row] == 'B' else 'Uji Ulang' if (db_antrian[3, row]) == 'U' else 'Baru' if (db_antrian[3, row]) == 'BR' else 'Numpang Uji' if (db_antrian[3, row]) == 'NB' else 'Mutasi'
+            dt_merk                 = '-' if db_antrian[4, row] == None else f"{db_merk[np.where(db_merk == db_antrian[4, row])[0][0],1]}" 
+            dt_type                 = f"{db_antrian[5, row]}"
+            dt_jenis_kendaraan      = f"{db_antrian[6, row]}"
+            dt_jbb                  = f"{db_antrian[7, row]}"
+            dt_bahan_bakar          = '-' if db_antrian[8, row] == None else f"{db_bahan_bakar[np.where(db_bahan_bakar == db_antrian[8, row])[0][0],1]}" 
+            dt_warna                = '-' if db_antrian[9, row] == None else f"{db_warna[np.where(db_warna == db_antrian[9, row])[0][0],1]}" 
+            dt_check_flag           = 'Lulus' if (int(db_antrian[10, i]) == 2) else 'Tidak Lulus' if (int(db_antrian[10, i]) == 1) else 'Belum Tes'
+                      
             self.exec_start()
 
         except Exception as e:
@@ -333,7 +360,6 @@ class ScreenMain(MDScreen):
 
     def regular_update_display(self, dt):
         global flag_conn_stat
-        global count_starting, count_get_data
         global dt_user, dt_no_antrian, dt_no_pol, dt_no_uji, dt_nama, dt_jenis_kendaraan
         global dt_chasis, dt_merk, dt_type, dt_no_mesin
         global dt_check_flag, dt_check_user, dt_check_post, dt_foto_user
@@ -345,7 +371,7 @@ class ScreenMain(MDScreen):
             screen_menu = self.screen_manager.get_screen('screen_menu')
             screen_inspect_pit = self.screen_manager.get_screen('screen_inspect_pit')
             screen_inspect_id = self.screen_manager.get_screen('screen_inspect_id')
-            screen_inspect_body = self.screen_manager.get_screen('screen_inspect_body')
+            screen_inspect_visual2 = self.screen_manager.get_screen('screen_inspect_visual2')
             screen_inspect_visual = self.screen_manager.get_screen('screen_inspect_visual')
             screen_realtime_cctv = self.screen_manager.get_screen('screen_realtime_cctv')
 
@@ -359,8 +385,8 @@ class ScreenMain(MDScreen):
             screen_menu.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
             screen_inspect_id.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
             screen_inspect_id.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
-            screen_inspect_body.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
-            screen_inspect_body.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
+            screen_inspect_visual2.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
+            screen_inspect_visual2.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
             screen_inspect_visual.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
             screen_inspect_visual.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
             screen_inspect_pit.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
@@ -375,14 +401,6 @@ class ScreenMain(MDScreen):
             screen_menu.ids.lb_no_antrian.text = str(dt_no_antrian)
             screen_menu.ids.lb_no_pol.text = str(dt_no_pol)
             screen_menu.ids.lb_no_uji.text = str(dt_no_uji)
-
-            screen_inspect_id.ids.lb_no_uji.text = str(dt_no_uji)
-            screen_inspect_id.ids.lb_no_pol.text = str(dt_no_pol)
-            screen_inspect_id.ids.lb_chasis.text = str(dt_chasis)
-            screen_inspect_id.ids.lb_no_mesin.text = str(dt_no_mesin)
-            screen_inspect_id.ids.lb_merk.text = str(dt_merk)
-            screen_inspect_id.ids.lb_nama.text = str(dt_nama)
-            screen_inspect_id.ids.lb_jenis_kendaraan.text = str(dt_jenis_kendaraan)
 
             if(not flag_conn_stat):
                 self.ids.lb_comm.color = colors['Red']['A200']
@@ -412,7 +430,7 @@ class ScreenMain(MDScreen):
             screen_login.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
             screen_menu.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
             screen_inspect_id.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
-            screen_inspect_body.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
+            screen_inspect_visual2.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
             screen_inspect_visual.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
             screen_inspect_pit.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
             screen_realtime_cctv.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
@@ -471,19 +489,19 @@ class ScreenMain(MDScreen):
             toast(toast_msg)   
 
     def exec_reload_table(self):
-        global mydb, db_antrian, db_merk
+        global mydb, db_antrian, db_merk, db_bahan_bakar, db_warna
         global dt_dash_pendaftaran, dt_dash_belum_uji, dt_dash_sudah_uji
 
         try:
             tb_antrian = mydb.cursor()
-            tb_antrian.execute(f"SELECT noantrian, nopol, nouji, check_flag, user, merk, type, idjeniskendaraan, jbb, bahan_bakar, warna, statusuji FROM {TB_DATA}")
+            tb_antrian.execute(f"SELECT noantrian, nopol, nouji, statusuji, merk, type, idjeniskendaraan, jbb, bahan_bakar, warna, check_flag FROM {TB_DATA}")
             result_tb_antrian = tb_antrian.fetchall()
             mydb.commit()
             db_antrian = np.array(result_tb_antrian).T
             db_pendaftaran = np.array(result_tb_antrian)
-            dt_dash_pendaftaran = db_pendaftaran[:,3].size
-            dt_dash_belum_uji = np.where(db_pendaftaran[:,3] == 0)[0].size
-            dt_dash_sudah_uji = np.where(db_pendaftaran[:,3] == 1)[0].size
+            dt_dash_pendaftaran = db_pendaftaran[:,10].size
+            dt_dash_belum_uji = np.where(db_pendaftaran[:,10] == 0)[0].size
+            dt_dash_sudah_uji = np.where(db_pendaftaran[:,10] == 1)[0].size
 
             tb_merk = mydb.cursor()
             tb_merk.execute(f"SELECT ID, DESCRIPTION FROM {TB_MERK}")
@@ -502,10 +520,13 @@ class ScreenMain(MDScreen):
             result_tb_warna = tb_warna.fetchall()
             mydb.commit()
             db_warna = np.array(result_tb_warna)
-
+        except Exception as e:
+            toast_msg = f'Error Fetch Database: {e}'
+            print(toast_msg)
+        
+        try:
             layout_list = self.ids.layout_list
             layout_list.clear_widgets(children=None)
-
         except Exception as e:
             toast_msg = f'Error Remove Widget: {e}'
             print(toast_msg)
@@ -518,14 +539,15 @@ class ScreenMain(MDScreen):
                         MDLabel(text=f"{db_antrian[0, i]}", size_hint_x= 0.05),
                         MDLabel(text=f"{db_antrian[1, i]}", size_hint_x= 0.07),
                         MDLabel(text=f"{db_antrian[2, i]}", size_hint_x= 0.08),
-                        MDLabel(text='Belum Tes' if (int(db_antrian[3, i]) == 0) else 'Sudah Tes', size_hint_x= 0.07),
-                        MDLabel(text=f"{db_antrian[4, i]}", size_hint_x= 0.12),
-                        MDLabel(text='-' if db_antrian[5, i] == None else f"{db_merk[np.where(db_merk == db_antrian[5, i])[0][0],1]}" , size_hint_x= 0.08),
-                        MDLabel(text=f"{db_antrian[6, i]}", size_hint_x= 0.12),
-                        MDLabel(text=f"{db_antrian[7, i]}", size_hint_x= 0.15),
-                        MDLabel(text=f"{db_antrian[8, i]}", size_hint_x= 0.05),
-                        MDLabel(text='-' if db_antrian[9, i] == None else f"{db_bahan_bakar[np.where(db_bahan_bakar == db_antrian[9, i])[0][0],1]}" , size_hint_x= 0.08),
-                        MDLabel(text='-' if db_antrian[10, i] == None else f"{db_warna[np.where(db_warna == db_antrian[10, i])[0][0],1]}" , size_hint_x= 0.05),
+                        MDLabel(text='Berkala' if db_antrian[3, i] == 'B' else 'Uji Ulang' if (db_antrian[3, i]) == 'U' else 'Baru' if (db_antrian[3, i]) == 'BR' else 'Numpang Uji' if (db_antrian[3, i]) == 'NB' else 'Mutasi', size_hint_x= 0.07),
+                        MDLabel(text='-' if db_antrian[4, i] == None else f"{db_merk[np.where(db_merk == db_antrian[4, i])[0][0],1]}" , size_hint_x= 0.08),
+                        MDLabel(text=f"{db_antrian[5, i]}", size_hint_x= 0.12),
+                        MDLabel(text=f"{db_antrian[6, i]}", size_hint_x= 0.15),
+                        MDLabel(text=f"{db_antrian[7, i]}", size_hint_x= 0.05),
+                        MDLabel(text='-' if db_antrian[8, i] == None else f"{db_bahan_bakar[np.where(db_bahan_bakar == db_antrian[8, i])[0][0],1]}" , size_hint_x= 0.08),
+                        MDLabel(text='-' if db_antrian[9, i] == None else f"{db_warna[np.where(db_warna == db_antrian[9, i])[0][0],1]}" , size_hint_x= 0.05),
+                        MDLabel(text='Lulus' if (int(db_antrian[10, i]) == 2) else 'Tidak Lulus' if (int(db_antrian[10, i]) == 1) else 'Belum Tes', size_hint_x= 0.05),
+
                         ripple_behavior = True,
                         on_press = self.on_antrian_row_press,
                         padding = 20,
@@ -615,7 +637,7 @@ class ScreenMenu(MDScreen):
                 modbus_client.write_coil(3072, flag_gate, slave=1) #M0
                 modbus_client.close()
         except:
-            toast("error send exec_gate_open data to PLC Slave") 
+            toast("Error send exec_gate_open data to PLC Slave") 
 
     def exec_barrier_close(self):
         global flag_conn_stat
@@ -624,7 +646,7 @@ class ScreenMenu(MDScreen):
         if(flag_conn_stat):
             flag_gate = False
         else:
-            toast("Tidak bisa membuka Portal karena PLC tidak terhubung") 
+            toast("Tidak bisa menutup Portal karena PLC tidak terhubung") 
 
         try:
             if flag_conn_stat:
@@ -632,7 +654,7 @@ class ScreenMenu(MDScreen):
                 modbus_client.write_coil(3073, not flag_gate, slave=1) #M1
                 modbus_client.close()
         except:
-            toast("error send exec_gate_close data to PLC Slave") 
+            toast("Error send exec_gate_close data to PLC Slave") 
 
     def exec_barrier_stop(self):
         global flag_conn_stat
@@ -644,12 +666,19 @@ class ScreenMenu(MDScreen):
                 modbus_client.write_coil(3073, False, slave=1) #M1
                 modbus_client.close()
         except:
-            toast("error send exec_gate_stop data to PLC Slave") 
+            toast("Error send exec_gate_stop data to PLC Slave") 
+
+    def exec_inspect_id(self):
+        try:
+            self.screen_manager.current = 'screen_inspect_id'
+
+        except Exception as e:
+            toast_msg = f'Error Navigate to Identity Inspection Screen: {e}'
+            toast(toast_msg) 
 
     def exec_capture(self):
         try:
-            # self.screen_manager.current = 'screen_realtime_cctv'
-            self.screen_manager.current = 'screen_inspect_body'
+            self.screen_manager.current = 'screen_realtime_cctv'
 
         except Exception as e:
             toast_msg = f'Error Navigate to Play Detect: {e}'
@@ -663,13 +692,13 @@ class ScreenMenu(MDScreen):
             toast_msg = f'Error Navigate to Visual Inspection Screen: {e}'
             toast(toast_msg)    
 
-    def exec_inspect_id(self):
+    def exec_inspect_visual2(self):
         try:
-            self.screen_manager.current = 'screen_inspect_id'
+            self.screen_manager.current = 'screen_inspect_visual2'
 
         except Exception as e:
-            toast_msg = f'Error Navigate to Identity Inspection Screen: {e}'
-            toast(toast_msg) 
+            toast_msg = f'Error Navigate to Visual Inspection Screen: {e}'
+            toast(toast_msg)    
 
     def exec_inspect_pit(self):
         try:
@@ -691,85 +720,101 @@ class ScreenInspectNew(MDScreen):
             self.ids.tx_nopol.text = ""  
 
         except Exception as e:
-            toast_msg = f'error Login: {e}'
+            toast_msg = f'Error find data: {e}'
+            toast(toast_msg) 
 
     def exec_register(self):
-        global mydb, db_users
+        global mydb, db_users, dt_status_uji
         global dt_check_user, dt_user, dt_foto_user
         global dt_dash_pendaftaran
 
-        screen_main = self.screen_manager.get_screen('screen_main')
-
         try:
-            dt_nopol = self.ids.tx_nopol.text
+            dt_nopol_find = self.ids.tx_nopol.text
+            dt_nouji_find = self.ids.tx_nouji.text
 
             mycursor = mydb.cursor()
-            mycursor.execute(f"SELECT NOUJI, NOPOL, NAMA, MERK_ID, TYPE, idjeniskendaraan, JBB, BHN_BAKAR, WARNA_KEND FROM {TB_DATA_MASTER} WHERE NOPOL = '{dt_nopol}'")
+
+            if dt_nopol_find != "" and dt_nouji_find == "":
+                mycursor.execute(f"SELECT NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, SUBJENIS_ID, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, DAYAMOTOR, TGL_LASTUJI, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah FROM {TB_DATA_MASTER} WHERE NOPOL = '{dt_nopol_find}' ")
+            elif dt_nouji_find != "":
+                mycursor.execute(f"SELECT NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, SUBJENIS_ID, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, DAYAMOTOR, TGL_LASTUJI, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah FROM {TB_DATA_MASTER} WHERE NOUJI = '{dt_nouji_find}' ")
+            elif dt_nouji_find == "" and dt_nopol_find == "":
+                toast("Silahkan isi Nomor Uji atau Nomor Polisi")
             myresult = mycursor.fetchone()
             mydb.commit()
             db_pendaftaran = np.array(myresult).T
             dt_no_uji = db_pendaftaran[0]
-            dt_nopol = db_pendaftaran[1]
-            dt_nama = db_pendaftaran[2]
-            dt_merk_id = db_pendaftaran[3]
-            dt_type = db_pendaftaran[4]
-            dt_jenis_kendaraan = db_pendaftaran[5]
-            dt_jbb = db_pendaftaran[6]
-            dt_bahan_bakar = db_pendaftaran[7]
-            dt_warna = db_pendaftaran[8]
+            dt_new_no_uji = db_pendaftaran[1]
+            dt_no_wilayah = db_pendaftaran[2]
+            dt_no_kendaraan = db_pendaftaran[3]
+            dt_no_plat = db_pendaftaran[4]
+            dt_nopol = db_pendaftaran[5]
+            dt_nama = db_pendaftaran[6]
+            dt_no_hp = db_pendaftaran[7]
+            dt_alamat = db_pendaftaran[8]
+            dt_izin_id = db_pendaftaran[9]
+            dt_wilayah = db_pendaftaran[10]
+            dt_provinsi = db_pendaftaran[11]
+            dt_kabupaten_kota = db_pendaftaran[12]
+            dt_kecamatan = db_pendaftaran[13]
+            dt_merk_id = db_pendaftaran[14]
+            dt_subjenis_id = db_pendaftaran[15]
+            dt_type = db_pendaftaran[16]
+            dt_tahun_buat = db_pendaftaran[17]
+            dt_silinder = db_pendaftaran[18]
+            dt_warna = db_pendaftaran[19]
+            dt_chasis = db_pendaftaran[20]
+            dt_mesin = db_pendaftaran[21]
+            dt_warna_plat = db_pendaftaran[22]
+            dt_bahan_bakar = db_pendaftaran[23]
+            dt_jbb = db_pendaftaran[24]
+            dt_daya_motor = db_pendaftaran[25]
+            dt_tgl_last_uji = str(db_pendaftaran[26])
+            dt_status_penerbitan = db_pendaftaran[27]
+            dt_jenis_kendaraan = db_pendaftaran[28]
+            dt_kode_jenis_kendaraan = db_pendaftaran[29]
+            dt_kode_wilayah = db_pendaftaran[30]
 
+            dt_tgl_baru_uji = str(time.strftime("%Y/%m/%d %H:%M:%S", time.localtime()))
             dt_new_no_antrian = dt_dash_pendaftaran + 1
-            #if invalid
             if myresult == 0:
                 toast('Data tidak ditemukan di Database, membuat pendaftaran baru')
                 try:
-                    mycursor = mydb.cursor()
-                    
-                    sql = f"INSERT INTO {TB_DAFTAR_BARU} (NOUJI, NOPOL, NAMA, MERK_ID, TYPE, idjeniskendaraan, JBB, BHN_BAKAR, WARNA_KEND) VALUES ('{dt_no_uji}','{dt_nopol}', '{dt_nama}', '{dt_merk_id}', '{dt_type}', '{dt_jenis_kendaraan}', '{dt_jbb}', '{dt_bahan_bakar}', '{dt_warna}')"
-                    mycursor.execute(sql)
-                    mydb.commit()
-
                     dt_status_uji = 'BR'
-
-                except Exception as e:
-                    toast_msg = f'error Create Tabel Daftar Berkala: {e}'
-                    toast(toast_msg)
-            #else, if valid
-            else:
-                toast_msg = f'Berhasil Menemukan Data Nomor Polisi {myresult[1]}'
-                toast(toast_msg)
-
-                try:
                     mycursor = mydb.cursor()
-
-                    sql = f"INSERT INTO {TB_DAFTAR_BERKALA} (NOUJI, NOPOL, NAMA, MERK_ID, TYPE, idjeniskendaraan, JBB, BHN_BAKAR, WARNA_KEND) VALUES ('{dt_no_uji}','{dt_nopol}', '{dt_nama}', '{dt_merk_id}', '{dt_type}', '{dt_jenis_kendaraan}', '{dt_jbb}', '{dt_bahan_bakar}', '{dt_warna}')"
+                    sql = f"INSERT INTO {TB_DAFTAR_BARU} (NOANTRIAN, NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, SUBJENIS_ID, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, DAYAMOTOR, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah, TGL_LASTUJI) VALUES ('{dt_new_no_antrian:04d}', '{dt_no_uji}','{dt_new_no_uji}','{dt_no_wilayah}','{dt_no_kendaraan}','{dt_no_plat}','{dt_nopol}','{dt_nama}','{dt_no_hp}','{dt_alamat}','{dt_izin_id}','{dt_wilayah}','{dt_provinsi}','{dt_kabupaten_kota}','{dt_kecamatan}','{dt_merk_id}','{dt_subjenis_id}','{dt_type}','{dt_tahun_buat}','{dt_silinder}','{dt_warna}','{dt_chasis}','{dt_mesin}','{dt_warna_plat}','{dt_bahan_bakar}','{dt_jbb}','{dt_daya_motor}','{dt_status_penerbitan}','{dt_jenis_kendaraan}','{dt_kode_jenis_kendaraan}','{dt_kode_wilayah}','{dt_tgl_last_uji}')"
                     mycursor.execute(sql)
                     mydb.commit()
-
-                    dt_status_uji = 'B'
-
                 except Exception as e:
-                    toast_msg = f'error Create Tabel Daftar Berkala: {e}'
+                    toast_msg = f'Error Create Tabel Daftar Baru: {e}'
                     toast(toast_msg)
-
+            else:
+                toast_msg = f'Berhasil Menemukan Data Nomor Polisi {myresult[5]}'
+                toast(toast_msg)
+                try:
+                    dt_status_uji = 'B'
+                    mycursor = mydb.cursor()
+                    sql = f"INSERT INTO {TB_DAFTAR_BERKALA} (NOANTRIAN, NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, SUBJENIS_ID, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, DAYAMOTOR, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah, TGL_LASTUJI) VALUES ('{dt_new_no_antrian:04d}', '{dt_no_uji}','{dt_new_no_uji}','{dt_no_wilayah}','{dt_no_kendaraan}','{dt_no_plat}','{dt_nopol}','{dt_nama}','{dt_no_hp}','{dt_alamat}','{dt_izin_id}','{dt_wilayah}','{dt_provinsi}','{dt_kabupaten_kota}','{dt_kecamatan}','{dt_merk_id}','{dt_subjenis_id}','{dt_type}','{dt_tahun_buat}','{dt_silinder}','{dt_warna}','{dt_chasis}','{dt_mesin}','{dt_warna_plat}','{dt_bahan_bakar}','{dt_jbb}','{dt_daya_motor}','{dt_status_penerbitan}','{dt_jenis_kendaraan}','{dt_kode_jenis_kendaraan}','{dt_kode_wilayah}','{dt_tgl_last_uji}')"
+                    mycursor.execute(sql)
+                    mydb.commit()
+                except Exception as e:
+                    toast_msg = f'Error Create Tabel Daftar Berkala: {e}'
+                    toast(toast_msg)
             try:
                 mycursor = mydb.cursor()
-                # tb_antrian.execute(f"SELECT noantrian, nopol, nouji, check_flag, user, merk, type, idjeniskendaraan, jbb, bahan_bakar, warna, statusuji FROM {TB_DATA}")
-                sql = f"INSERT INTO {TB_DATA} (noantrian, nouji, NEW_NOUJI , nopol, check_flag, user, merk, type, idjeniskendaraan, jbb, bahan_bakar, warna, statusuji) VALUES ('{dt_new_no_antrian:04d}', '{dt_no_uji}', '{dt_no_uji}', '{dt_nopol}', '0', '{dt_nama}', '{dt_merk_id}', '{dt_type}', '{dt_jenis_kendaraan}', '{dt_jbb}', '{dt_bahan_bakar}', '{dt_warna}', '{dt_status_uji}')"
+                sql = f"INSERT INTO {TB_DATA} (noantrian, nouji, NEW_NOUJI, nopol, merk, type, idjeniskendaraan, kd_jnskendaraan, kodewilayah, jenis, jbb, bahan_bakar, warna, statusuji, statuspenerbitan, kode_daerah, no_kendaraan, kode_huruf, tgl_daftar, user, check_flag) VALUES ('{dt_new_no_antrian:04d}','{dt_no_uji}','{dt_new_no_uji}','{dt_nopol}','{dt_merk_id}','{dt_type}','{dt_jenis_kendaraan}','{dt_kode_jenis_kendaraan}','{dt_kode_wilayah}','{dt_subjenis_id}','{dt_jbb}','{dt_bahan_bakar}','{dt_warna}','{dt_status_uji}','{dt_status_penerbitan}','{dt_no_wilayah}','{dt_no_kendaraan}','{dt_no_plat}','{dt_tgl_baru_uji}','{dt_user}','0')"
                 mycursor.execute(sql)
                 mydb.commit()
-
             except Exception as e:
-                toast_msg = f'error Create Tabel Antrian: {e}'
+                toast_msg = f'Error Create Tabel Antrian: {e}'
                 toast(toast_msg)
 
             self.ids.tx_nopol.text = ""
-            screen_main.exec_reload_database()
-            screen_main.exec_reload_table()
+            self.ids.tx_nouji.text = ""
             self.screen_manager.current = 'screen_main'
 
         except Exception as e:
-            toast_msg = f'error Tambah Pendaftaran: {e}'
+            toast_msg = f'Error Tambah Pendaftaran: {e}'
             toast(toast_msg)
 
     def exec_navigate_home(self):
@@ -803,18 +848,184 @@ class ScreenInspectNew(MDScreen):
 class ScreenInspectId(MDScreen):        
     def __init__(self, **kwargs):
         super(ScreenInspectId, self).__init__(**kwargs)
-        Clock.schedule_once(self.delayed_init, 2)
+
+    def on_enter(self):
+        self.exec_reload_komponen_uji()
+
+    def menu_komentar_callback(self, text_item):
+        global selected_row_subkomponen_uji
+
+        try:
+            self.ids[f'tx_comment{selected_row_subkomponen_uji}'].text = text_item
+        except Exception as e:
+            toast_msg = f'Error Execute Command from Menu Comment Callback: {e}'
+            toast(toast_msg)  
+
+    def on_komponen_uji_row_press(self, instance):
+        global dt_no_antrian, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
+        global dt_merk, dt_type, dt_jenis_kendaraan, dt_jbb, dt_bahan_bakar, dt_warna
+        global db_komponen_uji
+
+        try:
+            self.ids.bt_dropdown_caller.disabled = True
+            row = int(str(instance.id).replace("card_komponen_uji",""))
+            self.exec_reload_subkomponen_uji(db_komponen_uji[1, row])
+
+        except Exception as e:
+            toast_msg = f'Error Execute Command from Table Komponen Uji Row: {e}'
+            toast(toast_msg)  
+
+    def on_subkomponen_uji_row_press(self, instance):
+        global dt_no_antrian, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
+        global dt_merk, dt_type, dt_jenis_kendaraan, dt_jbb, dt_bahan_bakar, dt_warna
+        global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji
+        global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
+
+        try:
+            self.ids.bt_dropdown_caller.disabled = False
+            row = int(str(instance.id).replace("card_subkomponen_uji",""))
+            selected_row_subkomponen_uji = row
+            selected_kode_subkomponen_uji = db_subkomponen_uji[0, row]
+            self.reload_menu_komentar_uji(selected_kode_subkomponen_uji)
+
+            if(flags_subkomponen_uji[row]):
+                flags_subkomponen_uji[row] = False
+                self.ids[f'bt_subkomponen_uji{row}'].icon = "cancel"
+                self.ids[f'bt_subkomponen_uji{row}'].md_bg_color = "#FF2A2A"
+            else:
+                flags_subkomponen_uji[row] = True
+                self.ids[f'bt_subkomponen_uji{row}'].icon = "check-bold"
+                self.ids[f'bt_subkomponen_uji{row}'].md_bg_color = "#2CA02C"
+           
+        except Exception as e:
+            toast_msg = f'Error Execute Command from Table Subkomponen Uji Row: {e}'
+            toast(toast_msg)  
+
+    def exec_reload_komponen_uji(self):
+        global mydb, db_komponen_uji
+
+        try:
+            tb_komponen_uji = mydb.cursor()
+            tb_komponen_uji.execute(f"SELECT kode_kelompok_uji, kode_komponen_uji, nama, keterangan FROM {TB_KOMPONEN_UJI} WHERE kode_komponen_uji = 'K01' OR kode_komponen_uji = 'K02' OR kode_komponen_uji = 'K15' OR kode_komponen_uji = 'K18' ")
+            result_tb_komponen_uji = tb_komponen_uji.fetchall()
+            mydb.commit()
+            db_komponen_uji = np.array(result_tb_komponen_uji).T
+        except Exception as e:
+            toast_msg = f'Error Fetch Table Komponen Uji: {e}'
+            print(toast_msg)
+
+        try:
+            layout_list = self.ids.layout_list_komponen_uji
+            layout_list.clear_widgets(children=None)
+        except Exception as e:
+            toast_msg = f'Error Remove Widget: {e}'
+            print(toast_msg)
         
-    def delayed_init(self, dt):
-        pass
+        try:           
+            layout_list = self.ids.layout_list_komponen_uji
+            for i in range(db_komponen_uji[0,:].size):
+                layout_list.add_widget(
+                    MDCard(
+                        MDLabel(text=f"{db_komponen_uji[2, i]}", size_hint_x= 0.7),
+                        MDIconButton(id=f'bt_komponen_uji{i}', size_hint_x= 0.1, icon="check-bold", md_bg_color="#2CA02C"),
+
+                        ripple_behavior = True,
+                        on_press = self.on_komponen_uji_row_press,
+                        padding = [20, 0],
+                        spacing = 10,
+                        id=f'card_komponen_uji{i}',
+                        size_hint_y=None,
+                        height="60dp",
+                        )
+                    )
+        except Exception as e:
+            toast_msg = f'Error Reload Table Komponen Uji: {e}'
+            print(toast_msg)
+
+    def exec_reload_subkomponen_uji(self, kode_komponen_uji):
+        global mydb, db_subkomponen_uji
+        global flags_subkomponen_uji
+
+        try:
+            tb_subkomponen_uji = mydb.cursor()
+            tb_subkomponen_uji.execute(f"SELECT kode_subkomponen_uji, nama, keterangan FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = '{kode_komponen_uji}' ")
+            result_tb_subkomponen_uji = tb_subkomponen_uji.fetchall()
+            mydb.commit()
+            db_subkomponen_uji = np.array(result_tb_subkomponen_uji).T
+            flags_subkomponen_uji = np.ones(db_subkomponen_uji[0,:].size, dtype='bool')
+        except Exception as e:
+            toast_msg = f'Error Fetch Table Subkomponen uji: {e}'
+            print(toast_msg)
+
+        try:
+            layout_list = self.ids.layout_list_subkomponen_uji
+            layout_list.clear_widgets(children=None)
+        except Exception as e:
+            toast_msg = f'Error Remove Widget: {e}'
+            print(toast_msg)
+        
+        try:           
+            layout_list = self.ids.layout_list_subkomponen_uji
+            for i in range(db_subkomponen_uji[0,:].size):
+                card = MDCard(
+                    MDLabel(text=f"{db_subkomponen_uji[0, i]}", size_hint_x= 0.1),
+                    MDLabel(text=f"{db_subkomponen_uji[1, i]}", size_hint_x= 0.4),
+                    
+                    ripple_behavior = False,
+                    padding = [20, 0],
+                    spacing = 10,
+                    id=f'card_subkomponen_uji{i}',
+                    on_press = self.on_subkomponen_uji_row_press,
+                    size_hint_y=None,
+                    height="60dp",
+                    )
+                self.ids[f'card_subkomponen_uji{i}'] = card
+                layout_list.add_widget(card)
+                
+                tx_comment = MDTextField(size_hint_x= 0.3, hint_text="Komentar",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
+                bt_check = MDIconButton(size_hint_x= 0.1, icon="check-bold", md_bg_color="#2CA02C",)                
+                self.ids[f'tx_comment{i}'] = tx_comment
+                self.ids[f'bt_subkomponen_uji{i}'] = bt_check
+                card.add_widget(tx_comment)
+                card.add_widget(bt_check)
+
+        except Exception as e:
+            toast_msg = f'Error Reload Table Sub Komponen Uji: {e}'
+            print(toast_msg)
+
+    def reload_menu_komentar_uji(self, selected_kode_subkomponen_uji=""):
+        try:
+            print(f"reload menu komentar uji {selected_kode_subkomponen_uji}")
+            tb_komentar_uji = mydb.cursor()
+            tb_komentar_uji.execute(f"SELECT id, id_komponen_uji, id_subkomponen_uji, komentar FROM {TB_KOMENTAR_UJI} WHERE id_subkomponen_uji = '{selected_kode_subkomponen_uji}'")
+            result_tb_komentar_uji = tb_komentar_uji.fetchall()
+            mydb.commit()
+            db_komentar_uji = np.array(result_tb_komentar_uji).T
+
+            if(db_komentar_uji.size == 0 ):
+                self.ids.bt_dropdown_caller.disabled = True
+                toast('Tidak ada rekomendasi komentar, silahkan isi komentar sendiri')
+
+            self.menu_komentar_uji_items = [
+                {
+                    "text": f"{db_komentar_uji[3,i]}",                   
+                    "viewclass": "ListItem",
+                    "height": dp(54),
+                    "on_release": lambda x=f"{db_komentar_uji[3,i]}": self.menu_komentar_callback(x),
+                } for i in range(db_komentar_uji[0,:].size)
+            ]
+
+            self.menu_komentar_uji = MDDropdownMenu(
+                caller=self.ids.bt_dropdown_caller,
+                items=self.menu_komentar_uji_items,
+                width_mult=4,
+            )
+
+        except Exception as e:
+            toast_msg = f'Error Show Komentar: {e}'
+            print(toast_msg)
 
     def open_screen_menu(self):
-        global flag_play        
-        global count_starting, count_get_data
-
-        count_starting = COUNT_STARTING
-        count_get_data = COUNT_ACQUISITION
-        flag_play = False   
         self.screen_manager.current = 'screen_menu'
 
     def exec_save(self):
@@ -823,167 +1034,592 @@ class ScreenInspectId(MDScreen):
     def exec_cancel(self):
         self.open_screen_menu()
 
-    def exec_no_uji(self):
-        global flag_no_uji
+class ScreenInspectVisual(MDScreen):        
+    def __init__(self, **kwargs):
+        super(ScreenInspectVisual, self).__init__(**kwargs)
+
+    def on_enter(self):
+        self.exec_reload_komponen_uji()
+
+    def menu_komentar_callback(self, text_item):
+        global selected_row_subkomponen_uji
 
         try:
-            if(flag_no_uji):
-                flag_no_uji = False
-                self.ids.bt_no_uji.icon = "cancel"
-                self.ids.bt_no_uji.md_bg_color = "#FF2A2A"
-            else:
-                flag_no_uji = True
-                self.ids.bt_no_uji.icon = "check-bold"
-                self.ids.bt_no_uji.md_bg_color = "#2CA02C"
-
+            self.ids[f'tx_comment{selected_row_subkomponen_uji}'].text = text_item
         except Exception as e:
-            toast_msg = f'Error ID Inspect: {e}'
+            toast_msg = f'Error Execute Command from Menu Comment Callback: {e}'
             toast(toast_msg)  
 
-    def exec_no_pol(self):
-        global flag_no_pol
+    def on_komponen_uji_row_press(self, instance):
+        global dt_no_antrian, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
+        global dt_merk, dt_type, dt_jenis_kendaraan, dt_jbb, dt_bahan_bakar, dt_warna
+        global db_komponen_uji
 
         try:
-            if(flag_no_pol):
-                flag_no_pol = False
-                self.ids.bt_no_pol.icon = "cancel"
-                self.ids.bt_no_pol.md_bg_color = "#FF2A2A"
-            else:
-                flag_no_pol = True
-                self.ids.bt_no_pol.icon = "check-bold"
-                self.ids.bt_no_pol.md_bg_color = "#2CA02C"
+            self.ids.bt_dropdown_caller.disabled = True
+            row = int(str(instance.id).replace("card_komponen_uji",""))
+            self.exec_reload_subkomponen_uji(db_komponen_uji[1, row])
 
         except Exception as e:
-            toast_msg = f'Error ID Inspect: {e}'
+            toast_msg = f'Error Execute Command from Table Komponen Uji Row: {e}'
             toast(toast_msg)  
 
-    def exec_chasis(self):
-        global flag_chasis
+    def on_subkomponen_uji_row_press(self, instance):
+        global dt_no_antrian, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
+        global dt_merk, dt_type, dt_jenis_kendaraan, dt_jbb, dt_bahan_bakar, dt_warna
+        global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji
+        global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
 
         try:
-            if(flag_chasis):
-                flag_chasis = False
-                self.ids.bt_chasis.icon = "cancel"
-                self.ids.bt_chasis.md_bg_color = "#FF2A2A"
-            else:
-                flag_chasis = True
-                self.ids.bt_chasis.icon = "check-bold"
-                self.ids.bt_chasis.md_bg_color = "#2CA02C"
+            self.ids.bt_dropdown_caller.disabled = False
+            row = int(str(instance.id).replace("card_subkomponen_uji",""))
+            selected_row_subkomponen_uji = row
+            selected_kode_subkomponen_uji = db_subkomponen_uji[0, row]
+            self.reload_menu_komentar_uji(selected_kode_subkomponen_uji)
 
+            if(flags_subkomponen_uji[row]):
+                flags_subkomponen_uji[row] = False
+                self.ids[f'bt_subkomponen_uji{row}'].icon = "cancel"
+                self.ids[f'bt_subkomponen_uji{row}'].md_bg_color = "#FF2A2A"
+            else:
+                flags_subkomponen_uji[row] = True
+                self.ids[f'bt_subkomponen_uji{row}'].icon = "check-bold"
+                self.ids[f'bt_subkomponen_uji{row}'].md_bg_color = "#2CA02C"
+           
         except Exception as e:
-            toast_msg = f'Error ID Inspect: {e}'
+            toast_msg = f'Error Execute Command from Table Subkomponen Uji Row: {e}'
             toast(toast_msg)  
 
-    def exec_no_mesin(self):
-        global flag_no_mesin
+    def exec_reload_komponen_uji(self):
+        global mydb, db_komponen_uji
 
         try:
-            if(flag_no_mesin):
-                flag_no_mesin = False
-                self.ids.bt_no_mesin.icon = "cancel"
-                self.ids.bt_no_mesin.md_bg_color = "#FF2A2A"
-            else:
-                flag_no_mesin = True
-                self.ids.bt_no_mesin.icon = "check-bold"
-                self.ids.bt_no_mesin.md_bg_color = "#2CA02C"
-
+            tb_komponen_uji = mydb.cursor()
+            tb_komponen_uji.execute(f"SELECT kode_kelompok_uji, kode_komponen_uji, nama, keterangan FROM {TB_KOMPONEN_UJI} WHERE kode_komponen_uji = 'K03' OR kode_komponen_uji = 'K04' OR kode_komponen_uji = 'K05' OR kode_komponen_uji = 'K06' OR kode_komponen_uji = 'K07' OR kode_komponen_uji = 'K08' OR kode_komponen_uji = 'K09' OR kode_komponen_uji = 'K14' OR kode_komponen_uji = 'K16' OR kode_komponen_uji = 'K17' ")
+            result_tb_komponen_uji = tb_komponen_uji.fetchall()
+            mydb.commit()
+            db_komponen_uji = np.array(result_tb_komponen_uji).T
         except Exception as e:
-            toast_msg = f'Error ID Inspect: {e}'
-            toast(toast_msg)  
-
-    def exec_jenis_kendaraan(self):
-        global flag_jenis_kendaraan
+            toast_msg = f'Error Fetch Table Komponen Uji: {e}'
+            print(toast_msg)
 
         try:
-            if(flag_jenis_kendaraan):
-                flag_jenis_kendaraan = False
-                self.ids.bt_jenis_kendaraan.icon = "cancel"
-                self.ids.bt_jenis_kendaraan.md_bg_color = "#FF2A2A"
-            else:
-                flag_jenis_kendaraan = True
-                self.ids.bt_jenis_kendaraan.icon = "check-bold"
-                self.ids.bt_jenis_kendaraan.md_bg_color = "#2CA02C"
-
+            layout_list = self.ids.layout_list_komponen_uji
+            layout_list.clear_widgets(children=None)
         except Exception as e:
-            toast_msg = f'Error ID Inspect: {e}'
-            toast(toast_msg)  
+            toast_msg = f'Error Remove Widget: {e}'
+            print(toast_msg)
+        
+        try:           
+            layout_list = self.ids.layout_list_komponen_uji
+            for i in range(db_komponen_uji[0,:].size):
+                layout_list.add_widget(
+                    MDCard(
+                        MDLabel(text=f"{db_komponen_uji[2, i]}", size_hint_x= 0.7),
+                        MDIconButton(id=f'bt_komponen_uji{i}', size_hint_x= 0.1, icon="check-bold", md_bg_color="#2CA02C"),
 
-    def exec_merk(self):
-        global flag_merk
+                        ripple_behavior = True,
+                        on_press = self.on_komponen_uji_row_press,
+                        padding = [20, 0],
+                        spacing = 10,
+                        id=f'card_komponen_uji{i}',
+                        size_hint_y=None,
+                        height="60dp",
+                        )
+                    )
+        except Exception as e:
+            toast_msg = f'Error Reload Table Komponen Uji: {e}'
+            print(toast_msg)
+
+    def exec_reload_subkomponen_uji(self, kode_komponen_uji):
+        global mydb, db_subkomponen_uji
+        global flags_subkomponen_uji
 
         try:
-            if(flag_merk):
-                flag_merk = False
-                self.ids.bt_merk.icon = "cancel"
-                self.ids.bt_merk.md_bg_color = "#FF2A2A"
-            else:
-                flag_merk = True
-                self.ids.bt_merk.icon = "check-bold"
-                self.ids.bt_merk.md_bg_color = "#2CA02C"
-
+            tb_subkomponen_uji = mydb.cursor()
+            tb_subkomponen_uji.execute(f"SELECT kode_subkomponen_uji, nama, keterangan FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = '{kode_komponen_uji}'")
+            result_tb_subkomponen_uji = tb_subkomponen_uji.fetchall()
+            mydb.commit()
+            db_subkomponen_uji = np.array(result_tb_subkomponen_uji).T
+            flags_subkomponen_uji = np.ones(db_subkomponen_uji[0,:].size, dtype='bool')
         except Exception as e:
-            toast_msg = f'Error ID Inspect: {e}'
-            toast(toast_msg)  
-
-    def exec_nama(self):
-        global flag_nama
+            toast_msg = f'Error Fetch Table Subkomponen Uji: {e}'
+            print(toast_msg)
 
         try:
-            if(flag_nama):
-                flag_nama = False
-                self.ids.bt_nama.icon = "cancel"
-                self.ids.bt_nama.md_bg_color = "#FF2A2A"
-            else:
-                flag_nama = True
-                self.ids.bt_nama.icon = "check-bold"
-                self.ids.bt_nama.md_bg_color = "#2CA02C"
+            layout_list = self.ids.layout_list_subkomponen_uji
+            layout_list.clear_widgets(children=None)
+        except Exception as e:
+            toast_msg = f'Error Remove Widget: {e}'
+            print(toast_msg)
+        
+        try:           
+            layout_list = self.ids.layout_list_subkomponen_uji
+            for i in range(db_subkomponen_uji[0,:].size):
+                card = MDCard(
+                    MDLabel(text=f"{db_subkomponen_uji[0, i]}", size_hint_x= 0.1),
+                    MDLabel(text=f"{db_subkomponen_uji[1, i]}", size_hint_x= 0.4),
+                    
+                    ripple_behavior = False,
+                    padding = [20, 0],
+                    spacing = 10,
+                    id=f'card_subkomponen_uji{i}',
+                    on_press = self.on_subkomponen_uji_row_press,
+                    size_hint_y=None,
+                    height="60dp",
+                    )
+                self.ids[f'card_subkomponen_uji{i}'] = card
+                layout_list.add_widget(card)
+                
+                tx_comment = MDTextField(size_hint_x= 0.3, hint_text="Komentar",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
+                bt_check = MDIconButton(size_hint_x= 0.1, icon="check-bold", md_bg_color="#2CA02C",)                
+                self.ids[f'tx_comment{i}'] = tx_comment
+                self.ids[f'bt_subkomponen_uji{i}'] = bt_check
+                card.add_widget(tx_comment)
+                card.add_widget(bt_check)
 
         except Exception as e:
-            toast_msg = f'Error ID Inspect: {e}'
-            toast(toast_msg)  
+            toast_msg = f'Error Reload Table Sub Komponen Uji: {e}'
+            print(toast_msg)
 
-    def exec_alamat(self):
-        global flag_alamat
+    def reload_menu_komentar_uji(self, selected_kode_subkomponen_uji=""):
+        try:
+            print(f"reload menu komentar uji {selected_kode_subkomponen_uji}")
+            tb_komentar_uji = mydb.cursor()
+            tb_komentar_uji.execute(f"SELECT id, id_komponen_uji, id_subkomponen_uji, komentar FROM {TB_KOMENTAR_UJI} WHERE id_subkomponen_uji = '{selected_kode_subkomponen_uji}'")
+            result_tb_komentar_uji = tb_komentar_uji.fetchall()
+            mydb.commit()
+            db_komentar_uji = np.array(result_tb_komentar_uji).T
+
+            if(db_komentar_uji.size == 0 ):
+                self.ids.bt_dropdown_caller.disabled = True
+                toast('Tidak ada rekomendasi komentar, silahkan isi komentar sendiri')
+
+            self.menu_komentar_uji_items = [
+                {
+                    "text": f"{db_komentar_uji[3,i]}",                   
+                    "viewclass": "ListItem",
+                    "height": dp(54),
+                    "on_release": lambda x=f"{db_komentar_uji[3,i]}": self.menu_komentar_callback(x),
+                } for i in range(db_komentar_uji[0,:].size)
+            ]
+
+            self.menu_komentar_uji = MDDropdownMenu(
+                caller=self.ids.bt_dropdown_caller,
+                items=self.menu_komentar_uji_items,
+                width_mult=4,
+            )
+
+        except Exception as e:
+            toast_msg = f'Error Show Komentar: {e}'
+            print(toast_msg)
+
+    def open_screen_menu(self):
+        self.screen_manager.current = 'screen_menu'
+
+    def exec_save(self):
+        self.open_screen_menu()
+
+    def exec_cancel(self):
+        self.open_screen_menu()
+
+class ScreenInspectVisual2(MDScreen):        
+    def __init__(self, **kwargs):
+        super(ScreenInspectVisual2, self).__init__(**kwargs)
+
+    def on_enter(self):
+        self.exec_reload_komponen_uji()
+
+    def menu_komentar_callback(self, text_item):
+        global selected_row_subkomponen_uji
 
         try:
-            if(flag_alamat):
-                flag_alamat = False
-                self.ids.bt_alamat.icon = "cancel"
-                self.ids.bt_alamat.md_bg_color = "#FF2A2A"
-            else:
-                flag_alamat = True
-                self.ids.bt_alamat.icon = "check-bold"
-                self.ids.bt_alamat.md_bg_color = "#2CA02C"
+            self.ids[f'tx_comment{selected_row_subkomponen_uji}'].text = text_item
+        except Exception as e:
+            toast_msg = f'Error Execute Command from Menu Comment Callback: {e}'
+            toast(toast_msg)  
+
+    def on_komponen_uji_row_press(self, instance):
+        global dt_no_antrian, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
+        global dt_merk, dt_type, dt_jenis_kendaraan, dt_jbb, dt_bahan_bakar, dt_warna
+        global db_komponen_uji
+
+        try:
+            self.ids.bt_dropdown_caller.disabled = True
+            row = int(str(instance.id).replace("card_komponen_uji",""))
+            self.exec_reload_subkomponen_uji(db_komponen_uji[1, row])
 
         except Exception as e:
-            toast_msg = f'Error ID Inspect: {e}'
+            toast_msg = f'Error Execute Command from Table Komponen Uji Row: {e}'
             toast(toast_msg)  
+
+    def on_subkomponen_uji_row_press(self, instance):
+        global dt_no_antrian, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
+        global dt_merk, dt_type, dt_jenis_kendaraan, dt_jbb, dt_bahan_bakar, dt_warna
+        global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji
+        global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
+
+        try:
+            self.ids.bt_dropdown_caller.disabled = False
+            row = int(str(instance.id).replace("card_subkomponen_uji",""))
+            selected_row_subkomponen_uji = row
+            selected_kode_subkomponen_uji = db_subkomponen_uji[0, row]
+            self.reload_menu_komentar_uji(selected_kode_subkomponen_uji)
+
+            if(flags_subkomponen_uji[row]):
+                flags_subkomponen_uji[row] = False
+                self.ids[f'bt_subkomponen_uji{row}'].icon = "cancel"
+                self.ids[f'bt_subkomponen_uji{row}'].md_bg_color = "#FF2A2A"
+            else:
+                flags_subkomponen_uji[row] = True
+                self.ids[f'bt_subkomponen_uji{row}'].icon = "check-bold"
+                self.ids[f'bt_subkomponen_uji{row}'].md_bg_color = "#2CA02C"
+           
+        except Exception as e:
+            toast_msg = f'Error Execute Command from Table Subkomponen Uji Row: {e}'
+            toast(toast_msg)  
+
+    def exec_reload_komponen_uji(self):
+        global mydb, db_komponen_uji
+
+        try:
+            tb_komponen_uji = mydb.cursor()
+            tb_komponen_uji.execute(f"SELECT kode_kelompok_uji, kode_komponen_uji, nama, keterangan FROM {TB_KOMPONEN_UJI} WHERE kode_komponen_uji = 'K10' OR kode_komponen_uji = 'K11' OR kode_komponen_uji = 'K12' OR kode_komponen_uji = 'K13' ")
+            result_tb_komponen_uji = tb_komponen_uji.fetchall()
+            mydb.commit()
+            db_komponen_uji = np.array(result_tb_komponen_uji).T
+        except Exception as e:
+            toast_msg = f'Error Fetch Table Komponen Uji: {e}'
+            print(toast_msg)
+
+        try:
+            layout_list = self.ids.layout_list_komponen_uji
+            layout_list.clear_widgets(children=None)
+        except Exception as e:
+            toast_msg = f'Error Remove Widget: {e}'
+            print(toast_msg)
+        
+        try:           
+            layout_list = self.ids.layout_list_komponen_uji
+            for i in range(db_komponen_uji[0,:].size):
+                layout_list.add_widget(
+                    MDCard(
+                        MDLabel(text=f"{db_komponen_uji[2, i]}", size_hint_x= 0.7),
+                        MDIconButton(id=f'bt_komponen_uji{i}', size_hint_x= 0.1, icon="check-bold", md_bg_color="#2CA02C"),
+
+                        ripple_behavior = True,
+                        on_press = self.on_komponen_uji_row_press,
+                        padding = [20, 0],
+                        spacing = 10,
+                        id=f'card_komponen_uji{i}',
+                        size_hint_y=None,
+                        height="60dp",
+                        )
+                    )
+
+        except Exception as e:
+            toast_msg = f'Error Reload Table Komponen Uji: {e}'
+            print(toast_msg)
+
+    def exec_reload_subkomponen_uji(self, kode_komponen_uji):
+        global mydb, db_subkomponen_uji
+        global flags_subkomponen_uji
+
+        try:
+            tb_subkomponen_uji = mydb.cursor()
+            tb_subkomponen_uji.execute(f"SELECT kode_subkomponen_uji, nama, keterangan FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = '{kode_komponen_uji}' ")
+            result_tb_subkomponen_uji = tb_subkomponen_uji.fetchall()
+            mydb.commit()
+            db_subkomponen_uji = np.array(result_tb_subkomponen_uji).T
+            flags_subkomponen_uji = np.ones(db_subkomponen_uji[0,:].size, dtype='bool')
+        except Exception as e:
+            toast_msg = f'Error Fetch Table Subkomponen Uji: {e}'
+            print(toast_msg)
+
+        try:
+            layout_list = self.ids.layout_list_subkomponen_uji
+            layout_list.clear_widgets(children=None)
+        except Exception as e:
+            toast_msg = f'Error Remove Widget: {e}'
+            print(toast_msg)
+        
+        try:           
+            layout_list = self.ids.layout_list_subkomponen_uji
+            for i in range(db_subkomponen_uji[0,:].size):
+                card = MDCard(
+                    MDLabel(text=f"{db_subkomponen_uji[0, i]}", size_hint_x= 0.1),
+                    MDLabel(text=f"{db_subkomponen_uji[1, i]}", size_hint_x= 0.4),
+                    
+                    ripple_behavior = False,
+                    padding = [20, 0],
+                    spacing = 10,
+                    id=f'card_subkomponen_uji{i}',
+                    on_press = self.on_subkomponen_uji_row_press,
+                    size_hint_y=None,
+                    height="60dp",
+                    )
+                self.ids[f'card_subkomponen_uji{i}'] = card
+                layout_list.add_widget(card)
+                
+                tx_comment = MDTextField(size_hint_x= 0.3, hint_text="Komentar",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
+                bt_check = MDIconButton(size_hint_x= 0.1, icon="check-bold", md_bg_color="#2CA02C",)                
+                self.ids[f'tx_comment{i}'] = tx_comment
+                self.ids[f'bt_subkomponen_uji{i}'] = bt_check
+                card.add_widget(tx_comment)
+                card.add_widget(bt_check)
+
+        except Exception as e:
+            toast_msg = f'Error Reload Table Sub Komponen Uji: {e}'
+            print(toast_msg)
+
+    def reload_menu_komentar_uji(self, selected_kode_subkomponen_uji=""):
+        try:
+            print(f"reload menu komentar uji {selected_kode_subkomponen_uji}")
+            tb_komentar_uji = mydb.cursor()
+            tb_komentar_uji.execute(f"SELECT id, id_komponen_uji, id_subkomponen_uji, komentar FROM {TB_KOMENTAR_UJI} WHERE id_subkomponen_uji = '{selected_kode_subkomponen_uji}'")
+            result_tb_komentar_uji = tb_komentar_uji.fetchall()
+            mydb.commit()
+            db_komentar_uji = np.array(result_tb_komentar_uji).T
+
+            if(db_komentar_uji.size == 0 ):
+                self.ids.bt_dropdown_caller.disabled = True
+                toast('Tidak ada rekomendasi komentar, silahkan isi komentar sendiri')
+
+            self.menu_komentar_uji_items = [
+                {
+                    "text": f"{db_komentar_uji[3,i]}",                   
+                    "viewclass": "ListItem",
+                    "height": dp(54),
+                    "on_release": lambda x=f"{db_komentar_uji[3,i]}": self.menu_komentar_callback(x),
+                } for i in range(db_komentar_uji[0,:].size)
+            ]
+
+            self.menu_komentar_uji = MDDropdownMenu(
+                caller=self.ids.bt_dropdown_caller,
+                items=self.menu_komentar_uji_items,
+                width_mult=4,
+            )
+
+        except Exception as e:
+            toast_msg = f'Error Show Komentar: {e}'
+            print(toast_msg)
+
+    def open_screen_menu(self):
+        self.screen_manager.current = 'screen_menu'
+
+    def exec_save(self):
+        self.open_screen_menu()
+
+    def exec_cancel(self):
+        self.open_screen_menu()
+
+class ScreenInspectPit(MDScreen):        
+    def __init__(self, **kwargs):
+        super(ScreenInspectPit, self).__init__(**kwargs)
+
+    def on_enter(self):
+        self.exec_reload_komponen_uji()
+
+    def menu_komentar_callback(self, text_item):
+        global selected_row_subkomponen_uji
+
+        try:
+            self.ids[f'tx_comment{selected_row_subkomponen_uji}'].text = text_item
+        except Exception as e:
+            toast_msg = f'Error Execute Command from Menu Comment Callback: {e}'
+            toast(toast_msg)  
+
+    def on_komponen_uji_row_press(self, instance):
+        global dt_no_antrian, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
+        global dt_merk, dt_type, dt_jenis_kendaraan, dt_jbb, dt_bahan_bakar, dt_warna
+        global db_komponen_uji
+
+        try:
+            self.ids.bt_dropdown_caller.disabled = True
+            row = int(str(instance.id).replace("card_komponen_uji",""))
+            self.exec_reload_subkomponen_uji(db_komponen_uji[1, row])
+
+        except Exception as e:
+            toast_msg = f'Error Execute Command from Table Komponen Uji Row: {e}'
+            toast(toast_msg)  
+
+    def on_subkomponen_uji_row_press(self, instance):
+        global dt_no_antrian, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
+        global dt_merk, dt_type, dt_jenis_kendaraan, dt_jbb, dt_bahan_bakar, dt_warna
+        global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji
+        global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
+
+        try:
+            self.ids.bt_dropdown_caller.disabled = False
+            row = int(str(instance.id).replace("card_subkomponen_uji",""))
+            selected_row_subkomponen_uji = row
+            selected_kode_subkomponen_uji = db_subkomponen_uji[0, row]
+            self.reload_menu_komentar_uji(selected_kode_subkomponen_uji)
+
+            if(flags_subkomponen_uji[row]):
+                flags_subkomponen_uji[row] = False
+                self.ids[f'bt_subkomponen_uji{row}'].icon = "cancel"
+                self.ids[f'bt_subkomponen_uji{row}'].md_bg_color = "#FF2A2A"
+            else:
+                flags_subkomponen_uji[row] = True
+                self.ids[f'bt_subkomponen_uji{row}'].icon = "check-bold"
+                self.ids[f'bt_subkomponen_uji{row}'].md_bg_color = "#2CA02C"
+           
+        except Exception as e:
+            toast_msg = f'Error Execute Command from Table Subkomponen Uji Row: {e}'
+            toast(toast_msg)  
+
+    def exec_reload_komponen_uji(self):
+        global mydb, db_komponen_uji
+
+        try:
+            tb_komponen_uji = mydb.cursor()
+            tb_komponen_uji.execute(f"SELECT kode_kelompok_uji, kode_komponen_uji, nama, keterangan FROM {TB_KOMPONEN_UJI} WHERE kode_kelompok_uji = 'V2' ")
+            result_tb_komponen_uji = tb_komponen_uji.fetchall()
+            mydb.commit()
+            db_komponen_uji = np.array(result_tb_komponen_uji).T
+        except Exception as e:
+            toast_msg = f'Error Fetch Table Komponen Uji: {e}'
+            print(toast_msg)
+
+        try:
+            layout_list = self.ids.layout_list_komponen_uji
+            layout_list.clear_widgets(children=None)
+        except Exception as e:
+            toast_msg = f'Error Remove Widget: {e}'
+            print(toast_msg)
+        
+        try:           
+            layout_list = self.ids.layout_list_komponen_uji
+            for i in range(db_komponen_uji[0,:].size):
+                layout_list.add_widget(
+                    MDCard(
+                        # MDLabel(text=f"{db_komponen_uji[1, i]}", size_hint_x= 0.2),
+                        MDLabel(text=f"{db_komponen_uji[2, i]}", size_hint_x= 0.7),
+                        MDIconButton(id=f'bt_komponen_uji{i}', size_hint_x= 0.1, icon="check-bold", md_bg_color="#2CA02C"),
+
+                        ripple_behavior = True,
+                        on_press = self.on_komponen_uji_row_press,
+                        padding = [20, 0],
+                        spacing = 10,
+                        id=f'card_komponen_uji{i}',
+                        size_hint_y=None,
+                        height="60dp",
+                        )
+                    )
+
+        except Exception as e:
+            toast_msg = f'Error Reload Table Komponen Uji: {e}'
+            print(toast_msg)
+
+    def exec_reload_subkomponen_uji(self, kode_komponen_uji):
+        global mydb, db_subkomponen_uji
+        global flags_subkomponen_uji
+
+        try:
+            tb_subkomponen_uji = mydb.cursor()
+            tb_subkomponen_uji.execute(f"SELECT kode_subkomponen_uji, nama, keterangan FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = '{kode_komponen_uji}' ")
+            result_tb_subkomponen_uji = tb_subkomponen_uji.fetchall()
+            mydb.commit()
+            db_subkomponen_uji = np.array(result_tb_subkomponen_uji).T
+            flags_subkomponen_uji = np.ones(db_subkomponen_uji[0,:].size, dtype='bool')
+        except Exception as e:
+            toast_msg = f'Error Fetch Table Subkomponen Uji: {e}'
+            print(toast_msg)
+
+        try:
+            layout_list = self.ids.layout_list_subkomponen_uji
+            layout_list.clear_widgets(children=None)
+        except Exception as e:
+            toast_msg = f'Error Remove Widget: {e}'
+            print(toast_msg)
+        
+        try:           
+            layout_list = self.ids.layout_list_subkomponen_uji
+            for i in range(db_subkomponen_uji[0,:].size):
+                card = MDCard(
+                    MDLabel(text=f"{db_subkomponen_uji[0, i]}", size_hint_x= 0.1),
+                    MDLabel(text=f"{db_subkomponen_uji[1, i]}", size_hint_x= 0.4),
+                    
+                    ripple_behavior = False,
+                    padding = [20, 0],
+                    spacing = 10,
+                    id=f'card_subkomponen_uji{i}',
+                    on_press = self.on_subkomponen_uji_row_press,
+                    size_hint_y=None,
+                    height="60dp",
+                    )
+                self.ids[f'card_subkomponen_uji{i}'] = card
+                layout_list.add_widget(card)
+                
+                # tx_comment = MDTextField(size_hint_x= 0.25, hint_text="Komentar",)
+                # bt_comment = MDRectangleFlatIconButton(size_hint_x= 0.05, icon="pen", md_bg_color="#2CA02C")
+                # bt_check = MDRectangleFlatIconButton(size_hint_x= 0.1, icon="check-bold", md_bg_color="#2CA02C")
+                tx_comment = MDTextField(size_hint_x= 0.3, hint_text="Komentar",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
+                bt_check = MDIconButton(size_hint_x= 0.1, icon="check-bold", md_bg_color="#2CA02C",)                
+                self.ids[f'tx_comment{i}'] = tx_comment
+                self.ids[f'bt_subkomponen_uji{i}'] = bt_check
+                card.add_widget(tx_comment)
+                card.add_widget(bt_check)
+
+        except Exception as e:
+            toast_msg = f'Error Reload Table Sub Komponen Uji: {e}'
+            print(toast_msg)
+
+    def reload_menu_komentar_uji(self, selected_kode_subkomponen_uji=""):
+        try:
+            print(f"reload menu komentar uji {selected_kode_subkomponen_uji}")
+            tb_komentar_uji = mydb.cursor()
+            tb_komentar_uji.execute(f"SELECT id, id_komponen_uji, id_subkomponen_uji, komentar FROM {TB_KOMENTAR_UJI} WHERE id_subkomponen_uji = '{selected_kode_subkomponen_uji}'")
+            result_tb_komentar_uji = tb_komentar_uji.fetchall()
+            mydb.commit()
+            db_komentar_uji = np.array(result_tb_komentar_uji).T
+
+            if(db_komentar_uji.size == 0 ):
+                self.ids.bt_dropdown_caller.disabled = True
+                toast('Tidak ada rekomendasi komentar, silahkan isi komentar sendiri')
+
+            self.menu_komentar_uji_items = [
+                {
+                    "text": f"{db_komentar_uji[3,i]}",                   
+                    "viewclass": "ListItem",
+                    "height": dp(54),
+                    "on_release": lambda x=f"{db_komentar_uji[3,i]}": self.menu_komentar_callback(x),
+                } for i in range(db_komentar_uji[0,:].size)
+            ]
+
+            self.menu_komentar_uji = MDDropdownMenu(
+                caller=self.ids.bt_dropdown_caller,
+                items=self.menu_komentar_uji_items,
+                width_mult=4,
+            )
+
+        except Exception as e:
+            toast_msg = f'Error Show Komentar: {e}'
+            print(toast_msg)
+
+    def open_screen_menu(self):
+        self.screen_manager.current = 'screen_menu'
+
+    def exec_open_camera(self):
+        self.screen_manager.current = 'screen_realtime_pit'
+
+    def exec_save(self):
+        self.open_screen_menu()
+
+    def exec_cancel(self):
+        self.open_screen_menu()
 
 class ScreenRealtimeCctv(MDScreen):        
     def __init__(self, **kwargs):
         super(ScreenRealtimeCctv, self).__init__(**kwargs)
-        # Clock.schedule_once(self.delayed_init, 2)
-
-    def menu_camera_callback(self, camera_number, camera_name):
-        global selected_camera
-
-        try:
-            print(f"Selected camera number {camera_number}")
-            toast(f"Kamera {camera_name} dipilih")
-            selected_camera = camera_number
-
-        except Exception as e:
-            toast_msg = f'Error Execute Command from Camera List: {e}'
-            toast(toast_msg)  
 
     def on_enter(self):
-        # Clock.schedule_interval(self.update_frame, 2)
-        db_camera_list = np.array(["Depan", "Belakang", "Kanan", "Kiri"])
+        db_camera_list = np.array(["Depan", "Kiri", "Kanan", "Belakang"])
         self.menu_camera_items = [
             {
-                # "left_icon": "camera",
                 "text": f"{db_camera_list[i]}",                   
-                "viewclass": "Item",
+                "viewclass": "ListItem",
                 "height": dp(54),
                 "on_release": lambda x=i, y=db_camera_list[i]: self.menu_camera_callback(x, y),
             } for i in range(db_camera_list.size)
@@ -998,6 +1634,18 @@ class ScreenRealtimeCctv(MDScreen):
     def on_leave(self):
         Clock.unschedule(self.update_frame)
 
+    def menu_camera_callback(self, camera_number, camera_name):
+        global selected_camera
+
+        try:
+            print(f"Selected camera number {camera_number}")
+            toast(f"Kamera {camera_name} dipilih")
+            selected_camera = camera_number
+
+        except Exception as e:
+            toast_msg = f'Error Execute Command from Camera List: {e}'
+            toast(toast_msg)  
+
     def exec_play_cctv(self):
         Clock.schedule_interval(self.update_frame, 5)
 
@@ -1007,42 +1655,9 @@ class ScreenRealtimeCctv(MDScreen):
     def update_frame(self, dt):
         global rtsp_url_cam1, rtsp_url_cam2, rtsp_url_cam3, rtsp_url_cam4
         global selected_camera
-        # try:
-        #     if (self.screen_manager.current == 'screen_inspect_body'):
-        #         texture = Texture.create(size=(600, 600), colorfmt='rgb')
-        #         rtsp_url = np.array([rtsp_url_cam1, rtsp_url_cam2, rtsp_url_cam3, rtsp_url_cam4])
-        #         texture_arr = np.array([texture, texture, texture, texture])
 
-        #         for i in range (rtsp_url.size):
-        #             # Membaca frame dari stream
-        #             self.capture = cv2.VideoCapture(rtsp_url[i])
-        #             # self.capture = cv2.VideoCapture(rtsp_url_cam1)
-        #             ret, frame = self.capture.read()
-
-        #             if ret:
-        #                 # Membalik frame secara vertikal
-        #                 frame = cv2.flip(frame, 0)  # 0 untuk membalik secara vertikal
-
-        #                 # OpenCV menggunakan format BGR, ubah ke RGB
-        #                 frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-        #                 # Konversi frame menjadi texture untuk ditampilkan di Kivy
-        #                 buf = frame_rgb.tobytes()
-        #                 # texture = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt='rgb')
-        #                 texture.blit_buffer(buf, colorfmt='rgb', bufferfmt='ubyte')
-        #                 texture_arr[i] = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt='rgb')
-        #                 texture_arr[i].blit_buffer(buf, colorfmt='rgb', bufferfmt='ubyte')
-                        
-
-        #                 # Update widget Image dengan texture baru
-        #                 # self.img_widget.texture = texture
-        #         self.ids.image_view_front.texture = texture_arr[0]
-        #         self.ids.image_view_back.texture = texture_arr[1]
-        #         self.ids.image_view_right.texture = texture_arr[2]
-        #         self.ids.image_view_left.texture = texture_arr[3]
         try:
-            # Load the image
-            
+            # Load the image           
             # frame = cv2.imread('assets/images/tampak-depan.png')
             rtsp_url = np.array([rtsp_url_cam1, rtsp_url_cam2, rtsp_url_cam3, rtsp_url_cam4])
 
@@ -1062,33 +1677,11 @@ class ScreenRealtimeCctv(MDScreen):
                 buf = zoomed.tobytes()
                 texture = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt='rgb')
                 texture.blit_buffer(buf, colorfmt='rgb', bufferfmt='ubyte')
-            # Get the original dimensions
-            # (h, w) = image.shape[:2]
-
-            # Desired width
-            # new_width = 600
-            
-
-            # Zoomed: 794 × 825 
-            # cropped = zoomed[0:550, 0:529] # Wrong area
-            # Now I want to crop the middle of the new image as variable.
-
-
-            # cv2.imwrite('assets/images/zoomed.png', zoomed)
-            # cv2.imwrite('assets/images/cropped.png', cropped)
-
-            # Calculate the aspect ratio
-            # aspect_ratio = h / w
-            # new_height = int(new_width * aspect_ratio)
-
-            # Resize the image
-            # resized_image = cv2.resize(image, (new_width, new_height))
-            # resized_image = cv2.resize(zoomed, (new_width, new_height))
 
             self.ids.image_view_front.texture = texture
 
         except Exception as e:
-            toast_msg = f'error update frame: {e}'
+            toast_msg = f'Error update frame: {e}'
             print(toast_msg)
 
     def zoom_center(self, img, zoom_factor=1.0):
@@ -1106,26 +1699,10 @@ class ScreenRealtimeCctv(MDScreen):
         img_cropped = img[y1:y2,x1:x2]
         return cv2.resize(img_cropped, None, fx=zoom_factor, fy=zoom_factor)
 
-
     def exec_save(self):
-        global flag_play
-        global count_starting, count_get_data
-        global dt_no_antrian, dt_no_pol, dt_no_uji, dt_nama, dt_jenis_kendaraan
-        global dt_check_flag, dt_check_user, dt_check_post
-
         self.open_screen_main()
 
     def open_screen_main(self):
-        global flag_play        
-        global count_starting, count_get_data
-
-        screen_main = self.screen_manager.get_screen('screen_main')
-
-        count_starting = COUNT_STARTING
-        count_get_data = COUNT_ACQUISITION
-        flag_play = False   
-        screen_main.exec_reload_database()
-        screen_main.exec_reload_table()
         self.screen_manager.current = 'screen_main'
 
     def exec_start(self):
@@ -1171,472 +1748,112 @@ class ScreenRealtimeCctv(MDScreen):
             toast_msg = f'Error Navigate to Main Screen: {e}'
             toast(toast_msg)    
 
-class ScreenInspectBody(MDScreen):        
+class ScreenRealtimePit(MDScreen):        
     def __init__(self, **kwargs):
-        super(ScreenInspectBody, self).__init__(**kwargs)
-        Clock.schedule_once(self.delayed_init, 2)
+        super(ScreenRealtimePit, self).__init__(**kwargs)
 
-    def menu_komentar_callback(self, text_item):
-        global selected_row_subkomponen_uji
+    def on_enter(self):
+        db_camera_list = np.array(["Depan Kiri", "Depan Kanan", "Belakang Kiri", "Belakang Kanan"])
+        self.menu_camera_items = [
+            {
+                "text": f"{db_camera_list[i]}",                   
+                "viewclass": "ListItem",
+                "height": dp(54),
+                "on_release": lambda x=i, y=db_camera_list[i]: self.menu_camera_callback(x, y),
+            } for i in range(db_camera_list.size)
+        ]
 
-        try:
-            self.ids[f'tx_comment{selected_row_subkomponen_uji}'].text = text_item
-        except Exception as e:
-            toast_msg = f'Error Execute Command from Table Row: {e}'
-            toast(toast_msg)  
-
-    def delayed_init(self, dt):
-        self.exec_reload_komponen_uji()
-
-    def on_komponen_uji_row_press(self, instance):
-        global dt_no_antrian, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
-        global dt_merk, dt_type, dt_jenis_kendaraan, dt_jbb, dt_bahan_bakar, dt_warna
-        global db_komponen_uji
-
-        try:
-            self.ids.bt_dropdown_caller.disabled = True
-            row = int(str(instance.id).replace("card_komponen_uji",""))
-            self.exec_reload_subkomponen_uji(db_komponen_uji[1, row])
-
-        except Exception as e:
-            toast_msg = f'Error Execute Command from Table Row: {e}'
-            toast(toast_msg)  
-
-    def on_subkomponen_uji_row_press(self, instance):
-        global dt_no_antrian, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
-        global dt_merk, dt_type, dt_jenis_kendaraan, dt_jbb, dt_bahan_bakar, dt_warna
-        global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji
-        global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
-
-        try:
-            self.ids.bt_dropdown_caller.disabled = False
-            row = int(str(instance.id).replace("card_subkomponen_uji",""))
-            selected_row_subkomponen_uji = row
-            selected_kode_subkomponen_uji = db_subkomponen_uji[0, row]
-            self.reload_menu_komentar_uji(selected_kode_subkomponen_uji)
-
-            if(flags_subkomponen_uji[row]):
-                flags_subkomponen_uji[row] = False
-                self.ids[f'bt_subkomponen_uji{row}'].icon = "cancel"
-                self.ids[f'bt_subkomponen_uji{row}'].md_bg_color = "#FF2A2A"
-            else:
-                flags_subkomponen_uji[row] = True
-                self.ids[f'bt_subkomponen_uji{row}'].icon = "check-bold"
-                self.ids[f'bt_subkomponen_uji{row}'].md_bg_color = "#2CA02C"
-           
-        except Exception as e:
-            toast_msg = f'Error Execute Command from Table Row: {e}'
-            toast(toast_msg)  
-
-    def exec_reload_komponen_uji(self):
-        global mydb, db_komponen_uji
-
-        try:
-            tb_komponen_uji = mydb.cursor()
-            tb_komponen_uji.execute(f"SELECT kode_kelompok_uji, kode_komponen_uji, nama, keterangan FROM {TB_KOMPONEN_UJI} WHERE kode_kelompok_uji = 'V1' AND kode_komponen_uji = 'K02'")
-            result_tb_komponen_uji = tb_komponen_uji.fetchall()
-            mydb.commit()
-            db_komponen_uji = np.array(result_tb_komponen_uji).T
-
-            layout_list = self.ids.layout_list_komponen_uji
-            layout_list.clear_widgets(children=None)
-
-        except Exception as e:
-            toast_msg = f'Error Remove Widget: {e}'
-            print(toast_msg)
-        
-        try:           
-            layout_list = self.ids.layout_list_komponen_uji
-            for i in range(db_komponen_uji[0,:].size):
-                layout_list.add_widget(
-                    MDCard(
-                        # MDLabel(text=f"{db_komponen_uji[1, i]}", size_hint_x= 0.2),
-                        MDLabel(text=f"{db_komponen_uji[2, i]}", size_hint_x= 0.7),
-                        MDIconButton(id=f'bt_komponen_uji{i}', size_hint_x= 0.1, icon="check-bold", md_bg_color="#2CA02C"),
-
-                        ripple_behavior = True,
-                        on_press = self.on_komponen_uji_row_press,
-                        padding = [20, 0],
-                        spacing = 10,
-                        id=f'card_komponen_uji{i}',
-                        size_hint_y=None,
-                        height="60dp",
-                        )
-                    )
-
-        except Exception as e:
-            toast_msg = f'Error Reload Table Komponen Uji: {e}'
-            print(toast_msg)
-
-    def exec_reload_subkomponen_uji(self, kode_komponen_uji):
-        global mydb, db_subkomponen_uji
-        global flags_subkomponen_uji
-
-        try:
-            tb_subkomponen_uji = mydb.cursor()
-            tb_subkomponen_uji.execute(f"SELECT kode_subkomponen_uji, nama, keterangan FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = '{kode_komponen_uji}'")
-            result_tb_subkomponen_uji = tb_subkomponen_uji.fetchall()
-            mydb.commit()
-            db_subkomponen_uji = np.array(result_tb_subkomponen_uji).T
-            flags_subkomponen_uji = np.ones(db_subkomponen_uji[0,:].size, dtype='bool')
-
-            layout_list = self.ids.layout_list_subkomponen_uji
-            layout_list.clear_widgets(children=None)
-
-        except Exception as e:
-            toast_msg = f'Error Remove Widget: {e}'
-            print(toast_msg)
-        
-        try:           
-            layout_list = self.ids.layout_list_subkomponen_uji
-            for i in range(db_subkomponen_uji[0,:].size):
-                card = MDCard(
-                    MDLabel(text=f"{db_subkomponen_uji[0, i]}", size_hint_x= 0.1),
-                    MDLabel(text=f"{db_subkomponen_uji[1, i]}", size_hint_x= 0.4),
-                    
-                    ripple_behavior = False,
-                    padding = [20, 0],
-                    spacing = 10,
-                    id=f'card_subkomponen_uji{i}',
-                    on_press = self.on_subkomponen_uji_row_press,
-                    size_hint_y=None,
-                    height="60dp",
-                    )
-                self.ids[f'card_subkomponen_uji{i}'] = card
-                layout_list.add_widget(card)
-                
-                # tx_comment = MDTextField(size_hint_x= 0.25, hint_text="Komentar",)
-                # bt_comment = MDRectangleFlatIconButton(size_hint_x= 0.05, icon="pen", md_bg_color="#2CA02C")
-                # bt_check = MDRectangleFlatIconButton(size_hint_x= 0.1, icon="check-bold", md_bg_color="#2CA02C")
-                tx_comment = MDTextField(size_hint_x= 0.3, hint_text="Komentar",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
-                bt_check = MDIconButton(size_hint_x= 0.1, icon="check-bold", md_bg_color="#2CA02C",)                
-                self.ids[f'tx_comment{i}'] = tx_comment
-                self.ids[f'bt_subkomponen_uji{i}'] = bt_check
-                card.add_widget(tx_comment)
-                card.add_widget(bt_check)
-
-        except Exception as e:
-            toast_msg = f'Error Reload Table Sub Komponen Uji: {e}'
-            print(toast_msg)
-
-    def reload_menu_komentar_uji(self, selected_kode_subkomponen_uji=""):
-        try:
-            print(f"reload menu komentar uji {selected_kode_subkomponen_uji}")
-            tb_komentar_uji = mydb.cursor()
-            tb_komentar_uji.execute(f"SELECT id, id_komponen_uji, id_subkomponen_uji, komentar FROM {TB_KOMENTAR_UJI} WHERE id_subkomponen_uji = '{selected_kode_subkomponen_uji}'")
-            result_tb_komentar_uji = tb_komentar_uji.fetchall()
-            mydb.commit()
-            db_komentar_uji = np.array(result_tb_komentar_uji).T
-
-            if(db_komentar_uji.size == 0 ):
-                self.ids.bt_dropdown_caller.disabled = True
-                toast('Tidak ada rekomendasi komentar, silahkan isi komentar sendiri')
-
-            self.menu_komentar_uji_items = [
-                {
-                    "left_icon": "comment",
-                    "text": f"{db_komentar_uji[3,i]}",                   
-                    "viewclass": "Item",
-                    "height": dp(54),
-                    "on_release": lambda x=f"{db_komentar_uji[3,i]}": self.menu_komentar_callback(x),
-                } for i in range(db_komentar_uji[0,:].size)
-            ]
-
-            self.menu_komentar_uji = MDDropdownMenu(
-                # caller=self.ids[f'bt_comment{i}'], 
-                caller=self.ids.bt_dropdown_caller,
-                items=self.menu_komentar_uji_items,
-                width_mult=2,
-            )
-
-        except Exception as e:
-            toast_msg = f'Error Show Komentar: {e}'
-            print(toast_msg)
-
-    def open_screen_menu(self):
-        global flag_play        
-        global count_starting, count_get_data
-
-        count_starting = COUNT_STARTING
-        count_get_data = COUNT_ACQUISITION
-        flag_play = False   
-        self.screen_manager.current = 'screen_menu'
-
-    def exec_save(self):
-        self.open_screen_menu()
-
-    def exec_cancel(self):
-        self.open_screen_menu()
-
-class ScreenInspectVisual(MDScreen):        
-    def __init__(self, **kwargs):
-        super(ScreenInspectVisual, self).__init__(**kwargs)
-        Clock.schedule_once(self.delayed_init, 2)
-
-    def menu_komentar_callback(self, text_item):
-        global selected_row_subkomponen_uji
-
-        try:
-            self.ids[f'tx_comment{selected_row_subkomponen_uji}'].text = text_item
-        except Exception as e:
-            toast_msg = f'Error Execute Command from Table Row: {e}'
-            toast(toast_msg)  
-
-    def delayed_init(self, dt):
-        self.exec_reload_komponen_uji()
-
-    def on_komponen_uji_row_press(self, instance):
-        global dt_no_antrian, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
-        global dt_merk, dt_type, dt_jenis_kendaraan, dt_jbb, dt_bahan_bakar, dt_warna
-        global db_komponen_uji
-
-        try:
-            self.ids.bt_dropdown_caller.disabled = True
-            row = int(str(instance.id).replace("card_komponen_uji",""))
-            self.exec_reload_subkomponen_uji(db_komponen_uji[1, row])
-
-        except Exception as e:
-            toast_msg = f'Error Execute Command from Table Row: {e}'
-            toast(toast_msg)  
-
-    def on_subkomponen_uji_row_press(self, instance):
-        global dt_no_antrian, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
-        global dt_merk, dt_type, dt_jenis_kendaraan, dt_jbb, dt_bahan_bakar, dt_warna
-        global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji
-        global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
-
-        try:
-            self.ids.bt_dropdown_caller.disabled = False
-            row = int(str(instance.id).replace("card_subkomponen_uji",""))
-            selected_row_subkomponen_uji = row
-            selected_kode_subkomponen_uji = db_subkomponen_uji[0, row]
-            self.reload_menu_komentar_uji(selected_kode_subkomponen_uji)
-
-            if(flags_subkomponen_uji[row]):
-                flags_subkomponen_uji[row] = False
-                self.ids[f'bt_subkomponen_uji{row}'].icon = "cancel"
-                self.ids[f'bt_subkomponen_uji{row}'].md_bg_color = "#FF2A2A"
-            else:
-                flags_subkomponen_uji[row] = True
-                self.ids[f'bt_subkomponen_uji{row}'].icon = "check-bold"
-                self.ids[f'bt_subkomponen_uji{row}'].md_bg_color = "#2CA02C"
-           
-        except Exception as e:
-            toast_msg = f'Error Execute Command from Table Row: {e}'
-            toast(toast_msg)  
-
-    def exec_reload_komponen_uji(self):
-        global mydb, db_komponen_uji
-
-        try:
-            tb_komponen_uji = mydb.cursor()
-            tb_komponen_uji.execute(f"SELECT kode_kelompok_uji, kode_komponen_uji, nama, keterangan FROM {TB_KOMPONEN_UJI} WHERE kode_kelompok_uji = 'V1' AND NOT (kode_komponen_uji = 'K01' OR kode_komponen_uji = 'K02')")
-            result_tb_komponen_uji = tb_komponen_uji.fetchall()
-            mydb.commit()
-            db_komponen_uji = np.array(result_tb_komponen_uji).T
-
-            layout_list = self.ids.layout_list_komponen_uji
-            layout_list.clear_widgets(children=None)
-
-        except Exception as e:
-            toast_msg = f'Error Remove Widget: {e}'
-            print(toast_msg)
-        
-        try:           
-            layout_list = self.ids.layout_list_komponen_uji
-            for i in range(db_komponen_uji[0,:].size):
-                layout_list.add_widget(
-                    MDCard(
-                        # MDLabel(text=f"{db_komponen_uji[1, i]}", size_hint_x= 0.2),
-                        MDLabel(text=f"{db_komponen_uji[2, i]}", size_hint_x= 0.7),
-                        MDIconButton(id=f'bt_komponen_uji{i}', size_hint_x= 0.1, icon="check-bold", md_bg_color="#2CA02C"),
-
-                        ripple_behavior = True,
-                        on_press = self.on_komponen_uji_row_press,
-                        padding = [20, 0],
-                        spacing = 10,
-                        id=f'card_komponen_uji{i}',
-                        size_hint_y=None,
-                        height="60dp",
-                        )
-                    )
-
-        except Exception as e:
-            toast_msg = f'Error Reload Table Komponen Uji: {e}'
-            print(toast_msg)
-
-    def exec_reload_subkomponen_uji(self, kode_komponen_uji):
-        global mydb, db_subkomponen_uji
-        global flags_subkomponen_uji
-
-        try:
-            tb_subkomponen_uji = mydb.cursor()
-            tb_subkomponen_uji.execute(f"SELECT kode_subkomponen_uji, nama, keterangan FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = '{kode_komponen_uji}'")
-            result_tb_subkomponen_uji = tb_subkomponen_uji.fetchall()
-            mydb.commit()
-            db_subkomponen_uji = np.array(result_tb_subkomponen_uji).T
-            flags_subkomponen_uji = np.ones(db_subkomponen_uji[0,:].size, dtype='bool')
-
-            layout_list = self.ids.layout_list_subkomponen_uji
-            layout_list.clear_widgets(children=None)
-
-        except Exception as e:
-            toast_msg = f'Error Remove Widget: {e}'
-            print(toast_msg)
-        
-        try:           
-            layout_list = self.ids.layout_list_subkomponen_uji
-            for i in range(db_subkomponen_uji[0,:].size):
-                card = MDCard(
-                    MDLabel(text=f"{db_subkomponen_uji[0, i]}", size_hint_x= 0.1),
-                    MDLabel(text=f"{db_subkomponen_uji[1, i]}", size_hint_x= 0.4),
-                    
-                    ripple_behavior = False,
-                    padding = [20, 0],
-                    spacing = 10,
-                    id=f'card_subkomponen_uji{i}',
-                    on_press = self.on_subkomponen_uji_row_press,
-                    size_hint_y=None,
-                    height="60dp",
-                    )
-                self.ids[f'card_subkomponen_uji{i}'] = card
-                layout_list.add_widget(card)
-                
-                # tx_comment = MDTextField(size_hint_x= 0.25, hint_text="Komentar",)
-                # bt_comment = MDRectangleFlatIconButton(size_hint_x= 0.05, icon="pen", md_bg_color="#2CA02C")
-                # bt_check = MDRectangleFlatIconButton(size_hint_x= 0.1, icon="check-bold", md_bg_color="#2CA02C")
-                tx_comment = MDTextField(size_hint_x= 0.3, hint_text="Komentar",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
-                bt_check = MDIconButton(size_hint_x= 0.1, icon="check-bold", md_bg_color="#2CA02C",)                
-                self.ids[f'tx_comment{i}'] = tx_comment
-                self.ids[f'bt_subkomponen_uji{i}'] = bt_check
-                card.add_widget(tx_comment)
-                card.add_widget(bt_check)
-
-        except Exception as e:
-            toast_msg = f'Error Reload Table Sub Komponen Uji: {e}'
-            print(toast_msg)
-
-    def reload_menu_komentar_uji(self, selected_kode_subkomponen_uji=""):
-        try:
-            print(f"reload menu komentar uji {selected_kode_subkomponen_uji}")
-            tb_komentar_uji = mydb.cursor()
-            tb_komentar_uji.execute(f"SELECT id, id_komponen_uji, id_subkomponen_uji, komentar FROM {TB_KOMENTAR_UJI} WHERE id_subkomponen_uji = '{selected_kode_subkomponen_uji}'")
-            result_tb_komentar_uji = tb_komentar_uji.fetchall()
-            mydb.commit()
-            db_komentar_uji = np.array(result_tb_komentar_uji).T
-
-            if(db_komentar_uji.size == 0 ):
-                self.ids.bt_dropdown_caller.disabled = True
-                toast('Tidak ada rekomendasi komentar, silahkan isi komentar sendiri')
-
-            self.menu_komentar_uji_items = [
-                {
-                    "left_icon": "comment",
-                    "text": f"{db_komentar_uji[3,i]}",                   
-                    "viewclass": "Item",
-                    "height": dp(54),
-                    "on_release": lambda x=f"{db_komentar_uji[3,i]}": self.menu_komentar_callback(x),
-                } for i in range(db_komentar_uji[0,:].size)
-            ]
-
-            self.menu_komentar_uji = MDDropdownMenu(
-                # caller=self.ids[f'bt_comment{i}'], 
-                caller=self.ids.bt_dropdown_caller,
-                items=self.menu_komentar_uji_items,
-                width_mult=2,
-            )
-
-        except Exception as e:
-            toast_msg = f'Error Show Komentar: {e}'
-            print(toast_msg)
-
-    def open_screen_menu(self):
-        global flag_play        
-        global count_starting, count_get_data
-
-        count_starting = COUNT_STARTING
-        count_get_data = COUNT_ACQUISITION
-        flag_play = False   
-        self.screen_manager.current = 'screen_menu'
-
-    def exec_save(self):
-        self.open_screen_menu()
-
-    def exec_cancel(self):
-        self.open_screen_menu()
-
-class Item(OneLineAvatarIconListItem):
-    left_icon = StringProperty()
-    right_text = StringProperty()
-
-class ScreenInspectPit(MDScreen):        
-    def __init__(self, **kwargs):
-        super(ScreenInspectPit, self).__init__(**kwargs)   
-
-    # def on_enter(self):
-        # Clock.schedule_interval(self.update_frame, 2)
+        self.menu_camera = MDDropdownMenu(
+            caller=self.ids.bt_dropdown_caller,
+            items=self.menu_camera_items,
+            width_mult=4,
+        )
 
     def on_leave(self):
         Clock.unschedule(self.update_frame)
 
-    def update_frame(self, dt):
-        global rtsp_url_pit1, rtsp_url_pit2, rtsp_url_pit3, rtsp_url_pit4
+    def menu_camera_callback(self, camera_number, camera_name):
+        global selected_camera
+
         try:
-            if (self.screen_manager.current == 'screen_inspect_pit'):
-                texture = Texture.create(size=(600, 600), colorfmt='rgb')
-                rtsp_url = np.array([rtsp_url_pit1, rtsp_url_pit2, rtsp_url_pit3, rtsp_url_pit4])
-                texture_arr = np.array([texture, texture, texture, texture])
-
-                for i in range (rtsp_url.size):
-                    # Membaca frame dari stream
-                    self.capture = cv2.VideoCapture(rtsp_url[i])
-                    # self.capture = cv2.VideoCapture(rtsp_url_cam1)
-                    ret, frame = self.capture.read()
-
-                    if ret:
-                        # Membalik frame secara vertikal
-                        frame = cv2.flip(frame, 0)  # 0 untuk membalik secara vertikal
-
-                        # OpenCV menggunakan format BGR, ubah ke RGB
-                        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-                        # Konversi frame menjadi texture untuk ditampilkan di Kivy
-                        buf = frame_rgb.tobytes()
-                        # texture = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt='rgb')
-                        texture.blit_buffer(buf, colorfmt='rgb', bufferfmt='ubyte')
-                        texture_arr[i] = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt='rgb')
-                        texture_arr[i].blit_buffer(buf, colorfmt='rgb', bufferfmt='ubyte')
-                        # Update widget Image dengan texture baru
-                        # self.img_widget.texture = texture
-                self.ids.image_view_front_right.texture = texture_arr[0]
-                self.ids.image_view_front_left.texture = texture_arr[1]
-                self.ids.image_view_back_right.texture = texture_arr[2]
-                self.ids.image_view_back_left.texture = texture_arr[3]
+            print(f"Selected camera number {camera_number}")
+            toast(f"Kamera {camera_name} dipilih")
+            selected_camera = camera_number
 
         except Exception as e:
-            toast_msg = f'error update frame: {e}'
+            toast_msg = f'Error Execute Command from Camera List: {e}'
+            toast(toast_msg)  
+
+    def exec_play_cctv(self):
+        Clock.schedule_interval(self.update_frame, 5)
+
+    def exec_stop_cctv(self):
+        Clock.unschedule(self.update_frame)
+
+    def update_frame(self, dt):
+        global rtsp_url_cam1, rtsp_url_cam2, rtsp_url_cam3, rtsp_url_cam4
+        global selected_camera
+
+        try:
+            # Load the image           
+            # frame = cv2.imread('assets/images/tampak-depan.png')
+            rtsp_url = np.array([rtsp_url_cam1, rtsp_url_cam2, rtsp_url_cam3, rtsp_url_cam4])
+
+            self.capture = cv2.VideoCapture(rtsp_url[selected_camera])
+                         # self.capture = cv2.VideoCapture(rtsp_url_cam1)
+            ret, frame = self.capture.read()
+            if ret:
+                # Membalik frame secara vertikal
+                frame = cv2.flip(frame, 0)  # 0 untuk membalik secara vertikal
+
+                # OpenCV menggunakan format BGR, ubah ke RGB
+                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                zoom_factor = self.ids.sl_cctv_zoom.value
+                zoomed = self.zoom_center(frame_rgb, zoom_factor)
+
+                # Konversi frame menjadi texture untuk ditampilkan di Kivy
+                buf = zoomed.tobytes()
+                texture = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt='rgb')
+                texture.blit_buffer(buf, colorfmt='rgb', bufferfmt='ubyte')
+
+            self.ids.image_view_front.texture = texture
+
+        except Exception as e:
+            toast_msg = f'Error update frame: {e}'
             print(toast_msg)
 
-    def open_screen_main(self):
-        global flag_play        
-        global count_starting, count_get_data
+    def zoom_center(self, img, zoom_factor=1.0):
 
-        screen_main = self.screen_manager.get_screen('screen_main')
+        y_size = img.shape[0]
+        x_size = img.shape[1]
+        
+        # define new boundaries
+        x1 = int(0.5*x_size*(1-1/zoom_factor))
+        x2 = int(x_size-0.5*x_size*(1-1/zoom_factor))
+        y1 = int(0.5*y_size*(1-1/zoom_factor))
+        y2 = int(y_size-0.5*y_size*(1-1/zoom_factor))
 
-        count_starting = COUNT_STARTING
-        count_get_data = COUNT_ACQUISITION
-        flag_play = False   
-        screen_main.exec_reload_table()
-        self.screen_manager.current = 'screen_main'
+        # first crop image then scale
+        img_cropped = img[y1:y2,x1:x2]
+        return cv2.resize(img_cropped, None, fx=zoom_factor, fy=zoom_factor)
 
     def exec_save(self):
         self.open_screen_main()
 
-    def open_screen_inspect_body(self):
-        self.screen_manager.current = 'screen_inspect_body'
+    def open_screen_main(self):
+        self.screen_manager.current = 'screen_main'
+
+    def exec_start(self):
+        self.screen_manager.current = 'screen_inspect_pit'
 
     def exec_cancel(self):
-        self.screen_manager.current = 'screen_menu'
+        try:
+            self.screen_manager.current = 'screen_menu'
+
+        except Exception as e:
+            toast_msg = f'Error Navigate to Home Screen: {e}'
+            toast(toast_msg)        
+
 
     def exec_logout(self):
         self.screen_manager.current = 'screen_login'
@@ -1659,7 +1876,7 @@ class ScreenInspectPit(MDScreen):
 
         except Exception as e:
             toast_msg = f'Error Navigate to Login Screen: {e}'
-            toast(toast_msg)     
+            toast(toast_msg)      
 
     def exec_navigate_main(self):
         try:
@@ -1667,7 +1884,16 @@ class ScreenInspectPit(MDScreen):
 
         except Exception as e:
             toast_msg = f'Error Navigate to Main Screen: {e}'
-            toast(toast_msg)   
+            toast(toast_msg)    
+
+class ListItem(OneLineListItem):
+ 
+# class Item(BaseListItem):    
+# class Item(OneLineListItem):
+    # pass        
+    # left_icon = StringProperty()
+    list_text = StringProperty()
+    # text = StringProperty()
 
 class RootScreen(ScreenManager):
     pass             

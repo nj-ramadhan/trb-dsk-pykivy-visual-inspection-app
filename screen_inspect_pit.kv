@@ -88,57 +88,75 @@
 			padding:20
 
 			MDBoxLayout:
-				orientation: "vertical"
+				orientation: "horizontal"
 				spacing:50
 
-				MDLabel:
-					text: "REALTIME CCTV"
-					halign: "center"
-					valign: "middle"
-					font_style: 'H6'
-					size_hint_y: 0.1
+				MDBoxLayout:
+					orientation: "vertical"
+					size_hint_x: 0.4
+					spacing: 10
+
+					MDLabel:
+						text: "PEMERIKSAAN KOLONG KENDARAAN"
+						halign: "center"
+						valign: "middle"
+						font_style: 'H6'
+						size_hint_y: 0.05
+
+					MDScrollView:
+						id: layout_scroll_komponen_uji
+						size_hint_y: 0.95
+						scroll_timeout:100
+						MDList:
+							id: layout_list_komponen_uji
+							spacing: 10
 
 				MDBoxLayout:
-					orientation: "horizontal"
-					size_hint_x: 0.9
+					orientation: "vertical"
+					size_hint_x: 0.6
 					spacing: 10
 
 					MDBoxLayout:
-						orientation: "vertical"
-						size_hint_x: 0.5
-						spacing:5
+						orientation: "horizontal"
+						size_hint_y: 0.05
 
-						Image:
-							id: image_view_front_right
-							source:'assets/images/tampak-kolong-depan.png'
-							allow_stretch: True 
+						MDRectangleFlatIconButton:
+							id: bt_dropdown_caller
+							text: "REKOMENDASI"
+							icon: "comment"
+							md_bg_color: "#4471C4"
+							size_hint_x: 0.2
+							disabled: True
+							on_press: root.menu_komentar_uji.open()
 
-						Image:
-							id: image_view_back_right
-							source:'assets/images/tampak-kolong-belakang.png'
-							allow_stretch: True 
+						MDLabel:
+							text: "SUB MENU PEMERIKSAAN"
+							halign: "center"
+							valign: "middle"
+							font_style: 'H6'
+							size_hint_x: 0.8
 
-					MDBoxLayout:
-						orientation: "vertical"
-						size_hint_x: 0.5
-						spacing:5
-
-						Image:
-							id: image_view_front_left
-							source:'assets/images/tampak-kolong-depan.png'
-							allow_stretch: True 
-							
-						Image:
-							id: image_view_back_left
-							source:'assets/images/tampak-kolong-belakang.png'
-							allow_stretch: True 
-
+					MDScrollView:
+						id: layout_scroll_subkomponen_uji
+						size_hint_y: 0.95
+						scroll_timeout:100
+						MDList:
+							id: layout_list_subkomponen_uji
+							spacing: 10
 		# button layout
         MDBoxLayout:
             orientation: "horizontal"
 			size_hint_y: 0.1
 			padding: 20, 20
 			spacing: 50
+
+			MDRectangleFlatIconButton:
+				id: bt_open_camera
+				text: "BUKA KAMERA"
+				icon: "camera"
+				md_bg_color: "#4471C4"
+				size_hint_x: 0.5
+				on_press: root.exec_open_camera()
 
 			MDRectangleFlatIconButton:
 				id: bt_save
@@ -228,3 +246,6 @@
 					halign: "left"
 					valign: "middle"
 					font_style: 'H6'
+
+<ListItem>
+	text: root.list_text
