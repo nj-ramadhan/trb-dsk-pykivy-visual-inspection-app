@@ -1,6 +1,6 @@
 #:kivy 2.1.0
 
-<ScreenLogin>:
+<ScreenInspectBody>:
     MDBoxLayout:
         orientation: "vertical"
 
@@ -34,7 +34,7 @@
 
 				MDLabel:
 					id: subtitle            
-					text: "VISUAL INSPECTION"
+					text: "VEHICLE VISUAL INSPECTION"
 					halign: "left"
 					valign: "middle"
 					font_style: 'H5'
@@ -44,7 +44,6 @@
 			MDBoxLayout:
 				orientation: "vertical"
 				size_hint_x: 0.15
-
 
 				MDLabel:
 					id: lb_time
@@ -85,7 +84,7 @@
 		MDBoxLayout:
 			id: layout_main
 			orientation: "horizontal"
-			size_hint_y: 0.7
+			size_hint_y: 0.6
 			padding:20
 
 			MDBoxLayout:
@@ -94,117 +93,79 @@
 
 				MDBoxLayout:
 					orientation: "vertical"
-					size_hint_x: 0.1
-					spacing: 20
-
-					MDCard:
-						ripple_behavior: True
-                        on_press: root.exec_navigate_home()
-						md_bg_color: "#EEEEEE"
-                        padding: 10
-						Image:
-							source:'assets/images/icon-home.png'
-							size_hint_x: 0.15
-							allow_stretch: True 
-
-					MDCard:
-						ripple_behavior: True
-                        on_press: root.exec_navigate_login()
-						md_bg_color: "#EEEEEE"
-                        padding: 10
-						AsyncImage:
-							id: img_user
-							source:'assets/images/icon-login.png'
-							size_hint_x: 0.15
-							allow_stretch: True 
-
-					MDCard:
-						ripple_behavior: True
-                        on_press: root.exec_navigate_main()
-						md_bg_color: "#EEEEEE"
-                        padding: 10
-						Image:
-							source:'assets/images/icon-realtime.png'
-							size_hint_x: 0.15
-							allow_stretch: True 
-
-
-				MDBoxLayout:
-					orientation: "vertical"
-					size_hint_x: 0.9
-					spacing: 20
+					size_hint_x: 0.4
+					spacing: 10
 
 					MDLabel:
-						text: "SILAHKAN LOGIN"
+						text: "PEMERIKSAAN VISUAL KENDARAAN"
 						halign: "center"
 						valign: "middle"
 						font_style: 'H6'
-						theme_text_color: "Custom"
 						size_hint_y: 0.05
-						
-					MDTextField:
-						id: tx_username
-						font_size: '40sp'
-						font_name: "Recharge"
-						font_name_hint_text:'Recharge'
-						icon_left: "account"
-						hint_text: "Nama Pengguna"
-						text_color_focus: "#4471C4"
-						hint_text_color_focus: "#4471C4"
-						line_color_focus: "#4471C4"	
-						icon_left_color_focus: "#4471C4"				
-						mode: "rectangle"
-						on_text_validate: root.exec_login()
-						size_hint_y: 0.15
 
-					MDTextField:
-						id: tx_password
-						font_size: '40sp'
-						font_name: "Recharge"
-						font_name_hint_text:'Recharge'
-						icon_left: "lock"
-						hint_text: "Password"
-						text_color_focus: "#4471C4"
-						hint_text_color_focus: "#4471C4"
-						line_color_focus: "#4471C4"
-						icon_left_color_focus: "#4471C4"
-						mode: "rectangle"
-						password: True
-						on_text_validate: root.exec_login()
-						size_hint_y: 0.15
+					MDScrollView:
+						id: layout_scroll_komponen_uji
+						size_hint_y: 0.95
+						scroll_timeout:100
+						MDList:
+							id: layout_list_komponen_uji
+							spacing: 10
+
+				MDBoxLayout:
+					orientation: "vertical"
+					size_hint_x: 0.6
+					spacing: 10
 
 					MDBoxLayout:
 						orientation: "horizontal"
-						spacing: 100
-						size_hint_y: 0.15
+						size_hint_y: 0.05
 
 						MDRectangleFlatIconButton:
-							id: bt_login
-							type: "large"
-							size_hint_x: 0.5
-							size_hint_y: 1
-							icon: "login"
-							text:"MASUK"
-							text_color: "#EEEEEE"
+							id: bt_dropdown_caller
+							text: "REKOMENDASI"
+							icon: "comment"
 							md_bg_color: "#4471C4"
-							font_style: 'H6'
-							on_press: root.exec_login()
+							size_hint_x: 0.2
+							disabled: True
+							on_press: root.menu_komentar_uji.open()
 
-						MDRectangleFlatIconButton:
-							id: bt_cancel
-							type: "large"
-							size_hint_x: 0.5
-							size_hint_y: 1
-							icon: "cancel"
-							text:"BATAL"
-							text_color: "#EEEEEE"
-							md_bg_color: "#FF2A2A"
+						MDLabel:
+							text: "SUB MENU PEMERIKSAAN"
+							halign: "center"
+							valign: "middle"
 							font_style: 'H6'
-							on_press: root.exec_cancel()
+							size_hint_x: 0.8
 
-					MDBoxLayout:
-						orientation: "horizontal"
-						size_hint_y: 0.5
+					MDScrollView:
+						id: layout_scroll_subkomponen_uji
+						size_hint_y: 0.95
+						scroll_timeout:100
+						MDList:
+							id: layout_list_subkomponen_uji
+							spacing: 10
+							
+		# button layout
+        MDBoxLayout:
+            orientation: "horizontal"
+			size_hint_y: 0.1
+			padding: 20, 20
+			spacing: 50
+
+			MDRectangleFlatIconButton:
+				id: bt_save
+				text: "SIMPAN"
+				icon: "floppy"
+				md_bg_color: "#2CA02C"
+				size_hint_x: 0.5
+				on_press: root.exec_save()
+
+			MDRectangleFlatIconButton:
+				id: bt_cancel
+				text: "BATAL"
+				icon: "cancel"
+				md_bg_color: "#FF2A2A"
+				size_hint_x: 0.5
+				on_press: root.exec_cancel()
 
 		# footer layout
         MDBoxLayout:
@@ -274,8 +235,11 @@
 
 				MDLabel:
 					id: lb_info
-					text: "Silahkan Login untuk menggunakan aplikasi"
+					text: "Silahkan Pilih Kendaraan yang akan diuji dari Tabel yang Tersedia"
 					halign: "left"
 					valign: "middle"
 					font_style: 'H6'
-		
+
+<Item>
+	IconLeftWidget:
+		icon: root.left_icon

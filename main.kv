@@ -5,10 +5,12 @@
 #:include screen_login.kv
 #:include screen_main.kv
 #:include screen_menu.kv
+#:include screen_inspect_new.kv
 #:include screen_inspect_pit.kv
 #:include screen_inspect_id.kv
-#:include screen_inspect_cctv.kv
+#:include screen_inspect_body.kv
 #:include screen_inspect_visual.kv
+#:include screen_realtime_cctv.kv
 
 # ScreenManager:
 <RootScreen>:
@@ -35,14 +37,19 @@
         name: 'screen_menu'
         screen_manager: screen_manager
 
+    ScreenInspectNew:
+        id: screen_inspect_new
+        name: 'screen_inspect_new'
+        screen_manager: screen_manager
+
     ScreenInspectId:
         id: screen_inspect_id
         name: 'screen_inspect_id'
         screen_manager: screen_manager   
 
-    ScreenInspectCctv:
-        id: screen_inspect_cctv
-        name: 'screen_inspect_cctv'
+    ScreenInspectBody:
+        id: screen_inspect_body
+        name: 'screen_inspect_body'
         screen_manager: screen_manager  
 
     ScreenInspectVisual:
@@ -54,3 +61,8 @@
         id: screen_inspect_pit
         name: 'screen_inspect_pit'
         screen_manager: screen_manager   
+
+    ScreenRealtimeCctv:
+        id: screen_realtime_cctv
+        name: 'screen_realtime_cctv'
+        screen_manager: screen_manager  

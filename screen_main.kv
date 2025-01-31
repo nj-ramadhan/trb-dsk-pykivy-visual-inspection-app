@@ -112,7 +112,8 @@
                         on_press: root.exec_navigate_login()
 						md_bg_color: "#EEEEEE"
                         padding: 10
-						Image:
+						AsyncImage:
+							id: img_user
 							source:'assets/images/icon-login.png'
 							size_hint_x: 0.15
 							allow_stretch: True 
@@ -196,13 +197,14 @@
 						spacing: 50
 
 						MDRectangleFlatIconButton:
-							icon: "reload"
-							text: "RELOAD TABLE"
+							id: bt_new_inspect
+							icon: "plus"
+							text: "PENDAFTARAN"
 							theme_text_color: "Custom"
 							text_color: "#EEEEEE"
 							md_bg_color: "#4471C4"
 							size_hint_x: 0.3
-							on_press: root.exec_reload_table()
+							on_press: root.exec_new_inspect()
 
 						MDRectangleFlatIconButton:
 							id: bt_logout
@@ -232,7 +234,7 @@
 							halign: "left"
 							valign: "middle"
 							font_style: 'Subtitle1'
-							size_hint_x: 0.08
+							size_hint_x: 0.07
 
 						MDLabel:
 							text: "No. Uji"
@@ -246,7 +248,7 @@
 							halign: "left"
 							valign: "middle"
 							font_style: 'Subtitle1'
-							size_hint_x: 0.08
+							size_hint_x: 0.07
 
 						MDLabel:
 							text: "Nama"
@@ -267,7 +269,7 @@
 							halign: "left"
 							valign: "middle"
 							font_style: 'Subtitle1'
-							size_hint_x: 0.05
+							size_hint_x: 0.12
 
 						MDLabel:
 							text: "Jenis"
@@ -295,7 +297,7 @@
 							halign: "left"
 							valign: "middle"
 							font_style: 'Subtitle1'
-							size_hint_x: 0.08
+							size_hint_x: 0.05
 
 					MDScrollView:
 						id: layout_scroll

@@ -1,6 +1,6 @@
 #:kivy 2.1.0
 
-<ScreenInspectCctv>:
+<ScreenRealtimeCctv>:
     MDBoxLayout:
         orientation: "vertical"
 
@@ -105,33 +105,63 @@
 
 					MDBoxLayout:
 						orientation: "vertical"
-						size_hint_x: 0.5
+						# size_hint_x: 0.5
 						spacing:5
 
 						Image:
 							id: image_view_front
 							source:'assets/images/tampak-depan.png'
 							allow_stretch: True 
+							size_hint_y: 0.8
 
-						Image:
-							id: image_view_back
-							source:'assets/images/tampak-belakang.png'
-							allow_stretch: True 
+						MDBoxLayout:
+							orientation: "horizontal"
+							size_hint_y: 0.1
 
-					MDBoxLayout:
-						orientation: "vertical"
-						size_hint_x: 0.5
-						spacing:5
+							MDRectangleFlatIconButton:
+								id: bt_dropdown_caller
+								text: "Pilih Kamera"
+								icon: "camera"
+								md_bg_color: "#4471C4"
+								size_hint_x: 0.2
+								on_press: root.menu_camera.open()
 
-						Image:
-							id: image_view_left
-							source:'assets/images/tampak-kiri.png'
-							allow_stretch: True 
+							MDIconButton:
+								id: bt_play_cctv
+								icon: 'play-circle'
+								on_press: root.exec_play_cctv()
 
-						Image:
-							id: image_view_right
-							source:'assets/images/tampak-kanan.png'
-							allow_stretch: True 
+							MDIconButton:
+								id: bt_stop_cctv
+								icon: 'stop-circle'
+								on_press: root.exec_stop_cctv()
+
+							MDSlider:
+								id: sl_cctv_zoom
+								step: 0.5
+								value: 1
+								size_hint_y: 0.1
+								min: 1
+								max: 4
+						# Image:
+						# 	id: image_view_back
+						# 	source:'assets/images/tampak-belakang.png'
+						# 	allow_stretch: True 
+
+					# MDBoxLayout:
+					# 	orientation: "vertical"
+					# 	size_hint_x: 0.5
+					# 	spacing:5
+
+					# 	Image:
+					# 		id: image_view_left
+					# 		source:'assets/images/tampak-kiri.png'
+					# 		allow_stretch: True 
+
+					# 	Image:
+					# 		id: image_view_right
+					# 		source:'assets/images/tampak-kanan.png'
+					# 		allow_stretch: True 
 
 		# button layout
         MDBoxLayout:
