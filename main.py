@@ -24,16 +24,14 @@ import configparser, hashlib, mysql.connector, paramiko
 import cv2
 from pymodbus.client import ModbusTcpClient
 
-colors = {
-    "Red"   : {"A200": "#FF2A2A","A500": "#FF8080","A700": "#FFD5D5",},
-    "Gray"  : {"200": "#CCCCCC","500": "#ECECEC","700": "#F9F9F9",},
-    "Blue"  : {"200": "#4471C4","500": "#5885D8","700": "#6C99EC",},
-    "Green" : {"200": "#2CA02C","500": "#2DB97F", "700": "#D5FFD5",},
-    "Yellow": {"200": "#ffD42A","500": "#ffE680","700": "#fff6D5",},
-
-    "Light" : {"StatusBar": "E0E0E0","AppBar": "#202020","Background": "#EEEEEE","CardsDialogs": "#FFFFFF","FlatButtonDown": "#CCCCCC","Text": "#000000",},
-    "Dark"  : {"StatusBar": "101010","AppBar": "#E0E0E0","Background": "#111111","CardsDialogs": "#222222","FlatButtonDown": "#DDDDDD","Text": "#FFFFFF",},
-}
+colors = {  "Red"   : {"A200": "#FF2A2A","A500": "#FF8080","A700": "#FFD5D5",},
+            "Gray"  : {"200": "#CCCCCC","500": "#ECECEC","700": "#F9F9F9",},
+            "Blue"  : {"200": "#4471C4","500": "#5885D8","700": "#6C99EC",},
+            "Green" : {"200": "#2CA02C","500": "#2DB97F", "700": "#D5FFD5",},
+            "Yellow": {"200": "#ffD42A","500": "#ffE680","700": "#fff6D5",},
+            "Light" : {"StatusBar": "E0E0E0","AppBar": "#202020","Background": "#EEEEEE","CardsDialogs": "#FFFFFF","FlatButtonDown": "#CCCCCC","Text": "#000000",},
+            "Dark"  : {"StatusBar": "101010","AppBar": "#E0E0E0","Background": "#111111","CardsDialogs": "#222222","FlatButtonDown": "#DDDDDD","Text": "#FFFFFF",},
+        }
 
 if getattr(sys, 'frozen', False):
     app_path = os.path.dirname(os.path.abspath(__file__))
@@ -46,9 +44,16 @@ print(f"Path config.ini: {config_path}")
 config = configparser.ConfigParser()
 config.read(config_path)
 
+IMG_LOGO_PEMKAB = config['app']['IMG_LOGO_PEMKAB']
+IMG_LOGO_DISHUB = config['app']['IMG_LOGO_DISHUB']
+LB_PEMKAB = config['app']['LB_PEMKAB']
+LB_DISHUB = config['app']['LB_DISHUB']
+LB_UNIT = config['app']['LB_UNIT']
+LB_UNIT_ADDRESS = config['app']['LB_UNIT_ADDRESS']
+
 DB_HOST = config['mysql']['DB_HOST']
 DB_USER = config['mysql']['DB_USER']
-DB_PASSWORD = config['mysql']['DB_PASSWORD']
+DB_PASS = config['mysql']['DB_PASS']
 DB_NAME = config['mysql']['DB_NAME']
 TB_DATA = config['mysql']['TB_DATA']
 TB_USER = config['mysql']['TB_USER']
@@ -66,7 +71,7 @@ TB_UJI = config['mysql']['TB_UJI']
 TB_UJI_DETAIL = config['mysql']['TB_UJI_DETAIL']
 
 RTSP_USER = config['setting']['RTSP_USER']
-RTSP_PASSWORD = config['setting']['RTSP_PASSWORD']
+RTSP_PASS = config['setting']['RTSP_PASS']
 RTSP_IP_DISPLAY_CAM1 = config['setting']['RTSP_IP_DISPLAY_CAM1']
 RTSP_IP_DISPLAY_CAM2 = config['setting']['RTSP_IP_DISPLAY_CAM2']
 RTSP_IP_DISPLAY_CAM3 = config['setting']['RTSP_IP_DISPLAY_CAM3']
@@ -76,86 +81,24 @@ RTSP_IP_PIT_CAM2 = config['setting']['RTSP_IP_PIT_CAM2']
 RTSP_IP_PIT_CAM3 = config['setting']['RTSP_IP_PIT_CAM3']
 RTSP_IP_PIT_CAM4 = config['setting']['RTSP_IP_PIT_CAM4']
 
-FTP_HOST = str(config['setting']['FTP_HOST'])
-FTP_USER = str(config['setting']['FTP_USER'])
-FTP_PASSWORD = str(config['setting']['FTP_PASSWORD'])
+FTP_HOST = config['setting']['FTP_HOST']
+FTP_USER = config['setting']['FTP_USER']
+FTP_PASS = config['setting']['FTP_PASS']
 
 MODBUS_IP_PLC = config['setting']['MODBUS_IP_PLC']
-
-COUNT_STARTING = 3
-COUNT_ACQUISITION = 4
-TIME_OUT = 500
-
-# rtsp_url_cam1 = 'rtsp://admin:TRBintegrated202@192.168.70.64:554/Streaming/Channels/101'
-rtsp_url_cam1 = f'rtsp://{RTSP_USER}:{RTSP_PASSWORD}@{RTSP_IP_DISPLAY_CAM1}:554/Streaming/Channels/101'
-rtsp_url_cam2 = f'rtsp://{RTSP_USER}:{RTSP_PASSWORD}@{RTSP_IP_DISPLAY_CAM2}:554/Streaming/Channels/101'
-rtsp_url_cam3 = f'rtsp://{RTSP_USER}:{RTSP_PASSWORD}@{RTSP_IP_DISPLAY_CAM3}:554/Streaming/Channels/101'
-rtsp_url_cam4 = f'rtsp://{RTSP_USER}:{RTSP_PASSWORD}@{RTSP_IP_DISPLAY_CAM4}:554/Streaming/Channels/101'
-
-rtsp_url_pit1 = f'rtsp://{RTSP_USER}:{RTSP_PASSWORD}@{RTSP_IP_PIT_CAM1}:554/Streaming/Channels/101'
-rtsp_url_pit2 = f'rtsp://{RTSP_USER}:{RTSP_PASSWORD}@{RTSP_IP_PIT_CAM2}:554/Streaming/Channels/101'
-rtsp_url_pit3 = f'rtsp://{RTSP_USER}:{RTSP_PASSWORD}@{RTSP_IP_PIT_CAM3}:554/Streaming/Channels/101'
-rtsp_url_pit4 = f'rtsp://{RTSP_USER}:{RTSP_PASSWORD}@{RTSP_IP_PIT_CAM4}:554/Streaming/Channels/101'
-
-dt_check_flag = 0
-dt_check_user = 1
-dt_check_post = str(time.strftime("%Y/%m/%d %H:%M:%S", time.localtime()))
-
-dt_dash_pendaftaran = 0
-dt_dash_belum_uji = 0
-dt_dash_sudah_uji = 0
-
-dt_check_body_flag = 0
-dt_check_body_image = ""
-dt_check_chassis_flag = 0
-dt_check_chassis_image = ""
-dt_check_engine_flag = 0
-dt_check_engine_image = ""
-dt_check_handle_flag = 0
-dt_check_handle_image = ""
-dt_check_wiper_flag = 0
-dt_check_wiper_image = ""
-dt_check_windshield_flag = 0
-dt_check_windshield_image = ""
-dt_check_headlight_flag = 0
-dt_check_headlight_image = ""
-dt_check_signallight_flag = 0
-dt_check_signallight_image = ""
-
-flag_no_uji = True
-flag_no_pol = True
-flag_chasis = True
-flag_no_mesin = True
-flag_jenis_kendaraan = True
-flag_merk = True
-flag_nama = True
-flag_alamat = True
-
-dt_foto_user = ""
-dt_user = ""
-dt_no_antrian = ""
-dt_no_pol = ""
-dt_no_uji = ""
-dt_status_uji = ""
-dt_nama = ""
-dt_merk = ""
-dt_type = ""
-dt_jenis_kendaraan = ""
-dt_jbb = ""
-dt_bahan_bakar = ""
-dt_warna = ""
-dt_chasis = ""
-dt_no_mesin = ""
-
-modbus_client = ModbusTcpClient(MODBUS_IP_PLC)
-
-flag_conn_stat = False
-flag_gate = False
-selected_camera = 0
 
 class ScreenHome(MDScreen):
     def __init__(self, **kwargs):
         super(ScreenHome, self).__init__(**kwargs)
+        Clock.schedule_once(self.delayed_init, 1)
+    
+    def delayed_init(self, dt):
+        self.ids.img_pemkab.source = f'assets/images/{IMG_LOGO_PEMKAB}'
+        self.ids.img_dishub.source = f'assets/images/{IMG_LOGO_DISHUB}'
+        self.ids.lb_pemkab.text = LB_PEMKAB
+        self.ids.lb_dishub.text = LB_DISHUB
+        self.ids.lb_unit.text = LB_UNIT
+        self.ids.lb_unit_address.text = LB_UNIT_ADDRESS
 
     def on_enter(self):
         Clock.schedule_interval(self.regular_update_carousel, 3)
@@ -202,6 +145,15 @@ class ScreenHome(MDScreen):
 class ScreenLogin(MDScreen):
     def __init__(self, **kwargs):
         super(ScreenLogin, self).__init__(**kwargs)
+        Clock.schedule_once(self.delayed_init, 1)
+    
+    def delayed_init(self, dt):
+        self.ids.img_pemkab.source = f'assets/images/{IMG_LOGO_PEMKAB}'
+        self.ids.img_dishub.source = f'assets/images/{IMG_LOGO_DISHUB}'
+        self.ids.lb_pemkab.text = LB_PEMKAB
+        self.ids.lb_dishub.text = LB_DISHUB
+        self.ids.lb_unit.text = LB_UNIT
+        self.ids.lb_unit_address.text = LB_UNIT_ADDRESS
 
     def exec_cancel(self):
         try:
@@ -213,7 +165,7 @@ class ScreenLogin(MDScreen):
 
     def exec_login(self):
         global mydb, db_users
-        global dt_check_user, dt_user, dt_foto_user
+        global dt_id_user, dt_user, dt_foto_user
 
         screen_main = self.screen_manager.get_screen('screen_main')
 
@@ -230,14 +182,13 @@ class ScreenLogin(MDScreen):
             mycursor.execute(f"SELECT id_user, nama, username, password, image FROM {TB_USER} WHERE username = '{input_username}' and password = '{hashed_password.hexdigest()}'")
             myresult = mycursor.fetchone()
             db_users = np.array(myresult).T
-            #if invalid
-            if myresult == 0:
+            
+            if myresult is None:
                 toast('Gagal Masuk, Nama Pengguna atau Password Salah')
-            #else, if valid
             else:
                 toast_msg = f'Berhasil Masuk, Selamat Datang {myresult[1]}'
                 toast(toast_msg)
-                dt_check_user = myresult[0]
+                dt_id_user = myresult[0]
                 dt_user = myresult[1]
                 dt_foto_user = myresult[4]
                 self.ids.tx_username.text = ""
@@ -245,9 +196,8 @@ class ScreenLogin(MDScreen):
                 self.screen_manager.current = 'screen_main'
 
         except Exception as e:
-            toast_msg = f'Error Login: {e}'
-            toast(toast_msg)        
-            toast('Gagal Masuk, Nama Pengguna atau Password Salah')
+            toast_msg = f'Gagal masuk, silahkan isi nama user dan password yang sesuai'
+            toast(toast_msg)
 
     def exec_navigate_home(self):
         try:
@@ -280,6 +230,48 @@ class ScreenLogin(MDScreen):
 class ScreenMain(MDScreen):   
     def __init__(self, **kwargs):
         super(ScreenMain, self).__init__(**kwargs)
+        global flag_conn_stat, flag_gate, dt_selected_camera
+        global dt_user, dt_foto_user, dt_no_antri, dt_no_pol, dt_no_uji, dt_sts_uji, dt_nama
+        global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna, dt_chasis, dt_no_mesin
+        global dt_check_flag, dt_id_user, dt_verified_data, dt_verified_payment
+        global dt_dash_antri, dt_dash_belum_uji, dt_dash_sudah_uji
+        global dt_temp_nama, dt_temp_alamat, dt_temp_tgl_uji_terakhir, dt_temp_tgl_uji_habis, dt_temp_status_uji
+        global dt_temp_id_merk, dt_temp_type, dt_temp_jenis_kendaraan, dt_temp_warna, dt_temp_chasis, dt_temp_mesin, dt_temp_bhn_bkr, dt_temp_jbb
+        global rtsp_url_cam1, rtsp_url_cam2, rtsp_url_cam3, rtsp_url_cam4, rtsp_url_pit1, rtsp_url_pit2, rtsp_url_pit3, rtsp_url_pit4, modbus_client
+
+        flag_conn_stat = flag_gate = False
+        dt_user = dt_foto_user = dt_no_antri = dt_no_pol = dt_no_uji = dt_sts_uji = dt_nama = ""
+        dt_merk = dt_type = dt_jns_kend = dt_jbb = dt_bhn_bkr = dt_warna = dt_chasis = dt_no_mesin = ""
+        dt_temp_nama = dt_temp_alamat = dt_temp_tgl_uji_terakhir = dt_temp_tgl_uji_habis = dt_temp_status_uji = ""
+        dt_temp_id_merk = dt_temp_type = dt_temp_jenis_kendaraan = dt_temp_warna = dt_temp_chasis = dt_temp_mesin = dt_temp_bhn_bkr = dt_temp_jbb = ""
+        dt_check_flag = dt_verified_data = dt_verified_payment = 0
+        dt_id_user = 1
+        dt_dash_antri = dt_dash_belum_uji = dt_dash_sudah_uji = 0
+        dt_selected_camera = 0
+
+        # rtsp_url_cam1 = 'rtsp://admin:TRBintegrated202@192.168.70.64:554/Streaming/Channels/101'
+        rtsp_url_cam1 = f'rtsp://{RTSP_USER}:{RTSP_PASS}@{RTSP_IP_DISPLAY_CAM1}:554/Streaming/Channels/101'
+        rtsp_url_cam2 = f'rtsp://{RTSP_USER}:{RTSP_PASS}@{RTSP_IP_DISPLAY_CAM2}:554/Streaming/Channels/101'
+        rtsp_url_cam3 = f'rtsp://{RTSP_USER}:{RTSP_PASS}@{RTSP_IP_DISPLAY_CAM3}:554/Streaming/Channels/101'
+        rtsp_url_cam4 = f'rtsp://{RTSP_USER}:{RTSP_PASS}@{RTSP_IP_DISPLAY_CAM4}:554/Streaming/Channels/101'
+
+        rtsp_url_pit1 = f'rtsp://{RTSP_USER}:{RTSP_PASS}@{RTSP_IP_PIT_CAM1}:554/Streaming/Channels/101'
+        rtsp_url_pit2 = f'rtsp://{RTSP_USER}:{RTSP_PASS}@{RTSP_IP_PIT_CAM2}:554/Streaming/Channels/101'
+        rtsp_url_pit3 = f'rtsp://{RTSP_USER}:{RTSP_PASS}@{RTSP_IP_PIT_CAM3}:554/Streaming/Channels/101'
+        rtsp_url_pit4 = f'rtsp://{RTSP_USER}:{RTSP_PASS}@{RTSP_IP_PIT_CAM4}:554/Streaming/Channels/101'
+
+        modbus_client = ModbusTcpClient(MODBUS_IP_PLC)
+
+        Clock.schedule_once(self.delayed_init, 1)
+    
+    def delayed_init(self, dt):
+        self.ids.img_pemkab.source = f'assets/images/{IMG_LOGO_PEMKAB}'
+        self.ids.img_dishub.source = f'assets/images/{IMG_LOGO_DISHUB}'
+        self.ids.lb_pemkab.text = LB_PEMKAB
+        self.ids.lb_dishub.text = LB_DISHUB
+        self.ids.lb_unit.text = LB_UNIT
+        self.ids.lb_unit_address.text = LB_UNIT_ADDRESS
+
         Clock.schedule_interval(self.regular_update_display, 1)
 
     def on_enter(self):
@@ -287,43 +279,29 @@ class ScreenMain(MDScreen):
         self.exec_reload_table()
 
     def sftp_upload_file(local_path, remote_path):
-        # Create an SSH client
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        # Connect to the SFTP server
-        ssh.connect(FTP_HOST, username = FTP_USER, password = FTP_PASSWORD)
-        # Open an SFTP session
+        ssh.connect(FTP_HOST, username = FTP_USER, password = FTP_PASS)
         sftp = ssh.open_sftp()
-        # Upload the file
         sftp.put(local_path, remote_path)
-        # Close the SFTP session and SSH connection
         sftp.close()
         ssh.close()
 
     def sftp_list_files(remote_path):
-        # Create an SSH client
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        # Connect to the SFTP server
-        ssh.connect(FTP_HOST, username = FTP_USER, password = FTP_PASSWORD)
-        # Open an SFTP session
+        ssh.connect(FTP_HOST, username = FTP_USER, password = FTP_PASS)
         sftp = ssh.open_sftp()
-        # List files in the remote directory
         files = sftp.listdir(remote_path)
-        # Print the list of files
         for file in files:
             print(file)
-        # Close the SFTP session and SSH connection
         sftp.close()
         ssh.close()
         
     def sftp_make_dir(self, remote_path):
-        # Create an SSH client
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        # Connect to the SFTP server
-        ssh.connect(FTP_HOST, username = FTP_USER, password = FTP_PASSWORD)
-        # Open an SFTP session
+        ssh.connect(FTP_HOST, username = FTP_USER, password = FTP_PASS)
         sftp = ssh.open_sftp()
         try:
             sftp.chdir(remote_path)  # Test if remote_path exists
@@ -333,37 +311,12 @@ class ScreenMain(MDScreen):
         sftp.close()
         ssh.close()
                 
-    def on_antrian_row_press(self, instance):
-        global dt_no_antrian, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama, dt_status_uji
-        global dt_merk, dt_type, dt_jenis_kendaraan, dt_jbb, dt_bahan_bakar, dt_warna
-        global db_antrian, db_merk, db_bahan_bakar, db_warna
-
-        try:
-            row = int(str(instance.id).replace("card_antrian",""))
-            dt_no_antrian           = f"{db_antrian[0, row]}"
-            dt_no_pol               = f"{db_antrian[1, row]}"
-            dt_no_uji               = f"{db_antrian[2, row]}"
-            dt_status_uji           = 'Berkala' if db_antrian[3, row] == 'B' else 'Uji Ulang' if (db_antrian[3, row]) == 'U' else 'Baru' if (db_antrian[3, row]) == 'BR' else 'Numpang Uji' if (db_antrian[3, row]) == 'NB' else 'Mutasi'
-            dt_merk                 = '-' if db_antrian[4, row] == None else f"{db_merk[np.where(db_merk == db_antrian[4, row])[0][0],1]}" 
-            dt_type                 = f"{db_antrian[5, row]}"
-            dt_jenis_kendaraan      = f"{db_antrian[6, row]}"
-            dt_jbb                  = f"{db_antrian[7, row]}"
-            dt_bahan_bakar          = '-' if db_antrian[8, row] == None else f"{db_bahan_bakar[np.where(db_bahan_bakar == db_antrian[8, row])[0][0],1]}" 
-            dt_warna                = '-' if db_antrian[9, row] == None else f"{db_warna[np.where(db_warna == db_antrian[9, row])[0][0],1]}" 
-            dt_check_flag           = 'Lulus' if (int(db_antrian[10, row]) == 2) else 'Tidak Lulus' if (int(db_antrian[10, row]) == 1) else 'Belum Uji'
-                      
-            self.exec_start()
-
-        except Exception as e:
-            toast_msg = f'Error Execute Command from Table Row: {e}'
-            toast(toast_msg)   
-
     def regular_update_display(self, dt):
-        global flag_conn_stat
-        global dt_user, dt_no_antrian, dt_no_pol, dt_no_uji, dt_nama, dt_jenis_kendaraan
+        global flag_conn_stat, db_merk, db_bahan_bakar, db_warna
+        global dt_user, dt_no_antri, dt_no_pol, dt_no_uji, dt_nama, dt_jns_kend
         global dt_chasis, dt_merk, dt_type, dt_no_mesin
-        global dt_check_flag, dt_check_user, dt_check_post, dt_foto_user
-        global dt_dash_pendaftaran, dt_dash_belum_uji, dt_dash_sudah_uji
+        global dt_check_flag, dt_id_user, dt_foto_user, dt_verified_data, dt_verified_payment
+        global dt_dash_antri, dt_dash_belum_uji, dt_dash_sudah_uji
 
         try:
             screen_home = self.screen_manager.get_screen('screen_home')
@@ -400,13 +353,15 @@ class ScreenMain(MDScreen):
             screen_realtime_pit.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
             screen_realtime_pit.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
 
-            self.ids.lb_dash_pendaftaran.text = str(dt_dash_pendaftaran)
+            self.ids.lb_dash_pendaftaran.text = str(dt_dash_antri)
             self.ids.lb_dash_belum_uji.text = str(dt_dash_belum_uji)
             self.ids.lb_dash_sudah_uji.text = str(dt_dash_sudah_uji)
 
-            screen_menu.ids.lb_no_antrian.text = str(dt_no_antrian)
-            screen_menu.ids.lb_no_pol.text = str(dt_no_pol)
-            screen_menu.ids.lb_no_uji.text = str(dt_no_uji)
+            screen_menu.ids.bt_verify_data.disabled = True if dt_verified_data == 1 else False
+            if dt_verified_payment == 1 or dt_verified_data == 0:
+                screen_menu.ids.bt_verify_payment.disabled = True
+            elif dt_verified_payment == 0 and dt_verified_data == 1:
+                screen_menu.ids.bt_verify_payment.disabled = False
 
             if(not flag_conn_stat):
                 self.ids.lb_comm.color = colors['Red']['A200']
@@ -497,27 +452,16 @@ class ScreenMain(MDScreen):
     def exec_reload_database(self):
         global mydb
         try:
-            mydb = mysql.connector.connect(host = DB_HOST,user = DB_USER,password = DB_PASSWORD,database = DB_NAME)
+            mydb = mysql.connector.connect(host = DB_HOST,user = DB_USER,password = DB_PASS,database = DB_NAME)
         except Exception as e:
             toast_msg = f'Error Initiate Database: {e}'
             toast(toast_msg)   
 
     def exec_reload_table(self):
         global mydb, db_antrian, db_merk, db_bahan_bakar, db_warna
-        global dt_dash_pendaftaran, dt_dash_belum_uji, dt_dash_sudah_uji
+        global dt_dash_antri, dt_dash_belum_uji, dt_dash_sudah_uji
 
         try:
-            tb_antrian = mydb.cursor()
-            tb_antrian.execute(f"SELECT noantrian, nopol, nouji, statusuji, merk, type, idjeniskendaraan, jbb, bahan_bakar, warna, check_flag FROM {TB_DATA}")
-            result_tb_antrian = tb_antrian.fetchall()
-            mydb.commit()
-            db_antrian = np.array(result_tb_antrian).T
-            db_pendaftaran = np.array(result_tb_antrian)
-            print(db_pendaftaran)
-            dt_dash_pendaftaran = db_pendaftaran[:,10].size
-            dt_dash_belum_uji = np.where(db_pendaftaran[:,10] == '0')[0].size
-            dt_dash_sudah_uji = np.where(db_pendaftaran[:,10] == '1')[0].size
-
             tb_merk = mydb.cursor()
             tb_merk.execute(f"SELECT ID, DESCRIPTION FROM {TB_MERK}")
             result_tb_merk = tb_merk.fetchall()
@@ -535,6 +479,20 @@ class ScreenMain(MDScreen):
             result_tb_warna = tb_warna.fetchall()
             mydb.commit()
             db_warna = np.array(result_tb_warna)
+
+            tb_antrian = mydb.cursor()
+            tb_antrian.execute(f"SELECT noantrian, nopol, nouji, statusuji, merk, type, idjeniskendaraan, jbb, bahan_bakar, warna, check_flag FROM {TB_DATA}")
+            result_tb_antrian = tb_antrian.fetchall()
+            mydb.commit()
+            if result_tb_antrian is None:
+                print('Data Tabel cekident kosong')
+                dt_dash_antri = dt_dash_belum_uji = dt_dash_sudah_uji = 0
+            else:
+                db_antrian = np.array(result_tb_antrian).T
+                db_pendaftaran = np.array(result_tb_antrian)
+                dt_dash_antri = db_pendaftaran[:,10].size
+                dt_dash_belum_uji = np.where(db_pendaftaran[:,10] == '0')[0].size
+                dt_dash_sudah_uji = np.where(db_pendaftaran[:,10] == '1')[0].size
         except Exception as e:
             toast_msg = f'Error Fetch Database: {e}'
             print(toast_msg)
@@ -576,6 +534,56 @@ class ScreenMain(MDScreen):
             toast_msg = f'Error Reload Table: {e}'
             print(toast_msg)
 
+    def on_antrian_row_press(self, instance):
+        global mydb, db_antrian, db_merk, db_bahan_bakar, db_warna
+        global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama, dt_sts_uji
+        global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
+        global dt_check_flag, dt_id_user, dt_foto_user, dt_verified_data, dt_verified_payment
+
+        try:
+            row = int(str(instance.id).replace("card_antrian",""))
+            dt_no_antri             = db_antrian[0, row]
+            dt_no_pol               = db_antrian[1, row]
+            dt_no_uji               = db_antrian[2, row]
+            dt_sts_uji              = db_antrian[3, row]
+            dt_merk                 = db_antrian[4, row]
+            dt_type                 = db_antrian[5, row]
+            dt_jns_kend             = db_antrian[6, row]
+            dt_jbb                  = db_antrian[7, row]
+            dt_bhn_bkr              = db_antrian[8, row]
+            dt_warna                = db_antrian[9, row]
+            dt_check_flag           = db_antrian[10, row]
+
+            screen_inspect_new = self.screen_manager.get_screen('screen_inspect_new')
+            screen_inspect_new.exec_fetch_master_data(dt_no_pol, dt_no_uji)
+            self.check_temp_data()
+
+            self.exec_start()
+
+        except Exception as e:
+            toast_msg = f'Error Execute Command from Table Row: {e}'
+            toast(toast_msg)   
+
+    def check_temp_data(self):
+        global mydb, db_antrian, db_merk, db_bahan_bakar, db_warna
+        global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama, dt_sts_uji
+        global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
+        global dt_check_flag, dt_id_user, dt_foto_user, dt_verified_data, dt_verified_payment
+
+        mycursor = mydb.cursor()
+        mycursor.execute(f"SELECT NOANTRIAN, NOUJI, NOPOL, STS_SPP FROM {TB_DAFTAR_BERKALA} WHERE NOANTRIAN = '{dt_no_antri}' ")
+        myresult = mycursor.fetchone()
+        if myresult is None:
+            toast_msg = f'Belum ada data untuk No. Antrian {dt_no_antri}, No. Uji {dt_no_uji}, Silahkan Verifikasi terlebih dahulu'
+            toast(toast_msg)
+            dt_verified_data = 0
+            dt_verified_payment = 0
+        else:
+            toast_msg = f'Sudah ada data untuk No. Antrian {dt_no_antri}, No. Uji {dt_no_uji}, Silahkan lanjutkan pengujian'
+            toast(toast_msg)
+            dt_verified_data = 1
+            dt_verified_payment = myresult[3]
+
     def exec_new_inspect(self):
         try:
             self.screen_manager.current = 'screen_inspect_new'
@@ -585,13 +593,13 @@ class ScreenMain(MDScreen):
             toast(toast_msg)  
 
     def exec_start(self):
-        global dt_check_flag, dt_no_antrian, dt_user
+        global dt_check_flag, dt_no_antri, dt_user
 
         if (dt_user != ''):
-            if (dt_check_flag == 'Belum Uji'):
+            if (dt_check_flag == '0'):
                 self.open_screen_menu()
             else:
-                toast(f'No. Antrian {dt_no_antrian} Sudah Melakukan Pengujian')
+                toast(f'No. Antrian {dt_no_antri} Sudah Melakukan Pengujian')
         else:
             toast(f'Silahkan Login Untuk Melakukan Pengujian')
             
@@ -636,17 +644,87 @@ class ScreenMain(MDScreen):
 class ScreenMenu(MDScreen):
     def __init__(self, **kwargs):
         super(ScreenMenu, self).__init__(**kwargs)
+        Clock.schedule_once(self.delayed_init, 1)
+    
+    def delayed_init(self, dt):
+        self.ids.img_pemkab.source = f'assets/images/{IMG_LOGO_PEMKAB}'
+        self.ids.img_dishub.source = f'assets/images/{IMG_LOGO_DISHUB}'
+        self.ids.lb_pemkab.text = LB_PEMKAB
+        self.ids.lb_dishub.text = LB_DISHUB
+        self.ids.lb_unit.text = LB_UNIT
+        self.ids.lb_unit_address.text = LB_UNIT_ADDRESS
 
-    def exec_barrier_open(self):
-        global flag_conn_stat
-        global flag_gate
+    def on_enter(self):
+        global db_antrian, db_merk, db_bahan_bakar, db_warna
+        global dt_temp_nama, dt_temp_alamat, dt_temp_tgl_uji_terakhir, dt_temp_tgl_uji_habis, dt_temp_status_uji
+        global dt_temp_id_merk, dt_temp_type, dt_temp_jenis_kendaraan, dt_temp_warna, dt_temp_chasis, dt_temp_mesin, dt_temp_bhn_bkr, dt_temp_jbb
 
-        if(flag_conn_stat):
-            flag_gate = True
-        else:
-            toast("Tidak bisa membuka Portal karena PLC tidak terhubung") 
+        self.ids.lb_no_antrian.text = str(dt_no_antri)
+        self.ids.lb_no_pol.text = str(dt_no_pol)
+        self.ids.lb_no_uji.text = str(dt_no_uji)
+        self.ids.lb_temp_nama.text = str(dt_temp_nama)
+        self.ids.lb_temp_alamat.text = str(dt_temp_alamat)
+        self.ids.lb_temp_status_uji.text = 'Berkala' if dt_temp_status_uji == 'B' else 'Uji Ulang' if dt_temp_status_uji == 'U' else 'Baru' if dt_temp_status_uji == 'BR' else 'Numpang Uji' if dt_temp_status_uji == 'NB' else 'Mutasi'
+        self.ids.lb_temp_tgl_uji_terakhir.text = f'{dt_temp_tgl_uji_terakhir}'
+        self.ids.lb_temp_tgl_uji_habis.text = f'{dt_temp_tgl_uji_habis}'
+        self.ids.lb_temp_merk.text = '-' if dt_temp_id_merk == None else f"{db_merk[np.where(db_merk == dt_temp_id_merk)[0][0],1]}"
+        self.ids.lb_temp_type.text = str(dt_temp_type)
+        self.ids.lb_temp_jenis_kendaraan.text = str(dt_temp_jenis_kendaraan)
+        self.ids.lb_temp_warna.text = '-' if dt_temp_warna == None else f"{db_warna[np.where(db_warna == dt_temp_warna)[0][0],1]}"
+        self.ids.lb_temp_chasis.text = str(dt_temp_chasis)
+        self.ids.lb_temp_mesin.text = str(dt_temp_mesin)
+        self.ids.lb_temp_bahan_bakar.text = '-' if dt_temp_bhn_bkr == None else f"{db_bahan_bakar[np.where(db_bahan_bakar == dt_temp_bhn_bkr)[0][0],1]}"
+        self.ids.lb_temp_jbb.text = str(dt_temp_jbb)
+
+    def exec_verify_data(self):
+        global dt_no_antri, dt_verified_data, dt_verified_payment
+        global dt_temp_no_uji, dt_temp_no_uji_new, dt_temp_no_wilayah, dt_temp_no_kendaraan, dt_temp_no_plat, dt_temp_no_pol
+        global dt_temp_nama, dt_temp_no_hp, dt_temp_alamat, dt_temp_id_izin, dt_temp_wilayah, dt_temp_provinsi, dt_temp_kabupaten_kota, dt_temp_kecamatan
+        global dt_temp_id_merk, dt_temp_id_subjenis, dt_temp_type, dt_temp_tahun_buat, dt_temp_silinder, dt_temp_warna, dt_temp_chasis, dt_temp_mesin, dt_temp_warna_plat
+        global dt_temp_bhn_bkr, dt_temp_jbb, dt_temp_daya_motor, dt_temp_tgl_uji_terakhir, dt_temp_status_penerbitan, dt_temp_jenis_kendaraan, dt_temp_kode_jenis_kendaraan, dt_temp_kode_wilayah
 
         try:
+            mycursor = mydb.cursor()
+            sql = f"INSERT INTO {TB_DAFTAR_BERKALA} (NOANTRIAN, NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, SUBJENIS_ID, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, DAYAMOTOR, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah, TGL_LASTUJI) VALUES ('{dt_no_antri}', '{dt_temp_no_uji}','{dt_temp_no_uji_new}','{dt_temp_no_wilayah}','{dt_temp_no_kendaraan}','{dt_temp_no_plat}','{dt_temp_no_pol}','{dt_temp_nama}','{dt_temp_no_hp}','{dt_temp_alamat}','{dt_temp_id_izin}','{dt_temp_wilayah}','{dt_temp_provinsi}','{dt_temp_kabupaten_kota}','{dt_temp_kecamatan}','{dt_temp_id_merk}','{dt_temp_id_subjenis}','{dt_temp_type}','{dt_temp_tahun_buat}','{dt_temp_silinder}','{dt_temp_warna}','{dt_temp_chasis}','{dt_temp_mesin}','{dt_temp_warna_plat}','{dt_temp_bhn_bkr}','{dt_temp_jbb}','{dt_temp_daya_motor}','{dt_temp_status_penerbitan}','{dt_temp_jenis_kendaraan}','{dt_temp_kode_jenis_kendaraan}','{dt_temp_kode_wilayah}','{dt_temp_tgl_uji_terakhir}')"
+            mycursor.execute(sql)
+            mydb.commit()
+            dt_verified_data = 1
+            dt_verified_payment = 0
+            toast_msg = f'Berhasil Membuat Data Pengujian di tabel Daftar Berkala'
+            toast(toast_msg)
+        except Exception as e:
+            toast_msg = f'Gagal Membuat Tabel Daftar Berkala: {e}'
+            toast(toast_msg)
+
+    def exec_verify_payment(self):
+        global dt_no_antri, dt_verified_payment
+
+        try:
+            mycursor = mydb.cursor()
+            sql = f"UPDATE {TB_DAFTAR_BERKALA} SET STS_SPP = '1' WHERE NOANTRIAN = '{dt_no_antri}' "
+            mycursor.execute(sql)
+            mydb.commit()
+            dt_verified_payment = 1
+            toast_msg = f'Berhasil Memverifikasi pembayaran'
+            toast(toast_msg)
+        except Exception as e:
+            toast_msg = f'Gagal Memverifikasi pembayaran: {e}'
+            toast(toast_msg)                
+
+    def exec_barrier_open(self):
+        global flag_conn_stat, flag_gate
+        global dt_verified_data, dt_verified_payment
+
+        try:
+            if dt_verified_data and dt_verified_payment:
+                if(flag_conn_stat):
+                    flag_gate = True
+                else:
+                    toast("Tidak bisa membuka Portal karena PLC tidak terhubung") 
+            else:
+                toast_msg = f'Silahkan Verifikasi data dan pembayaran terlebih dahulu'
+                toast(toast_msg)                 
+
             if flag_conn_stat:
                 modbus_client.connect()
                 modbus_client.write_coil(3072, flag_gate, slave=1) #M0
@@ -655,15 +733,19 @@ class ScreenMenu(MDScreen):
             toast("Error send exec_gate_open data to PLC Slave") 
 
     def exec_barrier_close(self):
-        global flag_conn_stat
-        global flag_gate
-
-        if(flag_conn_stat):
-            flag_gate = False
-        else:
-            toast("Tidak bisa menutup Portal karena PLC tidak terhubung") 
+        global flag_conn_stat, flag_gate
+        global dt_verified_data, dt_verified_payment
 
         try:
+            if dt_verified_data and dt_verified_payment:
+                if(flag_conn_stat):
+                    flag_gate = False
+                else:
+                    toast("Tidak bisa menutup Portal karena PLC tidak terhubung") 
+            else:
+                toast_msg = f'Silahkan Verifikasi data dan pembayaran terlebih dahulu'
+                toast(toast_msg)      
+
             if flag_conn_stat:
                 modbus_client.connect()
                 modbus_client.write_coil(3073, not flag_gate, slave=1) #M1
@@ -684,40 +766,70 @@ class ScreenMenu(MDScreen):
             toast("Error send exec_gate_stop data to PLC Slave") 
 
     def exec_inspect_id(self):
+        global dt_verified_data, dt_verified_payment
+
         try:
-            self.screen_manager.current = 'screen_inspect_id'
+            if dt_verified_data and dt_verified_payment:
+                self.screen_manager.current = 'screen_inspect_id'
+            else:
+                toast_msg = f'Silahkan Verifikasi data dan pembayaran terlebih dahulu'
+                toast(toast_msg)                 
 
         except Exception as e:
             toast_msg = f'Error Navigate to Identity Inspection Screen: {e}'
             toast(toast_msg) 
 
     def exec_capture(self):
+        global dt_verified_data, dt_verified_payment
+
         try:
-            self.screen_manager.current = 'screen_realtime_cctv'
+            if dt_verified_data and dt_verified_payment:
+                self.screen_manager.current = 'screen_realtime_cctv'
+            else:
+                toast_msg = f'Silahkan Verifikasi data dan pembayaran terlebih dahulu'
+                toast(toast_msg)         
 
         except Exception as e:
             toast_msg = f'Error Navigate to Play Detect: {e}'
             toast(toast_msg)    
 
     def exec_inspect_visual(self):
+        global dt_verified_data, dt_verified_payment
+
         try:
-            self.screen_manager.current = 'screen_inspect_visual'
+            if dt_verified_data and dt_verified_payment:
+                self.screen_manager.current = 'screen_inspect_visual'
+            else:
+                toast_msg = f'Silahkan Verifikasi data dan pembayaran terlebih dahulu'
+                toast(toast_msg)           
 
         except Exception as e:
             toast_msg = f'Error Navigate to Visual Inspection Screen: {e}'
             toast(toast_msg)    
 
     def exec_inspect_visual2(self):
+        global dt_verified_data, dt_verified_payment
+
         try:
-            self.screen_manager.current = 'screen_inspect_visual2'
+            if dt_verified_data and dt_verified_payment:
+                self.screen_manager.current = 'screen_inspect_visual2'
+            else:
+                toast_msg = f'Silahkan Verifikasi data dan pembayaran terlebih dahulu'
+                toast(toast_msg)  
 
         except Exception as e:
             toast_msg = f'Error Navigate to Visual Inspection Screen: {e}'
             toast(toast_msg)    
 
     def exec_inspect_pit(self):
+        global dt_verified_data, dt_verified_payment
+
         try:
-            self.screen_manager.current = 'screen_inspect_pit'
+            if dt_verified_data and dt_verified_payment:
+                self.screen_manager.current = 'screen_inspect_pit'
+            else:
+                toast_msg = f'Silahkan Verifikasi data dan pembayaran terlebih dahulu'
+                toast(toast_msg)
 
         except Exception as e:
             toast_msg = f'Error Navigate to Pit Inspection Screen: {e}'
@@ -729,109 +841,167 @@ class ScreenMenu(MDScreen):
 class ScreenInspectNew(MDScreen):
     def __init__(self, **kwargs):
         super(ScreenInspectNew, self).__init__(**kwargs)
+        Clock.schedule_once(self.delayed_init, 1)
+    
+    def delayed_init(self, dt):
+        self.ids.img_pemkab.source = f'assets/images/{IMG_LOGO_PEMKAB}'
+        self.ids.img_dishub.source = f'assets/images/{IMG_LOGO_DISHUB}'
+        self.ids.lb_pemkab.text = LB_PEMKAB
+        self.ids.lb_dishub.text = LB_DISHUB
+        self.ids.lb_unit.text = LB_UNIT
+        self.ids.lb_unit_address.text = LB_UNIT_ADDRESS        
 
     def exec_cancel(self):
-        try:
-            self.ids.tx_nopol.text = ""  
-            self.exec_navigate_main()
+        global dt_temp_no_uji, dt_temp_no_uji_new, dt_temp_no_wilayah, dt_temp_no_kendaraan, dt_temp_no_plat, dt_temp_no_pol
+        global dt_temp_nama, dt_temp_no_hp, dt_temp_alamat, dt_temp_id_izin, dt_temp_wilayah, dt_temp_provinsi, dt_temp_kabupaten_kota, dt_temp_kecamatan
+        global dt_temp_id_merk, dt_temp_id_subjenis, dt_temp_type, dt_temp_tahun_buat, dt_temp_silinder, dt_temp_warna, dt_temp_chasis, dt_temp_mesin, dt_temp_warna_plat
+        global dt_temp_bhn_bkr, dt_temp_jbb, dt_temp_daya_motor, dt_temp_tgl_uji_terakhir, dt_temp_tgl_uji_habis, dt_temp_status_uji, dt_temp_status_penerbitan, dt_temp_jenis_kendaraan, dt_temp_kode_jenis_kendaraan, dt_temp_kode_wilayah
 
+        try:
+            dt_temp_no_uji = dt_temp_no_uji_new = dt_temp_no_wilayah = dt_temp_no_kendaraan = dt_temp_no_plat = dt_temp_no_pol = ""
+            dt_temp_nama = dt_temp_no_hp = dt_temp_alamat = dt_temp_id_izin = dt_temp_wilayah = dt_temp_provinsi = dt_temp_kabupaten_kota = dt_temp_kecamatan = ""
+            dt_temp_id_merk = dt_temp_id_subjenis = dt_temp_type = dt_temp_tahun_buat = dt_temp_silinder = dt_temp_warna = dt_temp_chasis = dt_temp_mesin = dt_temp_warna_plat = ""
+            dt_temp_bhn_bkr = dt_temp_jbb = dt_temp_daya_motor = dt_temp_tgl_uji_terakhir = dt_temp_tgl_uji_habis = dt_temp_status_uji = dt_temp_status_penerbitan = dt_temp_jenis_kendaraan = dt_temp_kode_jenis_kendaraan = dt_temp_kode_wilayah = ""
+
+            self.ids.tx_nopol.text = "" 
+            self.ids.tx_nouji.text = "" 
+            self.ids.lb_temp_nama.text = self.ids.lb_temp_alamat.text = ""
+            self.ids.lb_temp_no_uji.text = self.ids.lb_temp_no_pol.text = self.ids.lb_temp_status_uji.text = self.ids.lb_temp_tgl_uji_terakhir.text = self.ids.lb_temp_tgl_uji_habis.text = ""
+            self.ids.lb_temp_merk.text = self.ids.lb_temp_type.text = self.ids.lb_temp_jenis_kendaraan.text = self.ids.lb_temp_warna.text = ""
+            self.ids.lb_temp_chasis.text = self.ids.lb_temp_mesin.text = self.ids.lb_temp_bahan_bakar.text = self.ids.lb_temp_jbb.text = ""
+            self.ids.bt_register.disabled = True
+
+            self.exec_navigate_main()
+            
         except Exception as e:
             toast_msg = f'Error find data: {e}'
             toast(toast_msg) 
 
-    def exec_register(self):
-        global mydb, db_users, dt_status_uji
-        global dt_check_user, dt_user, dt_foto_user
-        global dt_dash_pendaftaran
+    def exec_find(self):
+        global mydb, db_users, db_merk, db_bahan_bakar, db_warna
+        global dt_id_user, dt_user, dt_foto_user
+        global dt_temp_no_uji, dt_temp_no_uji_new, dt_temp_no_wilayah, dt_temp_no_kendaraan, dt_temp_no_plat, dt_temp_no_pol
+        global dt_temp_nama, dt_temp_no_hp, dt_temp_alamat, dt_temp_id_izin, dt_temp_wilayah, dt_temp_provinsi, dt_temp_kabupaten_kota, dt_temp_kecamatan
+        global dt_temp_id_merk, dt_temp_id_subjenis, dt_temp_type, dt_temp_tahun_buat, dt_temp_silinder, dt_temp_warna, dt_temp_chasis, dt_temp_mesin, dt_temp_warna_plat
+        global dt_temp_bhn_bkr, dt_temp_jbb, dt_temp_daya_motor, dt_temp_tgl_uji_terakhir, dt_temp_tgl_uji_habis, dt_temp_status_uji, dt_temp_status_penerbitan, dt_temp_jenis_kendaraan, dt_temp_kode_jenis_kendaraan, dt_temp_kode_wilayah
 
         try:
-            dt_nopol_find = self.ids.tx_nopol.text
-            dt_nouji_find = self.ids.tx_nouji.text
+            dt_find_no_pol = self.ids.tx_nopol.text
+            dt_find_no_uji = self.ids.tx_nouji.text
+            self.exec_fetch_master_data(dt_find_no_pol, dt_find_no_uji)
 
+            self.ids.lb_temp_nama.text = f'{dt_temp_nama}'
+            self.ids.lb_temp_alamat.text = f'{dt_temp_alamat}'
+            self.ids.lb_temp_no_uji.text = f'{dt_temp_no_uji}'
+            self.ids.lb_temp_no_pol.text = f'{dt_temp_no_pol}'
+            self.ids.lb_temp_status_uji.text = 'Berkala' if dt_temp_status_uji == 'B' else 'Uji Ulang' if dt_temp_status_uji == 'U' else 'Baru' if dt_temp_status_uji == 'BR' else 'Numpang Uji' if dt_temp_status_uji == 'NB' else 'Mutasi'
+            self.ids.lb_temp_tgl_uji_terakhir.text = f'{dt_temp_tgl_uji_terakhir}'
+            self.ids.lb_temp_tgl_uji_habis.text = f'{dt_temp_tgl_uji_habis}'
+            self.ids.lb_temp_merk.text = '-' if dt_temp_id_merk == None else f"{db_merk[np.where(db_merk == dt_temp_id_merk)[0][0],1]}"
+            self.ids.lb_temp_type.text = f'{dt_temp_type}'
+            self.ids.lb_temp_jenis_kendaraan.text = f'{dt_temp_jenis_kendaraan}'
+            self.ids.lb_temp_warna.text = '-' if dt_temp_warna == None else f"{db_warna[np.where(db_warna == dt_temp_warna)[0][0],1]}"
+            self.ids.lb_temp_chasis.text = f'{dt_temp_chasis}'
+            self.ids.lb_temp_mesin.text = f'{dt_temp_mesin}'
+            self.ids.lb_temp_bahan_bakar.text = '-' if dt_temp_bhn_bkr == None else f"{db_bahan_bakar[np.where(db_bahan_bakar == dt_temp_bhn_bkr)[0][0],1]}"
+            self.ids.lb_temp_jbb.text = f'{dt_temp_jbb}'
+            self.ids.bt_register.disabled = False
+            
+        except Exception as e:
+            toast_msg = f'Gagal menemukan data, silahkan isi nomor uji atau nomor polisi'
+            toast(toast_msg)
+
+    def exec_fetch_master_data(self, dt_find_no_pol, dt_find_no_uji):
+        global mydb, db_users, db_merk, db_bahan_bakar, db_warna
+        global dt_id_user, dt_user, dt_foto_user
+        global dt_temp_no_uji, dt_temp_no_uji_new, dt_temp_no_wilayah, dt_temp_no_kendaraan, dt_temp_no_plat, dt_temp_no_pol
+        global dt_temp_nama, dt_temp_no_hp, dt_temp_alamat, dt_temp_id_izin, dt_temp_wilayah, dt_temp_provinsi, dt_temp_kabupaten_kota, dt_temp_kecamatan
+        global dt_temp_id_merk, dt_temp_id_subjenis, dt_temp_type, dt_temp_tahun_buat, dt_temp_silinder, dt_temp_warna, dt_temp_chasis, dt_temp_mesin, dt_temp_warna_plat
+        global dt_temp_bhn_bkr, dt_temp_jbb, dt_temp_daya_motor, dt_temp_tgl_uji_terakhir, dt_temp_tgl_uji_habis, dt_temp_status_uji, dt_temp_status_penerbitan, dt_temp_jenis_kendaraan, dt_temp_kode_jenis_kendaraan, dt_temp_kode_wilayah
+
+        try:
             mycursor = mydb.cursor()
-
-            if dt_nopol_find != "" and dt_nouji_find == "":
-                mycursor.execute(f"SELECT NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, SUBJENIS_ID, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, DAYAMOTOR, TGL_LASTUJI, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah FROM {TB_DATA_MASTER} WHERE NOPOL = '{dt_nopol_find}' ")
-            elif dt_nouji_find != "":
-                mycursor.execute(f"SELECT NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, SUBJENIS_ID, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, DAYAMOTOR, TGL_LASTUJI, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah FROM {TB_DATA_MASTER} WHERE NOUJI = '{dt_nouji_find}' ")
-            elif dt_nouji_find == "" and dt_nopol_find == "":
+            if dt_find_no_pol != "" and dt_find_no_uji == "":
+                mycursor.execute(f"SELECT NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, SUBJENIS_ID, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, DAYAMOTOR, TGL_UJI_TERAKHIR, STATUSUJI, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah FROM {TB_DATA_MASTER} WHERE NOPOL = '{dt_find_no_pol}' ")
+            elif dt_find_no_uji != "":
+                mycursor.execute(f"SELECT NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, SUBJENIS_ID, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, DAYAMOTOR, TGL_UJI_TERAKHIR, STATUSUJI, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah FROM {TB_DATA_MASTER} WHERE NOUJI = '{dt_find_no_uji}' ")
+            elif dt_find_no_uji == "" and dt_find_no_pol == "":
                 toast("Silahkan isi Nomor Uji atau Nomor Polisi")
             myresult = mycursor.fetchone()
             mydb.commit()
-            db_pendaftaran = np.array(myresult).T
-            dt_no_uji = db_pendaftaran[0]
-            dt_new_no_uji = db_pendaftaran[1]
-            dt_no_wilayah = db_pendaftaran[2]
-            dt_no_kendaraan = db_pendaftaran[3]
-            dt_no_plat = db_pendaftaran[4]
-            dt_nopol = db_pendaftaran[5]
-            dt_nama = db_pendaftaran[6]
-            dt_no_hp = db_pendaftaran[7]
-            dt_alamat = db_pendaftaran[8]
-            dt_izin_id = db_pendaftaran[9]
-            dt_wilayah = db_pendaftaran[10]
-            dt_provinsi = db_pendaftaran[11]
-            dt_kabupaten_kota = db_pendaftaran[12]
-            dt_kecamatan = db_pendaftaran[13]
-            dt_merk_id = db_pendaftaran[14]
-            dt_subjenis_id = db_pendaftaran[15]
-            dt_type = db_pendaftaran[16]
-            dt_tahun_buat = db_pendaftaran[17]
-            dt_silinder = db_pendaftaran[18]
-            dt_warna = db_pendaftaran[19]
-            dt_chasis = db_pendaftaran[20]
-            dt_mesin = db_pendaftaran[21]
-            dt_warna_plat = db_pendaftaran[22]
-            dt_bahan_bakar = db_pendaftaran[23]
-            dt_jbb = db_pendaftaran[24]
-            dt_daya_motor = db_pendaftaran[25]
-            dt_tgl_last_uji = str(db_pendaftaran[26])
-            dt_status_penerbitan = db_pendaftaran[27]
-            dt_jenis_kendaraan = db_pendaftaran[28]
-            dt_kode_jenis_kendaraan = db_pendaftaran[29]
-            dt_kode_wilayah = db_pendaftaran[30]
+            db_master_data = np.array(myresult).T
 
-            dt_tgl_baru_uji = str(time.strftime("%Y/%m/%d %H:%M:%S", time.localtime()))
-            dt_new_no_antrian = dt_dash_pendaftaran + 1
-            if myresult == 0:
-                toast('Data tidak ditemukan di Database, membuat pendaftaran baru')
-                try:
-                    dt_status_uji = 'BR'
-                    mycursor = mydb.cursor()
-                    sql = f"INSERT INTO {TB_DAFTAR_BARU} (NOANTRIAN, NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, SUBJENIS_ID, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, DAYAMOTOR, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah, TGL_LASTUJI) VALUES ('{dt_new_no_antrian:04d}', '{dt_no_uji}','{dt_new_no_uji}','{dt_no_wilayah}','{dt_no_kendaraan}','{dt_no_plat}','{dt_nopol}','{dt_nama}','{dt_no_hp}','{dt_alamat}','{dt_izin_id}','{dt_wilayah}','{dt_provinsi}','{dt_kabupaten_kota}','{dt_kecamatan}','{dt_merk_id}','{dt_subjenis_id}','{dt_type}','{dt_tahun_buat}','{dt_silinder}','{dt_warna}','{dt_chasis}','{dt_mesin}','{dt_warna_plat}','{dt_bahan_bakar}','{dt_jbb}','{dt_daya_motor}','{dt_status_penerbitan}','{dt_jenis_kendaraan}','{dt_kode_jenis_kendaraan}','{dt_kode_wilayah}','{dt_tgl_last_uji}')"
-                    mycursor.execute(sql)
-                    mydb.commit()
-                except Exception as e:
-                    toast_msg = f'Error Create Tabel Daftar Baru: {e}'
-                    toast(toast_msg)
+            if myresult is None:
+                toast('Data tidak ditemukan di Database, silahkan ajukan pengujian baru')
+                self.exec_cancel()
             else:
-                toast_msg = f'Berhasil Menemukan Data Nomor Polisi {myresult[5]}'
-                toast(toast_msg)
-                try:
-                    dt_status_uji = 'B'
-                    mycursor = mydb.cursor()
-                    sql = f"INSERT INTO {TB_DAFTAR_BERKALA} (NOANTRIAN, NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, SUBJENIS_ID, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, DAYAMOTOR, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah, TGL_LASTUJI) VALUES ('{dt_new_no_antrian:04d}', '{dt_no_uji}','{dt_new_no_uji}','{dt_no_wilayah}','{dt_no_kendaraan}','{dt_no_plat}','{dt_nopol}','{dt_nama}','{dt_no_hp}','{dt_alamat}','{dt_izin_id}','{dt_wilayah}','{dt_provinsi}','{dt_kabupaten_kota}','{dt_kecamatan}','{dt_merk_id}','{dt_subjenis_id}','{dt_type}','{dt_tahun_buat}','{dt_silinder}','{dt_warna}','{dt_chasis}','{dt_mesin}','{dt_warna_plat}','{dt_bahan_bakar}','{dt_jbb}','{dt_daya_motor}','{dt_status_penerbitan}','{dt_jenis_kendaraan}','{dt_kode_jenis_kendaraan}','{dt_kode_wilayah}','{dt_tgl_last_uji}')"
-                    mycursor.execute(sql)
-                    mydb.commit()
-                except Exception as e:
-                    toast_msg = f'Error Create Tabel Daftar Berkala: {e}'
-                    toast(toast_msg)
-            try:
-                mycursor = mydb.cursor()
-                sql = f"INSERT INTO {TB_DATA} (noantrian, nouji, NEW_NOUJI, nopol, merk, type, idjeniskendaraan, kd_jnskendaraan, kodewilayah, jenis, jbb, bahan_bakar, warna, statusuji, statuspenerbitan, kode_daerah, no_kendaraan, kode_huruf, tgl_daftar, user, check_flag) VALUES ('{dt_new_no_antrian:04d}','{dt_no_uji}','{dt_new_no_uji}','{dt_nopol}','{dt_merk_id}','{dt_type}','{dt_jenis_kendaraan}','{dt_kode_jenis_kendaraan}','{dt_kode_wilayah}','{dt_subjenis_id}','{dt_jbb}','{dt_bahan_bakar}','{dt_warna}','{dt_status_uji}','{dt_status_penerbitan}','{dt_no_wilayah}','{dt_no_kendaraan}','{dt_no_plat}','{dt_tgl_baru_uji}','{dt_user}','0')"
-                mycursor.execute(sql)
-                mydb.commit()
-            except Exception as e:
-                toast_msg = f'Error Create Tabel Antrian: {e}'
-                toast(toast_msg)
+                dt_temp_no_uji = db_master_data[0]
+                dt_temp_no_uji_new = db_master_data[1]
+                dt_temp_no_wilayah = db_master_data[2]
+                dt_temp_no_kendaraan = db_master_data[3]
+                dt_temp_no_plat = db_master_data[4]
+                dt_temp_no_pol = db_master_data[5]
+                dt_temp_nama = db_master_data[6]
+                dt_temp_no_hp = db_master_data[7]
+                dt_temp_alamat = db_master_data[8]
+                dt_temp_id_izin = db_master_data[9]
+                dt_temp_wilayah = db_master_data[10]
+                dt_temp_provinsi = db_master_data[11]
+                dt_temp_kabupaten_kota = db_master_data[12]
+                dt_temp_kecamatan = db_master_data[13]
+                dt_temp_id_merk = db_master_data[14]
+                dt_temp_id_subjenis = db_master_data[15]
+                dt_temp_type = db_master_data[16]
+                dt_temp_tahun_buat = db_master_data[17]
+                dt_temp_silinder = db_master_data[18]
+                dt_temp_warna = db_master_data[19]
+                dt_temp_chasis = db_master_data[20]
+                dt_temp_mesin = db_master_data[21]
+                dt_temp_warna_plat = db_master_data[22]
+                dt_temp_bhn_bkr = db_master_data[23]
+                dt_temp_jbb = db_master_data[24]
+                dt_temp_daya_motor = db_master_data[25]
+                
+                dt_temp_status_uji = db_master_data[27]
+                dt_temp_status_penerbitan = db_master_data[28]
+                dt_temp_jenis_kendaraan = db_master_data[29]
+                dt_temp_kode_jenis_kendaraan = db_master_data[30]
+                dt_temp_kode_wilayah = db_master_data[31]
 
-            self.ids.tx_nopol.text = ""
-            self.ids.tx_nouji.text = ""
-            self.screen_manager.current = 'screen_main'
-
+                if(db_master_data[26] is not None):
+                    last_uji_date = db_master_data[26]
+                else:
+                    last_uji_date = datetime.datetime(1900, 1, 1)
+                years_to_add = last_uji_date.year + 1
+                dt_temp_tgl_uji_terakhir = str(last_uji_date.strftime('%d-%m-%Y'))
+                dt_temp_tgl_uji_habis = str(last_uji_date.replace(year=years_to_add).strftime('%d-%m-%Y'))
+            
         except Exception as e:
-            toast_msg = f'Error Tambah Pendaftaran: {e}'
+            toast_msg = f'Gagal menemukan data : {e}'
             toast(toast_msg)
+
+    def exec_register(self):
+        global mydb, db_users, db_merk, db_bahan_bakar, db_warna
+        global dt_id_user, dt_user, dt_foto_user
+        global dt_dash_antri, dt_sts_uji
+        global dt_temp_no_uji, dt_temp_no_uji_new, dt_temp_no_wilayah, dt_temp_no_kendaraan, dt_temp_no_plat, dt_temp_no_pol
+        global dt_temp_nama, dt_temp_no_hp, dt_temp_alamat, dt_temp_id_izin, dt_temp_wilayah, dt_temp_provinsi, dt_temp_kabupaten_kota, dt_temp_kecamatan
+        global dt_temp_id_merk, dt_temp_id_subjenis, dt_temp_type, dt_temp_tahun_buat, dt_temp_silinder, dt_temp_warna, dt_temp_chasis, dt_temp_mesin, dt_temp_warna_plat
+        global dt_temp_bhn_bkr, dt_temp_jbb, dt_temp_daya_motor, dt_temp_tgl_uji_terakhir, dt_temp_tgl_uji_habis, dt_temp_status_uji, dt_temp_status_penerbitan, dt_temp_jenis_kendaraan, dt_temp_kode_jenis_kendaraan, dt_temp_kode_wilayah
+
+        dt_tgl_baru_uji = str(time.strftime("%Y/%m/%d %H:%M:%S", time.localtime()))
+        dt_temp_no_antrian = dt_dash_antri + 1
+
+        try:
+            mycursor = mydb.cursor()
+            sql = f"INSERT INTO {TB_DATA} (noantrian, nouji, NEW_NOUJI, nopol, merk, type, idjeniskendaraan, kd_jnskendaraan, kodewilayah, jenis, jbb, bahan_bakar, warna, statusuji, statuspenerbitan, kode_daerah, no_kendaraan, kode_huruf, tgl_daftar, user, check_flag) VALUES ('{dt_temp_no_antrian:04d}','{dt_temp_no_uji}','{dt_temp_no_uji_new}','{dt_temp_no_pol}','{dt_temp_id_merk}','{dt_temp_type}','{dt_temp_jenis_kendaraan}','{dt_temp_kode_jenis_kendaraan}','{dt_temp_kode_wilayah}','{dt_temp_id_subjenis}','{dt_temp_jbb}','{dt_temp_bhn_bkr}','{dt_temp_warna}','{dt_temp_status_uji}','{dt_temp_status_penerbitan}','{dt_temp_no_wilayah}','{dt_temp_no_kendaraan}','{dt_temp_no_plat}','{dt_tgl_baru_uji}','{dt_user}','0')"
+            mycursor.execute(sql)
+            mydb.commit()
+        except Exception as e:
+            toast_msg = f'Error Create Tabel Antrian: {e}'
+            toast(toast_msg)
+
+        self.exec_cancel()
 
     def exec_navigate_home(self):
         try:
@@ -864,7 +1034,16 @@ class ScreenInspectNew(MDScreen):
 class ScreenInspectId(MDScreen):        
     def __init__(self, **kwargs):
         super(ScreenInspectId, self).__init__(**kwargs)
-
+        Clock.schedule_once(self.delayed_init, 1)
+    
+    def delayed_init(self, dt):
+        self.ids.img_pemkab.source = f'assets/images/{IMG_LOGO_PEMKAB}'
+        self.ids.img_dishub.source = f'assets/images/{IMG_LOGO_DISHUB}'
+        self.ids.lb_pemkab.text = LB_PEMKAB
+        self.ids.lb_dishub.text = LB_DISHUB
+        self.ids.lb_unit.text = LB_UNIT
+        self.ids.lb_unit_address.text = LB_UNIT_ADDRESS
+    
     def on_enter(self):
         self.exec_reload_komponen_uji()
 
@@ -878,8 +1057,8 @@ class ScreenInspectId(MDScreen):
             toast(toast_msg)  
 
     def on_komponen_uji_row_press(self, instance):
-        global dt_no_antrian, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
-        global dt_merk, dt_type, dt_jenis_kendaraan, dt_jbb, dt_bahan_bakar, dt_warna
+        global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
+        global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
         global db_komponen_uji
 
         try:
@@ -892,8 +1071,8 @@ class ScreenInspectId(MDScreen):
             toast(toast_msg)  
 
     def on_subkomponen_uji_row_press(self, instance):
-        global dt_no_antrian, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
-        global dt_merk, dt_type, dt_jenis_kendaraan, dt_jbb, dt_bahan_bakar, dt_warna
+        global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
+        global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
         global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji
         global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
 
@@ -1045,7 +1224,17 @@ class ScreenInspectId(MDScreen):
         self.screen_manager.current = 'screen_menu'
 
     def exec_save(self):
-        self.open_screen_menu()
+        global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji
+
+        try:
+            subkomponen_check_array = np.array([db_subkomponen_uji[0,:], flags_subkomponen_uji])
+            print(subkomponen_check_array)
+
+            toast_msg = f'Berhasil menyimpan data'
+            toast(toast_msg)            
+        except Exception as e:
+            toast_msg = f'Gagal menyimpan data: {e}'
+            toast(toast_msg)
 
     def exec_cancel(self):
         self.open_screen_menu()
@@ -1053,7 +1242,16 @@ class ScreenInspectId(MDScreen):
 class ScreenInspectVisual(MDScreen):        
     def __init__(self, **kwargs):
         super(ScreenInspectVisual, self).__init__(**kwargs)
-
+        Clock.schedule_once(self.delayed_init, 1)
+    
+    def delayed_init(self, dt):
+        self.ids.img_pemkab.source = f'assets/images/{IMG_LOGO_PEMKAB}'
+        self.ids.img_dishub.source = f'assets/images/{IMG_LOGO_DISHUB}'
+        self.ids.lb_pemkab.text = LB_PEMKAB
+        self.ids.lb_dishub.text = LB_DISHUB
+        self.ids.lb_unit.text = LB_UNIT
+        self.ids.lb_unit_address.text = LB_UNIT_ADDRESS
+    
     def on_enter(self):
         self.exec_reload_komponen_uji()
 
@@ -1067,8 +1265,8 @@ class ScreenInspectVisual(MDScreen):
             toast(toast_msg)  
 
     def on_komponen_uji_row_press(self, instance):
-        global dt_no_antrian, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
-        global dt_merk, dt_type, dt_jenis_kendaraan, dt_jbb, dt_bahan_bakar, dt_warna
+        global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
+        global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
         global db_komponen_uji
 
         try:
@@ -1081,8 +1279,8 @@ class ScreenInspectVisual(MDScreen):
             toast(toast_msg)  
 
     def on_subkomponen_uji_row_press(self, instance):
-        global dt_no_antrian, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
-        global dt_merk, dt_type, dt_jenis_kendaraan, dt_jbb, dt_bahan_bakar, dt_warna
+        global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
+        global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
         global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji
         global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
 
@@ -1242,7 +1440,16 @@ class ScreenInspectVisual(MDScreen):
 class ScreenInspectVisual2(MDScreen):        
     def __init__(self, **kwargs):
         super(ScreenInspectVisual2, self).__init__(**kwargs)
-
+        Clock.schedule_once(self.delayed_init, 1)
+    
+    def delayed_init(self, dt):
+        self.ids.img_pemkab.source = f'assets/images/{IMG_LOGO_PEMKAB}'
+        self.ids.img_dishub.source = f'assets/images/{IMG_LOGO_DISHUB}'
+        self.ids.lb_pemkab.text = LB_PEMKAB
+        self.ids.lb_dishub.text = LB_DISHUB
+        self.ids.lb_unit.text = LB_UNIT
+        self.ids.lb_unit_address.text = LB_UNIT_ADDRESS
+    
     def on_enter(self):
         self.exec_reload_komponen_uji()
 
@@ -1256,8 +1463,8 @@ class ScreenInspectVisual2(MDScreen):
             toast(toast_msg)  
 
     def on_komponen_uji_row_press(self, instance):
-        global dt_no_antrian, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
-        global dt_merk, dt_type, dt_jenis_kendaraan, dt_jbb, dt_bahan_bakar, dt_warna
+        global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
+        global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
         global db_komponen_uji
 
         try:
@@ -1270,8 +1477,8 @@ class ScreenInspectVisual2(MDScreen):
             toast(toast_msg)  
 
     def on_subkomponen_uji_row_press(self, instance):
-        global dt_no_antrian, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
-        global dt_merk, dt_type, dt_jenis_kendaraan, dt_jbb, dt_bahan_bakar, dt_warna
+        global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
+        global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
         global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji
         global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
 
@@ -1432,7 +1639,16 @@ class ScreenInspectVisual2(MDScreen):
 class ScreenInspectPit(MDScreen):        
     def __init__(self, **kwargs):
         super(ScreenInspectPit, self).__init__(**kwargs)
-
+        Clock.schedule_once(self.delayed_init, 1)
+    
+    def delayed_init(self, dt):
+        self.ids.img_pemkab.source = f'assets/images/{IMG_LOGO_PEMKAB}'
+        self.ids.img_dishub.source = f'assets/images/{IMG_LOGO_DISHUB}'
+        self.ids.lb_pemkab.text = LB_PEMKAB
+        self.ids.lb_dishub.text = LB_DISHUB
+        self.ids.lb_unit.text = LB_UNIT
+        self.ids.lb_unit_address.text = LB_UNIT_ADDRESS
+    
     def on_enter(self):
         self.exec_reload_komponen_uji()
 
@@ -1446,8 +1662,8 @@ class ScreenInspectPit(MDScreen):
             toast(toast_msg)  
 
     def on_komponen_uji_row_press(self, instance):
-        global dt_no_antrian, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
-        global dt_merk, dt_type, dt_jenis_kendaraan, dt_jbb, dt_bahan_bakar, dt_warna
+        global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
+        global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
         global db_komponen_uji
 
         try:
@@ -1460,8 +1676,8 @@ class ScreenInspectPit(MDScreen):
             toast(toast_msg)  
 
     def on_subkomponen_uji_row_press(self, instance):
-        global dt_no_antrian, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
-        global dt_merk, dt_type, dt_jenis_kendaraan, dt_jbb, dt_bahan_bakar, dt_warna
+        global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
+        global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
         global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji
         global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
 
@@ -1629,7 +1845,16 @@ class ScreenInspectPit(MDScreen):
 class ScreenRealtimeCctv(MDScreen):        
     def __init__(self, **kwargs):
         super(ScreenRealtimeCctv, self).__init__(**kwargs)
-
+        Clock.schedule_once(self.delayed_init, 1)
+    
+    def delayed_init(self, dt):
+        self.ids.img_pemkab.source = f'assets/images/{IMG_LOGO_PEMKAB}'
+        self.ids.img_dishub.source = f'assets/images/{IMG_LOGO_DISHUB}'
+        self.ids.lb_pemkab.text = LB_PEMKAB
+        self.ids.lb_dishub.text = LB_DISHUB
+        self.ids.lb_unit.text = LB_UNIT
+        self.ids.lb_unit_address.text = LB_UNIT_ADDRESS
+    
     def on_enter(self):
         db_camera_list = np.array(["Depan", "Kiri", "Kanan", "Belakang"])
         self.menu_camera_items = [
@@ -1651,12 +1876,12 @@ class ScreenRealtimeCctv(MDScreen):
         Clock.unschedule(self.update_frame)
 
     def menu_camera_callback(self, camera_number, camera_name):
-        global selected_camera
+        global dt_selected_camera
 
         try:
             print(f"Selected camera number {camera_number}")
             toast(f"Kamera {camera_name} dipilih")
-            selected_camera = camera_number
+            dt_selected_camera = camera_number
 
         except Exception as e:
             toast_msg = f'Error Execute Command from Camera List: {e}'
@@ -1670,14 +1895,14 @@ class ScreenRealtimeCctv(MDScreen):
 
     def update_frame(self, dt):
         global rtsp_url_cam1, rtsp_url_cam2, rtsp_url_cam3, rtsp_url_cam4
-        global selected_camera
+        global dt_selected_camera
 
         try:
             # Load the image           
             # frame = cv2.imread('assets/images/tampak-depan.png')
             rtsp_url = np.array([rtsp_url_cam1, rtsp_url_cam2, rtsp_url_cam3, rtsp_url_cam4])
 
-            self.capture = cv2.VideoCapture(rtsp_url[selected_camera])
+            self.capture = cv2.VideoCapture(rtsp_url[dt_selected_camera])
                          # self.capture = cv2.VideoCapture(rtsp_url_cam1)
             ret, frame = self.capture.read()
             if ret:
@@ -1767,7 +1992,16 @@ class ScreenRealtimeCctv(MDScreen):
 class ScreenRealtimePit(MDScreen):        
     def __init__(self, **kwargs):
         super(ScreenRealtimePit, self).__init__(**kwargs)
-
+        Clock.schedule_once(self.delayed_init, 1)
+    
+    def delayed_init(self, dt):
+        self.ids.img_pemkab.source = f'assets/images/{IMG_LOGO_PEMKAB}'
+        self.ids.img_dishub.source = f'assets/images/{IMG_LOGO_DISHUB}'
+        self.ids.lb_pemkab.text = LB_PEMKAB
+        self.ids.lb_dishub.text = LB_DISHUB
+        self.ids.lb_unit.text = LB_UNIT
+        self.ids.lb_unit_address.text = LB_UNIT_ADDRESS
+    
     def on_enter(self):
         db_camera_list = np.array(["Depan Kiri", "Depan Kanan", "Belakang Kiri", "Belakang Kanan"])
         self.menu_camera_items = [
@@ -1789,12 +2023,12 @@ class ScreenRealtimePit(MDScreen):
         Clock.unschedule(self.update_frame)
 
     def menu_camera_callback(self, camera_number, camera_name):
-        global selected_camera
+        global dt_selected_camera
 
         try:
             print(f"Selected camera number {camera_number}")
             toast(f"Kamera {camera_name} dipilih")
-            selected_camera = camera_number
+            dt_selected_camera = camera_number
 
         except Exception as e:
             toast_msg = f'Error Execute Command from Camera List: {e}'
@@ -1808,14 +2042,14 @@ class ScreenRealtimePit(MDScreen):
 
     def update_frame(self, dt):
         global rtsp_url_cam1, rtsp_url_cam2, rtsp_url_cam3, rtsp_url_cam4
-        global selected_camera
+        global dt_selected_camera
 
         try:
             # Load the image           
             # frame = cv2.imread('assets/images/tampak-depan.png')
             rtsp_url = np.array([rtsp_url_cam1, rtsp_url_cam2, rtsp_url_cam3, rtsp_url_cam4])
 
-            self.capture = cv2.VideoCapture(rtsp_url[selected_camera])
+            self.capture = cv2.VideoCapture(rtsp_url[dt_selected_camera])
                          # self.capture = cv2.VideoCapture(rtsp_url_cam1)
             ret, frame = self.capture.read()
             if ret:
@@ -1903,13 +2137,7 @@ class ScreenRealtimePit(MDScreen):
             toast(toast_msg)    
 
 class ListItem(OneLineListItem):
- 
-# class Item(BaseListItem):    
-# class Item(OneLineListItem):
-    # pass        
-    # left_icon = StringProperty()
     list_text = StringProperty()
-    # text = StringProperty()
 
 class RootScreen(ScreenManager):
     pass             
@@ -1970,10 +2198,6 @@ class VisualInspectionApp(MDApp):
             "Recharge", 8, False, 0.15]                                 
             
         Window.fullscreen = 'auto'
-        # Window.borderless = False
-        # Window.size = 1920, 1080
-        # Window.allow_screensaver = True
-
         Builder.load_file('main.kv')
         return RootScreen()
 
