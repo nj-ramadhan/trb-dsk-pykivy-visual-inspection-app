@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "VIIMS - Visual Inspection Application"
-#define MyAppVersion "1.4"
+#define MyAppVersion "1.9.250206"
 #define MyAppPublisher "PT. Tiga Ratu Berkarya"
 #define MyAppExeName "TRB-VIIMS-VisualInspectionApp.exe"
 #define MyAppAssocName "VIIMS - Visual Inspection Application Files"
@@ -12,7 +12,7 @@
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application. Do not use the same AppId value in installers for other applications.
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
-AppId={{75D037A1-60BB-4CE6-8314-8D2240781285}}
+AppId={{25853EA6-53C0-4A57-AAF0-EE43A0F8DACB}}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 ;AppVerName={#MyAppName} {#MyAppVersion}
