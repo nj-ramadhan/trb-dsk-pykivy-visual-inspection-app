@@ -87,59 +87,170 @@
 			size_hint_y: 0.6
 			padding:20
 
+			MDLabel:
+				text: "MENU PEMERIKSAAN VISUAL KENDARAAN"
+				halign: "center"
+				valign: "middle"
+				font_style: 'H6'
+				size_hint_y: 0.05
+
 			MDBoxLayout:
 				orientation: "vertical"
-				spacing: 10
-				size_hint_y: 0.2
+				size_hint_y: 0.3
+				padding: 20
 
-				MDBoxLayout:
-					orientation: "vertical"
-
+				MDGridLayout:
+					cols: 8
+					md_bg_color: "#DDDDDD"
 					MDLabel:
-						text: "FORM PEMERIKSAAN VISUAL KENDARAAN"
-						halign: "center"
-						valign: "middle"
+						text: "No. Antrian"
+						font_style: 'Subtitle1'
+						size_hint_x: 0.1
+					MDLabel:
+						id: lb_no_antrian
 						font_style: 'H6'
+						size_hint_x: 0.1
+					MDLabel:
+						text: "Nama"
+						font_style: 'Subtitle1'
+						size_hint_x: 0.1
+					MDLabel:
+						id: lb_temp_nama
+						font_style: 'H6'
+						size_hint_x: 0.2				
+					MDLabel:
+						text: "Alamat"
+						font_style: 'Subtitle1'
+						size_hint_x: 0.1
+					MDLabel:
+						id: lb_temp_alamat
+						font_style: 'H6'	
+						size_hint_x: 0.2
+					MDLabel:
+						text: "Status Uji"
+						font_style: 'Subtitle1'
+						size_hint_x: 0.1
+					MDLabel:
+						id: lb_temp_status_uji
+						font_style: 'H6'	
+						size_hint_x: 0.1
 
-					MDBoxLayout:
-						orientation: "horizontal"
+				MDGridLayout:
+					cols: 8
+					md_bg_color: "#DDDDDD"						
+					MDLabel:
+						text: "No. Uji"
+						font_style: 'Subtitle1'
+						size_hint_x: 0.1
+					MDLabel:
+						id: lb_no_uji
+						font_style: 'H6'
+						size_hint_x: 0.1
+					MDLabel:
+						text: "No. Polisi"
+						font_style: 'Subtitle1'
+						size_hint_x: 0.1
+					MDLabel:
+						id: lb_no_pol
+						font_style: 'H6'
+						size_hint_x: 0.2
+					MDLabel:
+						text: "Tanggal Terakhir Uji"
+						font_style: 'Subtitle1'	
+						size_hint_x: 0.1
+					MDLabel:
+						id: lb_temp_tgl_uji_terakhir
+						font_style: 'H6'
+						size_hint_x: 0.2
+					MDLabel:
+						text: "Tanggal Habis Uji"
+						font_style: 'Subtitle1'	
+						size_hint_x: 0.1
+					MDLabel:
+						id: lb_temp_tgl_uji_habis
+						font_style: 'H6'
+						size_hint_x: 0.1
 
-						MDLabel:
-							text: "ANTRIAN KENDARAAN NO:"
-							halign: "center"
-							valign: "middle"
-							font_style: 'Subtitle1'
+				MDGridLayout:
+					cols: 8
+					md_bg_color: "#DDDDDD"
+					MDLabel:
+						text: "Merk"
+						font_style: 'Subtitle1'	
+						size_hint_x: 0.1
+					MDLabel:
+						id: lb_temp_merk
+						font_style: 'H6'	
+						size_hint_x: 0.1
+					MDLabel:
+						text: "Type"
+						font_style: 'Subtitle1'	
+						size_hint_x: 0.1
+					MDLabel:
+						id: lb_temp_type
+						font_style: 'H6'	
+						size_hint_x: 0.2
+					MDLabel:
+						text: "Jenis Kendaraan"
+						font_style: 'Subtitle1'	
+						size_hint_x: 0.1
+					MDLabel:
+						id: lb_temp_jenis_kendaraan
+						font_style: 'H6'	
+						size_hint_x: 0.2
+					MDLabel:
+						text: "Warna"
+						font_style: 'Subtitle1'
+						size_hint_x: 0.1
+					MDLabel:
+						id: lb_temp_warna
+						font_style: 'H6'
+						size_hint_x: 0.1
 
-						MDLabel:
-							id: lb_no_antrian
-							halign: "center"
-							valign: "middle"
-							font_style: 'Subtitle1'
-
-					MDBoxLayout:
-						orientation: "horizontal"
-						md_bg_color: "#DDDDDD"
-
-						MDLabel:
-							id: lb_no_pol
-							halign: "center"
-							valign: "middle"
-							font_style: 'H4'
-
-						MDLabel:
-							id: lb_no_uji
-							halign: "center"
-							valign: "middle"
-							font_style: 'H4'
+				MDGridLayout:
+					cols: 8
+					md_bg_color: "#DDDDDD"
+					MDLabel:
+						text: "Bahan Bakar"
+						font_style: 'Subtitle1'	
+						size_hint_x: 0.1
+					MDLabel:
+						id: lb_temp_bahan_bakar
+						font_style: 'H6'
+						size_hint_x: 0.1
+					MDLabel:
+						text: "No. Mesin"
+						font_style: 'Subtitle1'	
+						size_hint_x: 0.1
+					MDLabel:
+						id: lb_temp_mesin
+						font_style: 'H6'	
+						size_hint_x: 0.2
+					MDLabel:
+						text: "No. Rangka"
+						font_style: 'Subtitle1'	
+						size_hint_x: 0.1
+					MDLabel:
+						id: lb_temp_chasis
+						font_style: 'H6'	
+						size_hint_x: 0.2					
+					MDLabel:
+						text: "JBB"
+						font_style: 'Subtitle1'
+						size_hint_x: 0.1
+					MDLabel:
+						id: lb_temp_jbb
+						font_style: 'H6'
+						size_hint_x: 0.1
 
 			MDBoxLayout:
-				orientation: "horizontal"
+				orientation: "vertical"
 				padding: 350, 10
 				size_hint_y: 0.7
 				
 				MDBoxLayout:
-					orientation: "vertical"
-					size_hint_x: 0.3
+					orientation: "horizontal"
+					size_hint_y: 0.5
 					spacing: 20
 
 					MDCard:
@@ -161,26 +272,6 @@
 					MDCard:
 						orientation: "vertical"
 						ripple_behavior: True
-						on_press: root.exec_inspect_visual()
-						md_bg_color: "#EEEEEE"
-						padding: 10
-						Image:
-							source:'assets/images/icon-inspect-visual.png'
-							size_hint_y: 0.9
-							allow_stretch: True 
-						MDLabel:
-							size_hint_y: 0.1
-							halign: "center"
-							text: "Inspeksi Visual"
-
-				MDBoxLayout:
-					orientation: "vertical"
-					size_hint_x: 0.3
-					spacing: 20
-
-					MDCard:
-						orientation: "vertical"
-						ripple_behavior: True
 						on_press: root.exec_inspect_id()
 						md_bg_color: "#EEEEEE"
 						padding: 10
@@ -191,27 +282,22 @@
 						MDLabel:
 							size_hint_y: 0.1
 							halign: "center"
-							text: "Inspeksi Identitas Kendaraan"
+							text: "Pra Uji Identitas Kendaraan"
 
 					MDCard:
 						orientation: "vertical"
 						ripple_behavior: True
-						on_press: root.exec_inspect_pit()
+						on_press: root.exec_inspect_dimension()
 						md_bg_color: "#EEEEEE"
 						padding: 10
 						Image:
-							source:'assets/images/icon-inspect-pit.png'
+							source:'assets/images/icon-inspect-id.png'
 							size_hint_y: 0.9
 							allow_stretch: True 
 						MDLabel:
 							size_hint_y: 0.1
 							halign: "center"
-							text: "Inspeksi Pit Kendaraan"
-
-				MDBoxLayout:
-					orientation: "vertical"
-					size_hint_x: 0.3
-					spacing: 20
+							text: "Pra Uji Dimensi Kendaraan"
 
 					MDCard:
 						orientation: "vertical"
@@ -227,6 +313,56 @@
 							size_hint_y: 0.1
 							halign: "center"
 							text: "Photo Visual"
+
+				MDBoxLayout:
+					orientation: "horizontal"
+					size_hint_y: 0.5
+					spacing: 20
+
+					MDCard:
+						orientation: "vertical"
+						ripple_behavior: True
+						on_press: root.exec_inspect_visual()
+						md_bg_color: "#EEEEEE"
+						padding: 10
+						Image:
+							source:'assets/images/icon-inspect-visual.png'
+							size_hint_y: 0.9
+							allow_stretch: True 
+						MDLabel:
+							size_hint_y: 0.1
+							halign: "center"
+							text: "Inspeksi Visual 1"
+
+					MDCard:
+						orientation: "vertical"
+						ripple_behavior: True
+						on_press: root.exec_inspect_visual2()
+						md_bg_color: "#EEEEEE"
+						padding: 10
+						Image:
+							source:'assets/images/icon-inspect-visual.png'
+							size_hint_y: 0.9
+							allow_stretch: True 
+						MDLabel:
+							size_hint_y: 0.1
+							halign: "center"
+							text: "Inspeksi Visual 2"
+
+					MDCard:
+						orientation: "vertical"
+						ripple_behavior: True
+						on_press: root.exec_inspect_pit()
+						md_bg_color: "#EEEEEE"
+						padding: 10
+						Image:
+							source:'assets/images/icon-inspect-pit.png'
+							size_hint_y: 0.9
+							allow_stretch: True 
+						MDLabel:
+							size_hint_y: 0.1
+							halign: "center"
+							text: "Inspeksi Pit Kendaraan"
 
 					MDCard:
 						orientation: "vertical"
@@ -252,6 +388,28 @@
 			spacing: 50
 
 			MDRectangleFlatIconButton:
+				id: bt_verify_data
+				icon: "check"
+				text: "VERIFIKASI DATA"
+				md_bg_color: "#4471C4"
+				theme_text_color: "Custom"
+				text_color: "#EEEEEE"
+				size_hint_x: 1
+				disabled: True
+				on_press: root.exec_verify_data()
+
+			MDRectangleFlatIconButton:
+				id: bt_verify_payment
+				icon: "cash"
+				text: "VERIFIKASI PEMBAYARAN"
+				md_bg_color: "#2CA02C"
+				theme_text_color: "Custom"
+				text_color: "#EEEEEE"
+				size_hint_x: 1
+				disabled: True
+				on_press: root.exec_verify_payment()
+
+			MDRectangleFlatIconButton:
 				id: bt_back
 				icon: "cancel"
 				text: "BATALKAN INSPEKSI"
@@ -273,12 +431,14 @@
 				md_bg_color: "#4471C4"
 				size_hint_x: 0.4
 				
-				Image:
+				AsyncImage:
+					id: img_pemkab
 					source:'assets/images/logo-sorong.png'
 					size_hint_x: 0.1
 					allow_stretch: True  
 
-				Image:
+				AsyncImage:
+					id: img_dishub
 					source:'assets/images/logo-dishub.png'
 					size_hint_x: 0.1
 					allow_stretch: True  
@@ -287,25 +447,35 @@
 					orientation: "vertical"
 					size_hint_x: 0.8
 
-					MDLabel:			
+					MDLabel:
+						id: lb_pemkab
 						text: "PEMERINTAH KABUPATEN SORONG"
 						halign: "left"
 						valign: "middle"
-						font_style: 'Subtitle1'
-
-					MDLabel:			
-						text: "DINAS PERHUBUNGAN"
-						halign: "left"
-						valign: "middle"
-						font_style: 'Subtitle1'
-
-					MDLabel:			
-						text: "UNIT PELAKSANA UJI BERKALA KENDARAAN BERMOTOR"
-						halign: "left"
-						valign: "middle"
+						theme_text_color: "Custom"
+						text_color: "#EEEEEE"						
 						font_style: 'Subtitle1'
 
 					MDLabel:
+						id: lb_dishub
+						text: "DINAS PERHUBUNGAN"
+						halign: "left"
+						valign: "middle"
+						theme_text_color: "Custom"
+						text_color: "#EEEEEE"
+						font_style: 'Subtitle1'
+
+					MDLabel:
+						id: lb_unit			
+						text: "UNIT PELAKSANA UJI BERKALA KENDARAAN BERMOTOR"
+						halign: "left"
+						valign: "middle"
+						theme_text_color: "Custom"
+						text_color: "#EEEEEE"
+						font_style: 'Subtitle1'
+
+					MDLabel:
+						id: lb_unit_address
 						text: " Klamasen, Distrik Mariat, Kabupaten Sorong, Papua Barat Daya. 98416"
 						halign: "left"
 						valign: "middle"

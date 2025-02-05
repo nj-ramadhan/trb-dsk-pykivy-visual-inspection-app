@@ -1,0 +1,291 @@
+#:kivy 2.1.0
+
+<ScreenRealtimeCctv>:
+    MDBoxLayout:
+        orientation: "vertical"
+
+		# header layout
+        MDBoxLayout:
+            id: header_layout
+            orientation: "horizontal"
+            padding: 20
+			spacing: 20
+			size_hint_y: 0.2
+			md_bg_color: "#111111"
+                    
+            Image:
+                id: logo
+                source:'assets/images/logo-trb.png'
+                size_hint_x: 0.15
+                allow_stretch: True 
+
+			MDBoxLayout:
+				orientation: "vertical"
+				size_hint_x: 0.7
+
+				MDLabel:
+					id: title            
+					text: "VEHICLE INSPECTION INTEGRATION MANAGEMENT SYSTEM"
+					halign: "left"
+					valign: "middle"
+					font_style: 'H4'
+					theme_text_color: "Custom"
+					text_color: "#FFFFFF"
+
+				MDLabel:
+					id: subtitle            
+					text: "VEHICLE VISUAL INSPECTION BY CCTV CAMERA"
+					halign: "left"
+					valign: "middle"
+					font_style: 'H5'
+					theme_text_color: "Custom"
+					text_color: "#FFFFFF"
+
+			MDBoxLayout:
+				orientation: "vertical"
+				size_hint_x: 0.15
+
+				MDLabel:
+					id: lb_time
+					text: "12:34:00"
+					halign: "center"
+					valign: "middle"
+					font_style: 'H6'
+					theme_text_color: "Custom"
+					text_color: "#FFFFFF"
+
+				MDLabel:
+					id: lb_date
+					text: "17/08/2024"
+					halign: "center"
+					valign: "middle"
+					font_style: 'H6'
+					theme_text_color: "Custom"
+					text_color: "#FFFFFF"
+
+				MDLabel:
+					id: lb_operator
+					text: "Nama Operator"
+					halign: "center"
+					valign: "middle"
+					font_style: 'H6'
+					theme_text_color: "Custom"
+					text_color: "#FFFFFF"
+
+				MDLabel:
+					id: lb_comm
+					text: "Status : Disconnected"
+					halign: "center"
+					valign: "middle"
+					font_style: 'H6'
+					theme_text_color: "Custom"
+
+		# main layout
+		MDBoxLayout:
+			id: layout_main
+			orientation: "horizontal"
+			size_hint_y: 0.6
+			padding:20
+
+			MDBoxLayout:
+				orientation: "vertical"
+				spacing:50
+
+				MDLabel:
+					text: "REALTIME CCTV"
+					halign: "center"
+					valign: "middle"
+					font_style: 'H6'
+					size_hint_y: 0.1
+
+				MDBoxLayout:
+					orientation: "horizontal"
+					size_hint_x: 0.9
+					spacing: 20
+
+					MDBoxLayout:
+						orientation: "vertical"
+						spacing:20
+						Image:
+							id: image_view
+							source:'assets/images/tampak-depan.png'
+							allow_stretch: True 
+							size_hint_y: 0.85
+
+						MDGridLayout:
+							cols: 2
+							size_hint_y: 0.15
+							MDLabel:
+								text: "Zoom Factor"
+								size_hint_x: 0.2
+							MDSlider:
+								id: sl_zoom
+								step: 0.2
+								value: 1
+								min: 1
+								max: 4
+								size_hint_x: 0.8
+
+							MDLabel:
+								text: "X Offset"
+								size_hint_x: 0.2
+							MDSlider:
+								id: sl_x_offs
+								step: 0.1
+								value: 0.0
+								min: 0.0
+								max: 0.8
+								size_hint_x: 0.8
+
+							MDLabel:
+								text: "Y Offset"
+								size_hint_x: 0.2
+							MDSlider:
+								id: sl_y_offs
+								step: 0.1
+								value: 0.0
+								min: 0.0
+								max: 0.8
+								size_hint_x: 0.8
+
+					MDBoxLayout:
+						orientation: "vertical"
+						size_hint_x: 0.1
+						spacing: 20
+
+						MDRectangleFlatIconButton:
+							id: bt_dropdown_caller
+							text: "Pilih Kamera"
+							icon: "camera"
+							md_bg_color: "#4471C4"
+							size_hint_x: 1
+							size_hint_y: 0.2
+							on_press: root.menu_camera.open()
+
+						MDRectangleFlatIconButton:
+							id: bt_play_cctv
+							text: "Mulai"
+							icon: 'play-circle'
+							md_bg_color: "#2CA02C"
+							size_hint_x: 1
+							size_hint_y: 0.2
+							on_press: root.exec_play_cctv()
+
+						MDRectangleFlatIconButton:
+							id: bt_stop_cctv
+							text: "Berhenti"
+							icon: 'stop-circle'
+							md_bg_color: "#FF2A2A"
+							size_hint_x: 1
+							size_hint_y: 0.2
+							on_press: root.exec_stop_cctv()
+		# button layout
+        MDBoxLayout:
+            orientation: "horizontal"
+			size_hint_y: 0.1
+			padding: 20, 20
+			spacing: 50
+
+			MDRectangleFlatIconButton:
+				id: bt_save
+				text: "SIMPAN"
+				icon: "floppy"
+				md_bg_color: "#2CA02C"
+				size_hint_x: 0.5
+				on_press: root.exec_save()
+
+			MDRectangleFlatIconButton:
+				id: bt_cancel
+				text: "BATAL"
+				icon: "cancel"
+				md_bg_color: "#FF2A2A"
+				size_hint_x: 0.5
+				on_press: root.exec_cancel()
+
+		# footer layout
+        MDBoxLayout:
+            orientation: "horizontal"
+			size_hint_y: 0.1
+
+			MDBoxLayout:
+				orientation: "horizontal"
+				padding: 20
+				spacing: 20
+				md_bg_color: "#4471C4"
+				size_hint_x: 0.4
+				
+				AsyncImage:
+					id: img_pemkab
+					source:'assets/images/logo-sorong.png'
+					size_hint_x: 0.1
+					allow_stretch: True  
+
+				AsyncImage:
+					id: img_dishub
+					source:'assets/images/logo-dishub.png'
+					size_hint_x: 0.1
+					allow_stretch: True  
+
+				MDBoxLayout:
+					orientation: "vertical"
+					size_hint_x: 0.8
+
+					MDLabel:
+						id: lb_pemkab
+						text: "PEMERINTAH KABUPATEN SORONG"
+						halign: "left"
+						valign: "middle"
+						theme_text_color: "Custom"
+						text_color: "#EEEEEE"						
+						font_style: 'Subtitle1'
+
+					MDLabel:
+						id: lb_dishub
+						text: "DINAS PERHUBUNGAN"
+						halign: "left"
+						valign: "middle"
+						theme_text_color: "Custom"
+						text_color: "#EEEEEE"
+						font_style: 'Subtitle1'
+
+					MDLabel:
+						id: lb_unit			
+						text: "UNIT PELAKSANA UJI BERKALA KENDARAAN BERMOTOR"
+						halign: "left"
+						valign: "middle"
+						theme_text_color: "Custom"
+						text_color: "#EEEEEE"
+						font_style: 'Subtitle1'
+
+					MDLabel:
+						id: lb_unit_address
+						text: " Klamasen, Distrik Mariat, Kabupaten Sorong, Papua Barat Daya. 98416"
+						halign: "left"
+						valign: "middle"
+						md_bg_color: "#EEEEEE"
+						theme_text_color: "Custom"
+						text_color: "#000000"
+						font_style: 'Subtitle1'
+
+			MDBoxLayout:
+				orientation: "vertical"
+				padding: 20
+				spacing: 20
+				md_bg_color: "#FFC000"
+				size_hint_x: 0.6
+
+				MDLabel:			
+					text: "INFORMASI"
+					halign: "left"
+					valign: "middle"
+					font_style: 'H5'
+
+				MDLabel:
+					id: lb_info
+					text: "Silahkan tekan tombol untuk mengendalikan Portal, kemudian tekan tombol PERIKSA untuk melanjutkan pemeriksaan"
+					halign: "left"
+					valign: "middle"
+					font_style: 'H6'
+
+<ListItem>
+	text: root.list_text

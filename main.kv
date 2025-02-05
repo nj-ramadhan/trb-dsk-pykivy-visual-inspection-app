@@ -6,10 +6,11 @@
 #:include screen_main.kv
 #:include screen_menu.kv
 #:include screen_inspect_new.kv
-#:include screen_inspect_pit.kv
 #:include screen_inspect_id.kv
+#:include screen_inspect_dimension.kv
 #:include screen_inspect_visual.kv
 #:include screen_inspect_visual2.kv
+#:include screen_inspect_pit.kv
 #:include screen_realtime_cctv.kv
 #:include screen_realtime_pit.kv
 
@@ -47,6 +48,11 @@
         id: screen_inspect_id
         name: 'screen_inspect_id'
         screen_manager: screen_manager   
+
+    ScreenInspectDimension:
+        id: screen_inspect_dimension
+        name: 'screen_inspect_dimension'
+        screen_manager: screen_manager  
 
     ScreenInspectVisual:
         id: screen_inspect_visual

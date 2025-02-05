@@ -92,7 +92,7 @@
 				spacing:50
 
 				MDLabel:
-					text: "REALTIME PIT CCTV"
+					text: "REALTIME CCTV"
 					halign: "center"
 					valign: "middle"
 					font_style: 'H6'
@@ -101,51 +101,84 @@
 				MDBoxLayout:
 					orientation: "horizontal"
 					size_hint_x: 0.9
-					spacing: 10
+					spacing: 20
 
 					MDBoxLayout:
 						orientation: "vertical"
-						spacing:5
-
-						AsyncImage:
-							id: image_view_front
+						spacing:20
+						Image:
+							id: image_view
 							source:'assets/images/tampak-depan.png'
 							allow_stretch: True 
-							size_hint_y: 0.8
+							size_hint_y: 0.85
 
-						MDBoxLayout:
-							orientation: "horizontal"
-							size_hint_y: 0.2
-
-							MDRectangleFlatIconButton:
-								id: bt_dropdown_caller
-								text: "Pilih Kamera"
-								icon: "camera"
-								md_bg_color: "#4471C4"
+						MDGridLayout:
+							cols: 2
+							size_hint_y: 0.15
+							MDLabel:
+								text: "Zoom Factor"
 								size_hint_x: 0.2
-								on_press: root.menu_camera.open()
-
-							MDIconButton:
-								id: bt_play_cctv
-								icon: 'play-circle'
-								size_hint_x: 0.1
-								on_press: root.exec_play_cctv()
-
-
-							MDIconButton:
-								id: bt_stop_cctv
-								icon: 'stop-circle'
-								size_hint_x: 0.1
-								on_press: root.exec_stop_cctv()
-
 							MDSlider:
-								id: sl_cctv_zoom
-								step: 0.5
+								id: sl_zoom
+								step: 0.2
 								value: 1
-								size_hint_x: 0.6
 								min: 1
 								max: 4
+								size_hint_x: 0.8
 
+							MDLabel:
+								text: "X Offset"
+								size_hint_x: 0.2
+							MDSlider:
+								id: sl_x_offs
+								step: 0.1
+								value: 0.0
+								min: 0.0
+								max: 0.8
+								size_hint_x: 0.8
+
+							MDLabel:
+								text: "Y Offset"
+								size_hint_x: 0.2
+							MDSlider:
+								id: sl_y_offs
+								step: 0.1
+								value: 0.0
+								min: 0.0
+								max: 0.8
+								size_hint_x: 0.8
+
+					MDBoxLayout:
+						orientation: "vertical"
+						size_hint_x: 0.1
+						spacing: 20
+
+						MDRectangleFlatIconButton:
+							id: bt_dropdown_caller
+							text: "Pilih Kamera"
+							icon: "camera"
+							md_bg_color: "#4471C4"
+							size_hint_x: 1
+							size_hint_y: 0.2
+							on_press: root.menu_camera.open()
+
+						MDRectangleFlatIconButton:
+							id: bt_play_cctv
+							text: "Mulai"
+							icon: 'play-circle'
+							md_bg_color: "#2CA02C"
+							size_hint_x: 1
+							size_hint_y: 0.2
+							on_press: root.exec_play_cctv()
+
+						MDRectangleFlatIconButton:
+							id: bt_stop_cctv
+							text: "Berhenti"
+							icon: 'stop-circle'
+							md_bg_color: "#FF2A2A"
+							size_hint_x: 1
+							size_hint_y: 0.2
+							on_press: root.exec_stop_cctv()
 		# button layout
         MDBoxLayout:
             orientation: "horizontal"

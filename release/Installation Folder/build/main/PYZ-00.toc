@@ -33,13 +33,9 @@
    'C:\\Users\\Nur '
    'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\EpsImagePlugin.py',
    'PYMODULE'),
-  ('PIL.ExifTags',
+  ('PIL.FitsStubImagePlugin',
    'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\ExifTags.py',
-   'PYMODULE'),
-  ('PIL.FitsImagePlugin',
-   'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\FitsImagePlugin.py',
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\FitsStubImagePlugin.py',
    'PYMODULE'),
   ('PIL.FliImagePlugin',
    'C:\\Users\\Nur '
@@ -97,10 +93,6 @@
    'C:\\Users\\Nur '
    'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\ImageChops.py',
    'PYMODULE'),
-  ('PIL.ImageCms',
-   'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\ImageCms.py',
-   'PYMODULE'),
   ('PIL.ImageColor',
    'C:\\Users\\Nur '
    'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\ImageColor.py',
@@ -129,10 +121,6 @@
    'C:\\Users\\Nur '
    'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\ImageMode.py',
    'PYMODULE'),
-  ('PIL.ImageOps',
-   'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\ImageOps.py',
-   'PYMODULE'),
   ('PIL.ImagePalette',
    'C:\\Users\\Nur '
    'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\ImagePalette.py',
@@ -156,10 +144,6 @@
   ('PIL.ImageTk',
    'C:\\Users\\Nur '
    'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\ImageTk.py',
-   'PYMODULE'),
-  ('PIL.ImageWin',
-   'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\ImageWin.py',
    'PYMODULE'),
   ('PIL.ImtImagePlugin',
    'C:\\Users\\Nur '
@@ -245,10 +229,6 @@
    'C:\\Users\\Nur '
    'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\PyAccess.py',
    'PYMODULE'),
-  ('PIL.QoiImagePlugin',
-   'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\QoiImagePlugin.py',
-   'PYMODULE'),
   ('PIL.SgiImagePlugin',
    'C:\\Users\\Nur '
    'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\SgiImagePlugin.py',
@@ -296,10 +276,6 @@
   ('PIL._binary',
    'C:\\Users\\Nur '
    'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\_binary.py',
-   'PYMODULE'),
-  ('PIL._deprecate',
-   'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\_deprecate.py',
    'PYMODULE'),
   ('PIL._util',
    'C:\\Users\\Nur '
@@ -497,6 +473,10 @@
    'C:\\Users\\Nur '
    'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\base64.py',
    'PYMODULE'),
+  ('bcrypt',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\bcrypt\\__init__.py',
+   'PYMODULE'),
   ('bdb',
    'C:\\Users\\Nur '
    'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\bdb.py',
@@ -589,6 +569,154 @@
    'C:\\Users\\Nur '
    'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\cgi.py',
    'PYMODULE'),
+  ('chardet',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\__init__.py',
+   'PYMODULE'),
+  ('chardet.big5freq',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\big5freq.py',
+   'PYMODULE'),
+  ('chardet.big5prober',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\big5prober.py',
+   'PYMODULE'),
+  ('chardet.chardistribution',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\chardistribution.py',
+   'PYMODULE'),
+  ('chardet.charsetgroupprober',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\charsetgroupprober.py',
+   'PYMODULE'),
+  ('chardet.charsetprober',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\charsetprober.py',
+   'PYMODULE'),
+  ('chardet.codingstatemachine',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\codingstatemachine.py',
+   'PYMODULE'),
+  ('chardet.cp949prober',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\cp949prober.py',
+   'PYMODULE'),
+  ('chardet.enums',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\enums.py',
+   'PYMODULE'),
+  ('chardet.escprober',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\escprober.py',
+   'PYMODULE'),
+  ('chardet.escsm',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\escsm.py',
+   'PYMODULE'),
+  ('chardet.eucjpprober',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\eucjpprober.py',
+   'PYMODULE'),
+  ('chardet.euckrfreq',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\euckrfreq.py',
+   'PYMODULE'),
+  ('chardet.euckrprober',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\euckrprober.py',
+   'PYMODULE'),
+  ('chardet.euctwfreq',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\euctwfreq.py',
+   'PYMODULE'),
+  ('chardet.euctwprober',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\euctwprober.py',
+   'PYMODULE'),
+  ('chardet.gb2312freq',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\gb2312freq.py',
+   'PYMODULE'),
+  ('chardet.gb2312prober',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\gb2312prober.py',
+   'PYMODULE'),
+  ('chardet.hebrewprober',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\hebrewprober.py',
+   'PYMODULE'),
+  ('chardet.jisfreq',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\jisfreq.py',
+   'PYMODULE'),
+  ('chardet.jpcntx',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\jpcntx.py',
+   'PYMODULE'),
+  ('chardet.langbulgarianmodel',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\langbulgarianmodel.py',
+   'PYMODULE'),
+  ('chardet.langgreekmodel',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\langgreekmodel.py',
+   'PYMODULE'),
+  ('chardet.langhebrewmodel',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\langhebrewmodel.py',
+   'PYMODULE'),
+  ('chardet.langrussianmodel',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\langrussianmodel.py',
+   'PYMODULE'),
+  ('chardet.langthaimodel',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\langthaimodel.py',
+   'PYMODULE'),
+  ('chardet.langturkishmodel',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\langturkishmodel.py',
+   'PYMODULE'),
+  ('chardet.latin1prober',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\latin1prober.py',
+   'PYMODULE'),
+  ('chardet.mbcharsetprober',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\mbcharsetprober.py',
+   'PYMODULE'),
+  ('chardet.mbcsgroupprober',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\mbcsgroupprober.py',
+   'PYMODULE'),
+  ('chardet.mbcssm',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\mbcssm.py',
+   'PYMODULE'),
+  ('chardet.sbcharsetprober',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\sbcharsetprober.py',
+   'PYMODULE'),
+  ('chardet.sbcsgroupprober',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\sbcsgroupprober.py',
+   'PYMODULE'),
+  ('chardet.sjisprober',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\sjisprober.py',
+   'PYMODULE'),
+  ('chardet.universaldetector',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\universaldetector.py',
+   'PYMODULE'),
+  ('chardet.utf8prober',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\utf8prober.py',
+   'PYMODULE'),
+  ('chardet.version',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\chardet\\version.py',
+   'PYMODULE'),
   ('cmd',
    'C:\\Users\\Nur '
    'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\cmd.py',
@@ -640,6 +768,158 @@
   ('copy',
    'C:\\Users\\Nur '
    'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\copy.py',
+   'PYMODULE'),
+  ('cryptography',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\__init__.py',
+   'PYMODULE'),
+  ('cryptography.__about__',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\__about__.py',
+   'PYMODULE'),
+  ('cryptography.exceptions',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\exceptions.py',
+   'PYMODULE'),
+  ('cryptography.hazmat',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\hazmat\\__init__.py',
+   'PYMODULE'),
+  ('cryptography.hazmat._oid',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\hazmat\\_oid.py',
+   'PYMODULE'),
+  ('cryptography.hazmat.backends',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\hazmat\\backends\\__init__.py',
+   'PYMODULE'),
+  ('cryptography.hazmat.backends.openssl',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\hazmat\\backends\\openssl\\__init__.py',
+   'PYMODULE'),
+  ('cryptography.hazmat.backends.openssl.backend',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\hazmat\\backends\\openssl\\backend.py',
+   'PYMODULE'),
+  ('cryptography.hazmat.bindings',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\hazmat\\bindings\\__init__.py',
+   'PYMODULE'),
+  ('cryptography.hazmat.bindings.openssl',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\hazmat\\bindings\\openssl\\__init__.py',
+   'PYMODULE'),
+  ('cryptography.hazmat.bindings.openssl._conditional',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\hazmat\\bindings\\openssl\\_conditional.py',
+   'PYMODULE'),
+  ('cryptography.hazmat.bindings.openssl.binding',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\hazmat\\bindings\\openssl\\binding.py',
+   'PYMODULE'),
+  ('cryptography.hazmat.decrepit',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\hazmat\\decrepit\\__init__.py',
+   'PYMODULE'),
+  ('cryptography.hazmat.decrepit.ciphers',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\hazmat\\decrepit\\ciphers\\__init__.py',
+   'PYMODULE'),
+  ('cryptography.hazmat.decrepit.ciphers.algorithms',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\hazmat\\decrepit\\ciphers\\algorithms.py',
+   'PYMODULE'),
+  ('cryptography.hazmat.primitives',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\hazmat\\primitives\\__init__.py',
+   'PYMODULE'),
+  ('cryptography.hazmat.primitives._asymmetric',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\hazmat\\primitives\\_asymmetric.py',
+   'PYMODULE'),
+  ('cryptography.hazmat.primitives._cipheralgorithm',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\hazmat\\primitives\\_cipheralgorithm.py',
+   'PYMODULE'),
+  ('cryptography.hazmat.primitives._serialization',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\hazmat\\primitives\\_serialization.py',
+   'PYMODULE'),
+  ('cryptography.hazmat.primitives.asymmetric',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\hazmat\\primitives\\asymmetric\\__init__.py',
+   'PYMODULE'),
+  ('cryptography.hazmat.primitives.asymmetric.dsa',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\hazmat\\primitives\\asymmetric\\dsa.py',
+   'PYMODULE'),
+  ('cryptography.hazmat.primitives.asymmetric.ec',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\hazmat\\primitives\\asymmetric\\ec.py',
+   'PYMODULE'),
+  ('cryptography.hazmat.primitives.asymmetric.ed25519',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\hazmat\\primitives\\asymmetric\\ed25519.py',
+   'PYMODULE'),
+  ('cryptography.hazmat.primitives.asymmetric.padding',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\hazmat\\primitives\\asymmetric\\padding.py',
+   'PYMODULE'),
+  ('cryptography.hazmat.primitives.asymmetric.rsa',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\hazmat\\primitives\\asymmetric\\rsa.py',
+   'PYMODULE'),
+  ('cryptography.hazmat.primitives.asymmetric.utils',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\hazmat\\primitives\\asymmetric\\utils.py',
+   'PYMODULE'),
+  ('cryptography.hazmat.primitives.asymmetric.x25519',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\hazmat\\primitives\\asymmetric\\x25519.py',
+   'PYMODULE'),
+  ('cryptography.hazmat.primitives.ciphers',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\hazmat\\primitives\\ciphers\\__init__.py',
+   'PYMODULE'),
+  ('cryptography.hazmat.primitives.ciphers.aead',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\hazmat\\primitives\\ciphers\\aead.py',
+   'PYMODULE'),
+  ('cryptography.hazmat.primitives.ciphers.algorithms',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\hazmat\\primitives\\ciphers\\algorithms.py',
+   'PYMODULE'),
+  ('cryptography.hazmat.primitives.ciphers.base',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\hazmat\\primitives\\ciphers\\base.py',
+   'PYMODULE'),
+  ('cryptography.hazmat.primitives.ciphers.modes',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\hazmat\\primitives\\ciphers\\modes.py',
+   'PYMODULE'),
+  ('cryptography.hazmat.primitives.constant_time',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\hazmat\\primitives\\constant_time.py',
+   'PYMODULE'),
+  ('cryptography.hazmat.primitives.hashes',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\hazmat\\primitives\\hashes.py',
+   'PYMODULE'),
+  ('cryptography.hazmat.primitives.serialization',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\hazmat\\primitives\\serialization\\__init__.py',
+   'PYMODULE'),
+  ('cryptography.hazmat.primitives.serialization.base',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\hazmat\\primitives\\serialization\\base.py',
+   'PYMODULE'),
+  ('cryptography.hazmat.primitives.serialization.ssh',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\hazmat\\primitives\\serialization\\ssh.py',
+   'PYMODULE'),
+  ('cryptography.utils',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cryptography\\utils.py',
    'PYMODULE'),
   ('csv',
    'C:\\Users\\Nur '
@@ -3546,6 +3826,94 @@
    'C:\\Users\\Nur '
    'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\mysql\\connector\\version.py',
    'PYMODULE'),
+  ('nacl',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\nacl\\__init__.py',
+   'PYMODULE'),
+  ('nacl.bindings',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\nacl\\bindings\\__init__.py',
+   'PYMODULE'),
+  ('nacl.bindings.crypto_aead',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\nacl\\bindings\\crypto_aead.py',
+   'PYMODULE'),
+  ('nacl.bindings.crypto_box',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\nacl\\bindings\\crypto_box.py',
+   'PYMODULE'),
+  ('nacl.bindings.crypto_core',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\nacl\\bindings\\crypto_core.py',
+   'PYMODULE'),
+  ('nacl.bindings.crypto_generichash',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\nacl\\bindings\\crypto_generichash.py',
+   'PYMODULE'),
+  ('nacl.bindings.crypto_hash',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\nacl\\bindings\\crypto_hash.py',
+   'PYMODULE'),
+  ('nacl.bindings.crypto_kx',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\nacl\\bindings\\crypto_kx.py',
+   'PYMODULE'),
+  ('nacl.bindings.crypto_pwhash',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\nacl\\bindings\\crypto_pwhash.py',
+   'PYMODULE'),
+  ('nacl.bindings.crypto_scalarmult',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\nacl\\bindings\\crypto_scalarmult.py',
+   'PYMODULE'),
+  ('nacl.bindings.crypto_secretbox',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\nacl\\bindings\\crypto_secretbox.py',
+   'PYMODULE'),
+  ('nacl.bindings.crypto_secretstream',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\nacl\\bindings\\crypto_secretstream.py',
+   'PYMODULE'),
+  ('nacl.bindings.crypto_shorthash',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\nacl\\bindings\\crypto_shorthash.py',
+   'PYMODULE'),
+  ('nacl.bindings.crypto_sign',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\nacl\\bindings\\crypto_sign.py',
+   'PYMODULE'),
+  ('nacl.bindings.randombytes',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\nacl\\bindings\\randombytes.py',
+   'PYMODULE'),
+  ('nacl.bindings.sodium_core',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\nacl\\bindings\\sodium_core.py',
+   'PYMODULE'),
+  ('nacl.bindings.utils',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\nacl\\bindings\\utils.py',
+   'PYMODULE'),
+  ('nacl.encoding',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\nacl\\encoding.py',
+   'PYMODULE'),
+  ('nacl.exceptions',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\nacl\\exceptions.py',
+   'PYMODULE'),
+  ('nacl.public',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\nacl\\public.py',
+   'PYMODULE'),
+  ('nacl.signing',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\nacl\\signing.py',
+   'PYMODULE'),
+  ('nacl.utils',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\nacl\\utils.py',
+   'PYMODULE'),
   ('netrc',
    'C:\\Users\\Nur '
    'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\netrc.py',
@@ -4089,6 +4457,190 @@
   ('packaging.version',
    'C:\\Users\\Nur '
    'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\packaging\\version.py',
+   'PYMODULE'),
+  ('paramiko',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\__init__.py',
+   'PYMODULE'),
+  ('paramiko._version',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\_version.py',
+   'PYMODULE'),
+  ('paramiko._winapi',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\_winapi.py',
+   'PYMODULE'),
+  ('paramiko.agent',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\agent.py',
+   'PYMODULE'),
+  ('paramiko.auth_handler',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\auth_handler.py',
+   'PYMODULE'),
+  ('paramiko.auth_strategy',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\auth_strategy.py',
+   'PYMODULE'),
+  ('paramiko.ber',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\ber.py',
+   'PYMODULE'),
+  ('paramiko.buffered_pipe',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\buffered_pipe.py',
+   'PYMODULE'),
+  ('paramiko.channel',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\channel.py',
+   'PYMODULE'),
+  ('paramiko.client',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\client.py',
+   'PYMODULE'),
+  ('paramiko.common',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\common.py',
+   'PYMODULE'),
+  ('paramiko.compress',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\compress.py',
+   'PYMODULE'),
+  ('paramiko.config',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\config.py',
+   'PYMODULE'),
+  ('paramiko.dsskey',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\dsskey.py',
+   'PYMODULE'),
+  ('paramiko.ecdsakey',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\ecdsakey.py',
+   'PYMODULE'),
+  ('paramiko.ed25519key',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\ed25519key.py',
+   'PYMODULE'),
+  ('paramiko.file',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\file.py',
+   'PYMODULE'),
+  ('paramiko.hostkeys',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\hostkeys.py',
+   'PYMODULE'),
+  ('paramiko.kex_curve25519',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\kex_curve25519.py',
+   'PYMODULE'),
+  ('paramiko.kex_ecdh_nist',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\kex_ecdh_nist.py',
+   'PYMODULE'),
+  ('paramiko.kex_gex',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\kex_gex.py',
+   'PYMODULE'),
+  ('paramiko.kex_group1',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\kex_group1.py',
+   'PYMODULE'),
+  ('paramiko.kex_group14',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\kex_group14.py',
+   'PYMODULE'),
+  ('paramiko.kex_group16',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\kex_group16.py',
+   'PYMODULE'),
+  ('paramiko.kex_gss',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\kex_gss.py',
+   'PYMODULE'),
+  ('paramiko.message',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\message.py',
+   'PYMODULE'),
+  ('paramiko.packet',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\packet.py',
+   'PYMODULE'),
+  ('paramiko.pipe',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\pipe.py',
+   'PYMODULE'),
+  ('paramiko.pkey',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\pkey.py',
+   'PYMODULE'),
+  ('paramiko.primes',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\primes.py',
+   'PYMODULE'),
+  ('paramiko.proxy',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\proxy.py',
+   'PYMODULE'),
+  ('paramiko.rsakey',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\rsakey.py',
+   'PYMODULE'),
+  ('paramiko.server',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\server.py',
+   'PYMODULE'),
+  ('paramiko.sftp',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\sftp.py',
+   'PYMODULE'),
+  ('paramiko.sftp_attr',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\sftp_attr.py',
+   'PYMODULE'),
+  ('paramiko.sftp_client',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\sftp_client.py',
+   'PYMODULE'),
+  ('paramiko.sftp_file',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\sftp_file.py',
+   'PYMODULE'),
+  ('paramiko.sftp_handle',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\sftp_handle.py',
+   'PYMODULE'),
+  ('paramiko.sftp_server',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\sftp_server.py',
+   'PYMODULE'),
+  ('paramiko.sftp_si',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\sftp_si.py',
+   'PYMODULE'),
+  ('paramiko.ssh_exception',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\ssh_exception.py',
+   'PYMODULE'),
+  ('paramiko.ssh_gss',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\ssh_gss.py',
+   'PYMODULE'),
+  ('paramiko.transport',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\transport.py',
+   'PYMODULE'),
+  ('paramiko.util',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\util.py',
+   'PYMODULE'),
+  ('paramiko.win_openssh',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\win_openssh.py',
+   'PYMODULE'),
+  ('paramiko.win_pageant',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\paramiko\\win_pageant.py',
    'PYMODULE'),
   ('pathlib',
    'C:\\Users\\Nur '
@@ -6344,6 +6896,14 @@
   ('ssl',
    'C:\\Users\\Nur '
    'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\ssl.py',
+   'PYMODULE'),
+  ('sspi',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\win32\\lib\\sspi.py',
+   'PYMODULE'),
+  ('sspicon',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\win32\\lib\\sspicon.py',
    'PYMODULE'),
   ('statistics',
    'C:\\Users\\Nur '

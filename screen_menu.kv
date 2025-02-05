@@ -287,6 +287,21 @@
 					MDCard:
 						orientation: "vertical"
 						ripple_behavior: True
+						on_press: root.exec_inspect_dimension()
+						md_bg_color: "#EEEEEE"
+						padding: 10
+						Image:
+							source:'assets/images/icon-inspect-id.png'
+							size_hint_y: 0.9
+							allow_stretch: True 
+						MDLabel:
+							size_hint_y: 0.1
+							halign: "center"
+							text: "Pra Uji Dimensi Kendaraan"
+
+					MDCard:
+						orientation: "vertical"
+						ripple_behavior: True
 						on_press: root.exec_capture()
 						md_bg_color: "#EEEEEE"
 						padding: 10
