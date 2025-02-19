@@ -5,16 +5,15 @@ from kivy.lang import Builder
 from kivy.core.window import Window
 from kivy.core.text import LabelBase
 from kivy.graphics.texture import Texture
-from kivy.resources import resource_add_path
 from kivy.uix.screenmanager import ScreenManager
 from kivymd.font_definitions import theme_font_styles
 from kivymd.uix.screen import MDScreen
-from kivymd.uix.label import MDLabel, MDIcon
+from kivymd.uix.label import MDLabel
 from kivymd.uix.button import MDIconButton
 from kivymd.uix.card import MDCard
 from kivymd.uix.textfield import MDTextField
 from kivymd.uix.menu import MDDropdownMenu
-from kivymd.uix.list import OneLineListItem, OneLineIconListItem, BaseListItem
+from kivymd.uix.list import OneLineListItem
 from kivy.properties import StringProperty
 from kivy.metrics import dp
 from kivymd.toast import toast
@@ -33,17 +32,24 @@ colors = {  "Red"   : {"A200": "#FF2A2A","A500": "#FF8080","A700": "#FFD5D5",},
             "Dark"  : {"StatusBar": "101010","AppBar": "#E0E0E0","Background": "#111111","CardsDialogs": "#222222","FlatButtonDown": "#DDDDDD","Text": "#FFFFFF",},
         }
 
+config_name = 'config.ini'
 if getattr(sys, 'frozen', False):
-    app_path = os.path.dirname(os.path.abspath(__file__))
+    application_path = os.path.dirname(sys.executable)
+    running_mode = 'Frozen/executable'
 else:
-    app_path = os.path.dirname(os.path.abspath(__file__))
+    try:
+        app_full_path = os.path.realpath(__file__)
+        application_path = os.path.dirname(app_full_path)
+        running_mode = "Non-interactive (e.g. 'python myapp.py')"
+    except NameError:
+        application_path = os.getcwd()
+        running_mode = 'Interactive'
 
-config_path = os.path.join(app_path, 'config.ini')
-print(f"Path config.ini: {config_path}")
-
+config_full_path = os.path.join(application_path, config_name)
 config = configparser.ConfigParser()
-config.read(config_path)
+config.read(config_full_path)
 
+## App Setting
 IMG_LOGO_PEMKAB = config['app']['IMG_LOGO_PEMKAB']
 IMG_LOGO_DISHUB = config['app']['IMG_LOGO_DISHUB']
 LB_PEMKAB = config['app']['LB_PEMKAB']
@@ -51,6 +57,7 @@ LB_DISHUB = config['app']['LB_DISHUB']
 LB_UNIT = config['app']['LB_UNIT']
 LB_UNIT_ADDRESS = config['app']['LB_UNIT_ADDRESS']
 
+## SQL Setting
 DB_HOST = config['mysql']['DB_HOST']
 DB_USER = config['mysql']['DB_USER']
 DB_PASS = config['mysql']['DB_PASS']
@@ -70,6 +77,7 @@ TB_KOMENTAR_UJI = config['mysql']['TB_KOMENTAR_UJI']
 TB_UJI = config['mysql']['TB_UJI']
 TB_UJI_DETAIL = config['mysql']['TB_UJI_DETAIL']
 
+## System Setting
 RTSP_USER = config['setting']['RTSP_USER']
 RTSP_PASS = config['setting']['RTSP_PASS']
 RTSP_IP_DISPLAY_CAM1 = config['setting']['RTSP_IP_DISPLAY_CAM1']
@@ -231,7 +239,7 @@ class ScreenMain(MDScreen):
     def __init__(self, **kwargs):
         super(ScreenMain, self).__init__(**kwargs)
         global flag_conn_stat, flag_gate, dt_selected_camera
-        global dt_user, dt_foto_user, dt_no_antri, dt_no_pol, dt_no_uji, dt_sts_uji, dt_nama
+        global dt_user, dt_foto_user, dt_id_pendaftaran, dt_no_antri, dt_no_pol, dt_no_uji, dt_sts_uji, dt_nama
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna, dt_chasis, dt_no_mesin
         global dt_check_flag, dt_id_user, dt_verified_data, dt_verified_payment
         global dt_dash_antri, dt_dash_belum_uji, dt_dash_sudah_uji
@@ -245,6 +253,7 @@ class ScreenMain(MDScreen):
         dt_temp_nama = dt_temp_alamat = dt_temp_tgl_uji_terakhir = dt_temp_tgl_uji_habis = dt_temp_status_uji = ""
         dt_temp_id_merk = dt_temp_type = dt_temp_jenis_kendaraan = dt_temp_warna = dt_temp_chasis = dt_temp_mesin = dt_temp_bhn_bkr = dt_temp_jbb = ""
         dt_check_flag = dt_verified_data = dt_verified_payment = 0
+        dt_id_pendaftaran = 0
         dt_id_user = 1
         dt_dash_antri = dt_dash_belum_uji = dt_dash_sudah_uji = 0
         dt_selected_camera = 0
@@ -280,7 +289,7 @@ class ScreenMain(MDScreen):
                 
     def regular_update_display(self, dt):
         global flag_conn_stat, db_merk, db_bahan_bakar, db_warna
-        global dt_user, dt_no_antri, dt_no_pol, dt_no_uji, dt_nama, dt_jns_kend
+        global dt_user, dt_id_pendaftaran, dt_no_antri, dt_no_pol, dt_no_uji, dt_nama, dt_jns_kend
         global dt_chasis, dt_merk, dt_type, dt_no_mesin
         global dt_check_flag, dt_id_user, dt_foto_user, dt_verified_data, dt_verified_payment
         global dt_dash_antri, dt_dash_belum_uji, dt_dash_sudah_uji
@@ -289,11 +298,13 @@ class ScreenMain(MDScreen):
             screen_home = self.screen_manager.get_screen('screen_home')
             screen_login = self.screen_manager.get_screen('screen_login')
             screen_menu = self.screen_manager.get_screen('screen_menu')
-            screen_inspect_new = self.screen_manager.get_screen('screen_inspect_new')
-            screen_inspect_pit = self.screen_manager.get_screen('screen_inspect_pit')
+            screen_antrian_new = self.screen_manager.get_screen('screen_antrian_new')
+            
             screen_inspect_id = self.screen_manager.get_screen('screen_inspect_id')
-            screen_inspect_visual2 = self.screen_manager.get_screen('screen_inspect_visual2')
+            screen_inspect_dimension = self.screen_manager.get_screen('screen_inspect_dimension')
             screen_inspect_visual = self.screen_manager.get_screen('screen_inspect_visual')
+            screen_inspect_visual2 = self.screen_manager.get_screen('screen_inspect_visual2')
+            screen_inspect_pit = self.screen_manager.get_screen('screen_inspect_pit')
             screen_realtime_cctv = self.screen_manager.get_screen('screen_realtime_cctv')
             screen_realtime_pit = self.screen_manager.get_screen('screen_realtime_pit')
 
@@ -305,14 +316,16 @@ class ScreenMain(MDScreen):
             screen_login.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
             screen_menu.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
             screen_menu.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
-            screen_inspect_new.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
-            screen_inspect_new.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
+            screen_antrian_new.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
+            screen_antrian_new.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
             screen_inspect_id.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
             screen_inspect_id.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
-            screen_inspect_visual2.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
-            screen_inspect_visual2.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
+            screen_inspect_dimension.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
+            screen_inspect_dimension.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
             screen_inspect_visual.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
             screen_inspect_visual.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
+            screen_inspect_visual2.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
+            screen_inspect_visual2.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))            
             screen_inspect_pit.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
             screen_inspect_pit.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
             screen_realtime_cctv.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
@@ -320,7 +333,7 @@ class ScreenMain(MDScreen):
             screen_realtime_pit.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
             screen_realtime_pit.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
 
-            self.ids.lb_dash_pendaftaran.text = str(dt_dash_antri)
+            self.ids.lb_dash_antri.text = str(dt_dash_antri)
             self.ids.lb_dash_belum_uji.text = str(dt_dash_belum_uji)
             self.ids.lb_dash_sudah_uji.text = str(dt_dash_sudah_uji)
 
@@ -339,8 +352,8 @@ class ScreenMain(MDScreen):
                 screen_login.ids.lb_comm.text = 'PLC Tidak Terhubung'
                 screen_menu.ids.lb_comm.color = colors['Red']['A200']
                 screen_menu.ids.lb_comm.text = 'PLC Tidak Terhubung'
-                screen_inspect_new.ids.lb_comm.color = colors['Red']['A200']
-                screen_inspect_new.ids.lb_comm.text = 'PLC Tidak Terhubung'
+                screen_antrian_new.ids.lb_comm.color = colors['Red']['A200']
+                screen_antrian_new.ids.lb_comm.text = 'PLC Tidak Terhubung'
 
             else:
                 self.ids.lb_comm.color = colors['Blue']['200']
@@ -351,8 +364,8 @@ class ScreenMain(MDScreen):
                 screen_login.ids.lb_comm.text = 'PLC Terhubung'
                 screen_menu.ids.lb_comm.color = colors['Blue']['200']
                 screen_menu.ids.lb_comm.text = 'PLC Terhubung'
-                screen_inspect_new.ids.lb_comm.color = colors['Blue']['200']
-                screen_inspect_new.ids.lb_comm.text = 'PLC Terhubung'
+                screen_antrian_new.ids.lb_comm.color = colors['Blue']['200']
+                screen_antrian_new.ids.lb_comm.text = 'PLC Terhubung'
             
             self.ids.bt_new_inspect.disabled = False if dt_user != '' else True
             self.ids.bt_logout.disabled = False if dt_user != '' else True
@@ -361,10 +374,11 @@ class ScreenMain(MDScreen):
             screen_home.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
             screen_login.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
             screen_menu.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
-            screen_inspect_new.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
+            screen_antrian_new.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
             screen_inspect_id.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
-            screen_inspect_visual2.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
+            screen_inspect_dimension.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
             screen_inspect_visual.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
+            screen_inspect_visual2.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
             screen_inspect_pit.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
             screen_realtime_cctv.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
             screen_realtime_pit.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
@@ -373,12 +387,12 @@ class ScreenMain(MDScreen):
                 self.ids.img_user.source = f'https://dishub.sorongkab.go.id/ujikir/foto_user/{dt_foto_user}'
                 screen_home.ids.img_user.source = f'https://dishub.sorongkab.go.id/ujikir/foto_user/{dt_foto_user}'
                 screen_login.ids.img_user.source = f'https://dishub.sorongkab.go.id/ujikir/foto_user/{dt_foto_user}'
-                screen_inspect_new.ids.img_user.source = f'https://dishub.sorongkab.go.id/ujikir/foto_user/{dt_foto_user}'
+                screen_antrian_new.ids.img_user.source = f'https://dishub.sorongkab.go.id/ujikir/foto_user/{dt_foto_user}'
             else:
                 self.ids.img_user.source = 'assets/images/icon-login.png'
                 screen_home.ids.img_user.source = 'assets/images/icon-login.png'
                 screen_login.ids.img_user.source = 'assets/images/icon-login.png'
-                screen_login.ids.img_user.source = 'assets/images/icon-login.png'               
+                screen_antrian_new.ids.img_user.source = 'assets/images/icon-login.png'               
 
         except Exception as e:
             toast_msg = f'Error Update Display: {e}'
@@ -427,6 +441,7 @@ class ScreenMain(MDScreen):
     def exec_reload_table(self):
         global mydb, db_antrian, db_merk, db_bahan_bakar, db_warna
         global dt_dash_antri, dt_dash_belum_uji, dt_dash_sudah_uji
+        global window_size_x, window_size_y
 
         try:
             tb_merk = mydb.cursor()
@@ -448,7 +463,7 @@ class ScreenMain(MDScreen):
             db_warna = np.array(result_tb_warna)
 
             tb_antrian = mydb.cursor()
-            tb_antrian.execute(f"SELECT noantrian, nopol, nouji, statusuji, merk, type, idjeniskendaraan, jbb, bahan_bakar, warna, check_flag FROM {TB_DATA}")
+            tb_antrian.execute(f"SELECT id, noantrian, nopol, nouji, statusuji, merk, type, idjeniskendaraan, jbb, bahan_bakar, warna, speed_flag FROM {TB_DATA}")
             result_tb_antrian = tb_antrian.fetchall()
             mydb.commit()
             if result_tb_antrian is None:
@@ -471,29 +486,29 @@ class ScreenMain(MDScreen):
             toast_msg = f'Error Remove Widget: {e}'
             print(toast_msg)
         
-        try:           
+        try:
             layout_list = self.ids.layout_list
             for i in range(db_antrian[0,:].size):
                 layout_list.add_widget(
                     MDCard(
-                        MDLabel(text=f"{db_antrian[0, i]}", size_hint_x= 0.05),
-                        MDLabel(text=f"{db_antrian[1, i]}", size_hint_x= 0.07),
-                        MDLabel(text=f"{db_antrian[2, i]}", size_hint_x= 0.08),
-                        MDLabel(text='Berkala' if db_antrian[3, i] == 'B' else 'Uji Ulang' if (db_antrian[3, i]) == 'U' else 'Baru' if (db_antrian[3, i]) == 'BR' else 'Numpang Uji' if (db_antrian[3, i]) == 'NB' else 'Mutasi', size_hint_x= 0.07),
-                        MDLabel(text='-' if db_antrian[4, i] == None else f"{db_merk[np.where(db_merk == db_antrian[4, i])[0][0],1]}" , size_hint_x= 0.08),
-                        MDLabel(text=f"{db_antrian[5, i]}", size_hint_x= 0.12),
-                        MDLabel(text=f"{db_antrian[6, i]}", size_hint_x= 0.15),
-                        MDLabel(text=f"{db_antrian[7, i]}", size_hint_x= 0.05),
-                        MDLabel(text='-' if db_antrian[8, i] == None else f"{db_bahan_bakar[np.where(db_bahan_bakar == db_antrian[8, i])[0][0],1]}" , size_hint_x= 0.08),
-                        MDLabel(text='-' if db_antrian[9, i] == None else f"{db_warna[np.where(db_warna == db_antrian[9, i])[0][0],1]}" , size_hint_x= 0.05),
-                        MDLabel(text='Lulus' if (int(db_antrian[10, i]) == 2) else 'Tidak Lulus' if (int(db_antrian[10, i]) == 1) else 'Belum Uji', size_hint_x= 0.05),
+                        MDLabel(text=f"{db_antrian[1, i]}", size_hint_x= 0.05),
+                        MDLabel(text=f"{db_antrian[2, i]}", size_hint_x= 0.07),
+                        MDLabel(text=f"{db_antrian[3, i]}", size_hint_x= 0.08),
+                        MDLabel(text='Berkala' if db_antrian[4, i] == 'B' else 'Uji Ulang' if (db_antrian[4, i]) == 'U' else 'Baru' if (db_antrian[4, i]) == 'BR' else 'Numpang Uji' if (db_antrian[3, i]) == 'NB' else 'Mutasi', size_hint_x= 0.07),
+                        MDLabel(text='-' if db_antrian[5, i] == None else f"{db_merk[np.where(db_merk == db_antrian[5, i])[0][0],1]}" , size_hint_x= 0.08),
+                        MDLabel(text=f"{db_antrian[6, i]}", size_hint_x= 0.12),
+                        MDLabel(text=f"{db_antrian[7, i]}", size_hint_x= 0.15),
+                        MDLabel(text=f"{db_antrian[8, i]}", size_hint_x= 0.05),
+                        MDLabel(text='-' if db_antrian[9, i] == None else f"{db_bahan_bakar[np.where(db_bahan_bakar == db_antrian[9, i])[0][0],1]}" , size_hint_x= 0.08),
+                        MDLabel(text='-' if db_antrian[10, i] == None else f"{db_warna[np.where(db_warna == db_antrian[10, i])[0][0],1]}" , size_hint_x= 0.05),
+                        MDLabel(text='Lulus' if (int(db_antrian[11, i]) == 2) else 'Tidak Lulus' if (int(db_antrian[11, i]) == 1) else 'Belum Uji', size_hint_x= 0.05),
 
                         ripple_behavior = True,
                         on_press = self.on_antrian_row_press,
                         padding = 20,
                         id=f"card_antrian{i}",
                         size_hint_y=None,
-                        height="60dp",
+                        height=dp(int(60 * 800 / window_size_y)),
                         )
                     )
 
@@ -503,26 +518,28 @@ class ScreenMain(MDScreen):
 
     def on_antrian_row_press(self, instance):
         global mydb, db_antrian, db_merk, db_bahan_bakar, db_warna
-        global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama, dt_sts_uji
+        global dt_id_pendaftaran, dt_no_antri, dt_no_pol, dt_no_uji, dt_sts_uji, dt_check_flag, dt_nama, dt_sts_uji
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
         global dt_check_flag, dt_id_user, dt_foto_user, dt_verified_data, dt_verified_payment
 
         try:
             row = int(str(instance.id).replace("card_antrian",""))
-            dt_no_antri             = db_antrian[0, row]
-            dt_no_pol               = db_antrian[1, row]
-            dt_no_uji               = db_antrian[2, row]
-            dt_sts_uji              = db_antrian[3, row]
-            dt_merk                 = db_antrian[4, row]
-            dt_type                 = db_antrian[5, row]
-            dt_jns_kend             = db_antrian[6, row]
-            dt_jbb                  = db_antrian[7, row]
-            dt_bhn_bkr              = db_antrian[8, row]
-            dt_warna                = db_antrian[9, row]
-            dt_check_flag           = db_antrian[10, row]
+            dt_id_pendaftaran       = db_antrian[0, row]
+            dt_no_antri             = db_antrian[1, row]
+            dt_no_pol               = db_antrian[2, row]
+            dt_no_uji               = db_antrian[3, row]
+            dt_sts_uji              = db_antrian[4, row]
+            dt_merk                 = db_antrian[5, row]
+            dt_type                 = db_antrian[6, row]
+            dt_jns_kend             = db_antrian[7, row]
+            dt_jbb                  = db_antrian[8, row]
+            dt_bhn_bkr              = db_antrian[9, row]
+            dt_warna                = db_antrian[10, row]
+            dt_check_flag           = db_antrian[11, row]
+            
 
-            screen_inspect_new = self.screen_manager.get_screen('screen_inspect_new')
-            screen_inspect_new.exec_fetch_master_data(dt_no_pol, dt_no_uji)
+            screen_antrian_new = self.screen_manager.get_screen('screen_antrian_new')
+            screen_antrian_new.exec_fetch_master_data(dt_no_pol, dt_no_uji)
 
             self.exec_start()
 
@@ -552,7 +569,7 @@ class ScreenMain(MDScreen):
 
     def exec_new_inspect(self):
         try:
-            self.screen_manager.current = 'screen_inspect_new'
+            self.screen_manager.current = 'screen_antrian_new'
 
         except Exception as e:
             toast_msg = f'Error Navigate to New Inspection Screen: {e}'
@@ -570,7 +587,6 @@ class ScreenMain(MDScreen):
         else:
             toast(f'Silahkan Login Untuk Melakukan Pengujian')
             
-
     def open_screen_menu(self):
         self.screen_manager.current = 'screen_menu'
 
@@ -644,7 +660,7 @@ class ScreenMenu(MDScreen):
         self.ids.lb_temp_jbb.text = str(dt_temp_jbb)
 
     def exec_verify_data(self):
-        global dt_no_antri, dt_verified_data, dt_verified_payment
+        global dt_id_pendaftaran, dt_no_antri, dt_verified_data, dt_verified_payment
         global dt_temp_no_uji, dt_temp_no_uji_new, dt_temp_no_wilayah, dt_temp_no_kendaraan, dt_temp_no_plat, dt_temp_no_pol
         global dt_temp_nama, dt_temp_no_hp, dt_temp_alamat, dt_temp_id_izin, dt_temp_wilayah, dt_temp_provinsi, dt_temp_kabupaten_kota, dt_temp_kecamatan
         global dt_temp_id_merk, dt_temp_id_subjenis, dt_temp_type, dt_temp_tahun_buat, dt_temp_silinder, dt_temp_warna, dt_temp_chasis, dt_temp_mesin, dt_temp_warna_plat
@@ -652,7 +668,7 @@ class ScreenMenu(MDScreen):
 
         try:
             mycursor = mydb.cursor()
-            sql = f"INSERT INTO {TB_DAFTAR_BERKALA} (NOANTRIAN, NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, SUBJENIS_ID, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, DAYAMOTOR, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah, TGL_LASTUJI) VALUES ('{dt_no_antri}', '{dt_temp_no_uji}','{dt_temp_no_uji_new}','{dt_temp_no_wilayah}','{dt_temp_no_kendaraan}','{dt_temp_no_plat}','{dt_temp_no_pol}','{dt_temp_nama}','{dt_temp_no_hp}','{dt_temp_alamat}','{dt_temp_id_izin}','{dt_temp_wilayah}','{dt_temp_provinsi}','{dt_temp_kabupaten_kota}','{dt_temp_kecamatan}','{dt_temp_id_merk}','{dt_temp_id_subjenis}','{dt_temp_type}','{dt_temp_tahun_buat}','{dt_temp_silinder}','{dt_temp_warna}','{dt_temp_chasis}','{dt_temp_mesin}','{dt_temp_warna_plat}','{dt_temp_bhn_bkr}','{dt_temp_jbb}','{dt_temp_daya_motor}','{dt_temp_status_penerbitan}','{dt_temp_jenis_kendaraan}','{dt_temp_kode_jenis_kendaraan}','{dt_temp_kode_wilayah}','{dt_temp_tgl_uji_terakhir}')"
+            sql = f"INSERT INTO {TB_DAFTAR_BERKALA} (ID, NOANTRIAN, NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, SUBJENIS_ID, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, DAYAMOTOR, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah, TGL_LASTUJI) VALUES ('{dt_id_pendaftaran}', '{dt_no_antri}', '{dt_temp_no_uji}','{dt_temp_no_uji_new}','{dt_temp_no_wilayah}','{dt_temp_no_kendaraan}','{dt_temp_no_plat}','{dt_temp_no_pol}','{dt_temp_nama}','{dt_temp_no_hp}','{dt_temp_alamat}','{dt_temp_id_izin}','{dt_temp_wilayah}','{dt_temp_provinsi}','{dt_temp_kabupaten_kota}','{dt_temp_kecamatan}','{dt_temp_id_merk}','{dt_temp_id_subjenis}','{dt_temp_type}','{dt_temp_tahun_buat}','{dt_temp_silinder}','{dt_temp_warna}','{dt_temp_chasis}','{dt_temp_mesin}','{dt_temp_warna_plat}','{dt_temp_bhn_bkr}','{dt_temp_jbb}','{dt_temp_daya_motor}','{dt_temp_status_penerbitan}','{dt_temp_jenis_kendaraan}','{dt_temp_kode_jenis_kendaraan}','{dt_temp_kode_wilayah}','{dt_temp_tgl_uji_terakhir}')"
             mycursor.execute(sql)
             mydb.commit()
             dt_verified_data = 1
@@ -880,9 +896,9 @@ class ScreenMenu(MDScreen):
     def exec_cancel(self):
         self.screen_manager.current = 'screen_main'
 
-class ScreenInspectNew(MDScreen):
+class ScreenAntrianNew(MDScreen):
     def __init__(self, **kwargs):
-        super(ScreenInspectNew, self).__init__(**kwargs)
+        super(ScreenAntrianNew, self).__init__(**kwargs)
         Clock.schedule_once(self.delayed_init, 1)
     
     def delayed_init(self, dt):
@@ -1087,6 +1103,9 @@ class ScreenInspectId(MDScreen):
         self.ids.lb_unit_address.text = LB_UNIT_ADDRESS
     
     def on_enter(self):
+        global dt_no_antri, dt_no_pol, dt_no_uji
+
+        self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Uji Identitas: LULUS"
         self.exec_reload_komponen_uji()
 
     def menu_komentar_callback(self, text_item):
@@ -1101,12 +1120,12 @@ class ScreenInspectId(MDScreen):
     def on_komponen_uji_row_press(self, instance):
         global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
-        global db_komponen_uji, selected_komponen_uji
+        global db_komponen_uji, selected_row_komponen_uji
 
         try:
             self.ids.bt_dropdown_caller.disabled = True
             row = int(str(instance.id).replace("card_komponen_uji",""))
-            selected_komponen_uji = row
+            selected_row_komponen_uji = row
             self.exec_reload_subkomponen_uji(db_komponen_uji[1, row])
 
         except Exception as e:
@@ -1116,7 +1135,7 @@ class ScreenInspectId(MDScreen):
     def on_subkomponen_uji_row_press(self, instance):
         global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
-        global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji, selected_komponen_uji
+        global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji, selected_row_komponen_uji
         global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
 
         try:
@@ -1124,6 +1143,7 @@ class ScreenInspectId(MDScreen):
             row = int(str(instance.id).replace("card_subkomponen_uji",""))
             selected_row_subkomponen_uji = row
             selected_kode_subkomponen_uji = db_subkomponen_uji[0, row]
+            selected_nama_komponen_uji = db_komponen_uji[2, selected_row_komponen_uji]
 
             if(flags_subkomponen_uji[row]):
                 flags_subkomponen_uji[row] = False
@@ -1135,11 +1155,13 @@ class ScreenInspectId(MDScreen):
                 self.ids[f'bt_subkomponen_uji{row}'].md_bg_color = "#2CA02C"
 
             if(np.all(flags_subkomponen_uji == True)):
-                self.ids[f'bt_komponen_uji{selected_komponen_uji}'].icon = "check-bold"
-                self.ids[f'bt_komponen_uji{selected_komponen_uji}'].md_bg_color = "#2CA02C"
+                self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon = "check-bold"
+                self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].md_bg_color = "#2CA02C"
+                self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Uji Identitas: LULUS"
             else:
-                self.ids[f'bt_komponen_uji{selected_komponen_uji}'].icon = "cancel"
-                self.ids[f'bt_komponen_uji{selected_komponen_uji}'].md_bg_color = "#FF2A2A"
+                self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon = "cancel"
+                self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].md_bg_color = "#FF2A2A"
+                self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Uji Identitas: TIDAK LULUS pada komponen uji {selected_nama_komponen_uji}"
             
             self.reload_menu_komentar_uji(selected_kode_subkomponen_uji)
 
@@ -1149,6 +1171,7 @@ class ScreenInspectId(MDScreen):
 
     def exec_reload_komponen_uji(self):
         global mydb, db_komponen_uji
+        global window_size_x, window_size_y
 
         try:
             tb_komponen_uji = mydb.cursor()
@@ -1179,7 +1202,7 @@ class ScreenInspectId(MDScreen):
                         spacing = 10,
                         id=f'card_komponen_uji{i}',
                         size_hint_y=None,
-                        height="60dp",
+                        height=dp(int(60 * 800 / window_size_y)),
                         )
                 self.ids[f'card_komponen_uji{i}'] = card
                 layout_list.add_widget(card)
@@ -1195,6 +1218,7 @@ class ScreenInspectId(MDScreen):
     def exec_reload_subkomponen_uji(self, kode_komponen_uji):
         global mydb, db_subkomponen_uji
         global flags_subkomponen_uji
+        global window_size_x, window_size_y
 
         try:
             tb_subkomponen_uji = mydb.cursor()
@@ -1218,7 +1242,6 @@ class ScreenInspectId(MDScreen):
             layout_list = self.ids.layout_list_subkomponen_uji
             for i in range(db_subkomponen_uji[0,:].size):
                 card = MDCard(
-                    # MDLabel(text=f"{db_subkomponen_uji[0, i]}", size_hint_x= 0.1),
                     MDLabel(text=f"{db_subkomponen_uji[1, i]}", size_hint_x= 0.4),
                     
                     ripple_behavior = False,
@@ -1227,7 +1250,7 @@ class ScreenInspectId(MDScreen):
                     id=f'card_subkomponen_uji{i}',
                     on_press = self.on_subkomponen_uji_row_press,
                     size_hint_y=None,
-                    height="60dp",
+                    height=dp(int(60 * 800 / window_size_y)),
                     )
                 self.ids[f'card_subkomponen_uji{i}'] = card
                 layout_list.add_widget(card)
@@ -1244,6 +1267,8 @@ class ScreenInspectId(MDScreen):
             print(toast_msg)
 
     def reload_menu_komentar_uji(self, selected_kode_subkomponen_uji=""):
+        global window_size_x, window_size_y
+
         try:
             print(f"reload menu komentar uji {selected_kode_subkomponen_uji}")
             tb_komentar_uji = mydb.cursor()
@@ -1260,7 +1285,7 @@ class ScreenInspectId(MDScreen):
                 {
                     "text": f"{db_komentar_uji[3,i]}",                   
                     "viewclass": "ListItem",
-                    "height": dp(54),
+                    "height": dp(int(60 * 800 / window_size_y)),
                     "on_release": lambda x=f"{db_komentar_uji[3,i]}": self.menu_komentar_callback(x),
                 } for i in range(db_komentar_uji[0,:].size)
             ]
@@ -1279,8 +1304,8 @@ class ScreenInspectId(MDScreen):
         self.screen_manager.current = 'screen_menu'
 
     def exec_save(self):
-        global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji, db_last_data
-        global mydb, dt_no_pol, selected_komponen_uji
+        global mydb, db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji, db_last_data
+        global dt_no_pol, selected_row_komponen_uji
 
         try:
             tb_image_kendaraan = mydb.cursor()
@@ -1289,7 +1314,7 @@ class ScreenInspectId(MDScreen):
             mydb.commit()
             id_image = result_tb_image_kendaraan[0]
 
-            if self.ids[f'bt_komponen_uji{selected_komponen_uji}'].icon == "cancel":
+            if self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon == "cancel":
                 mycursor = mydb.cursor()
                 sql = f"UPDATE {TB_UJI} SET lulus_uji = '0' WHERE nopol = '{dt_no_pol}' AND id_image = '{id_image}' "
                 mycursor.execute(sql)
@@ -1305,7 +1330,7 @@ class ScreenInspectId(MDScreen):
             result_tb_uji = tb_uji.fetchone()
             mydb.commit()
             id_uji = result_tb_uji[0]
-            dt_selected_kode_komponen_uji = db_komponen_uji[1, selected_komponen_uji]
+            dt_selected_kode_komponen_uji = db_komponen_uji[1, selected_row_komponen_uji]
 
             for i in range(db_subkomponen_uji[0,:].size):                
                 kode_subkomponen_uji = db_subkomponen_uji[0,i]
@@ -1341,6 +1366,9 @@ class ScreenInspectDimension(MDScreen):
         self.ids.lb_unit_address.text = LB_UNIT_ADDRESS
     
     def on_enter(self):
+        global dt_no_antri, dt_no_pol, dt_no_uji
+
+        self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Uji Identitas: LULUS"
         self.exec_reload_komponen_uji()
 
     def menu_komentar_callback(self, text_item):
@@ -1355,12 +1383,12 @@ class ScreenInspectDimension(MDScreen):
     def on_komponen_uji_row_press(self, instance):
         global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
-        global db_komponen_uji, selected_komponen_uji
+        global db_komponen_uji, selected_row_komponen_uji
 
         try:
             self.ids.bt_dropdown_caller.disabled = True
             row = int(str(instance.id).replace("card_komponen_uji",""))
-            selected_komponen_uji = row
+            selected_row_komponen_uji = row
             self.exec_reload_subkomponen_uji(db_komponen_uji[1, row])
 
         except Exception as e:
@@ -1370,7 +1398,7 @@ class ScreenInspectDimension(MDScreen):
     def on_subkomponen_uji_row_press(self, instance):
         global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
-        global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji, selected_komponen_uji
+        global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji, selected_row_komponen_uji
         global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
 
         try:
@@ -1378,6 +1406,7 @@ class ScreenInspectDimension(MDScreen):
             row = int(str(instance.id).replace("card_subkomponen_uji",""))
             selected_row_subkomponen_uji = row
             selected_kode_subkomponen_uji = db_subkomponen_uji[0, row]
+            selected_nama_komponen_uji = db_komponen_uji[2, selected_row_komponen_uji]
 
             if(flags_subkomponen_uji[row]):
                 flags_subkomponen_uji[row] = False
@@ -1389,11 +1418,13 @@ class ScreenInspectDimension(MDScreen):
                 self.ids[f'bt_subkomponen_uji{row}'].md_bg_color = "#2CA02C"
 
             if(np.all(flags_subkomponen_uji == True)):
-                self.ids[f'bt_komponen_uji{selected_komponen_uji}'].icon = "check-bold"
-                self.ids[f'bt_komponen_uji{selected_komponen_uji}'].md_bg_color = "#2CA02C"
+                self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon = "check-bold"
+                self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].md_bg_color = "#2CA02C"
+                self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Uji Identitas: LULUS"
             else:
-                self.ids[f'bt_komponen_uji{selected_komponen_uji}'].icon = "cancel"
-                self.ids[f'bt_komponen_uji{selected_komponen_uji}'].md_bg_color = "#FF2A2A"
+                self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon = "cancel"
+                self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].md_bg_color = "#FF2A2A"
+                self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Uji Identitas: TIDAK LULUS pada komponen uji {selected_nama_komponen_uji}"
             
             self.reload_menu_komentar_uji(selected_kode_subkomponen_uji)
 
@@ -1403,6 +1434,7 @@ class ScreenInspectDimension(MDScreen):
 
     def exec_reload_komponen_uji(self):
         global mydb, db_komponen_uji
+        global window_size_x, window_size_y
 
         try:
             tb_komponen_uji = mydb.cursor()
@@ -1433,7 +1465,7 @@ class ScreenInspectDimension(MDScreen):
                         spacing = 10,
                         id=f'card_komponen_uji{i}',
                         size_hint_y=None,
-                        height="60dp",
+                        height=dp(int(60 * 800 / window_size_y)),
                         )
                 self.ids[f'card_komponen_uji{i}'] = card
                 layout_list.add_widget(card)
@@ -1449,6 +1481,7 @@ class ScreenInspectDimension(MDScreen):
     def exec_reload_subkomponen_uji(self, kode_komponen_uji):
         global mydb, db_subkomponen_uji, dt_no_pol
         global flags_subkomponen_uji, db_last_data
+        global window_size_x, window_size_y
 
         try:
             tb_subkomponen_uji = mydb.cursor()
@@ -1480,7 +1513,7 @@ class ScreenInspectDimension(MDScreen):
                     id=f'card_subkomponen_uji{i}',
                     on_press = self.on_subkomponen_uji_row_press,
                     size_hint_y=None,
-                    height="60dp",
+                    height=dp(int(60 * 800 / window_size_y)),
                     )
                 self.ids[f'card_subkomponen_uji{i}'] = card
                 layout_list.add_widget(card)
@@ -1516,6 +1549,8 @@ class ScreenInspectDimension(MDScreen):
             print(toast_msg)
 
     def reload_menu_komentar_uji(self, selected_kode_subkomponen_uji=""):
+        global window_size_x, window_size_y
+
         try:
             print(f"reload menu komentar uji {selected_kode_subkomponen_uji}")
             tb_komentar_uji = mydb.cursor()
@@ -1532,7 +1567,7 @@ class ScreenInspectDimension(MDScreen):
                 {
                     "text": f"{db_komentar_uji[3,i]}",                   
                     "viewclass": "ListItem",
-                    "height": dp(54),
+                    "height": dp(int(60 * 800 / window_size_y)),
                     "on_release": lambda x=f"{db_komentar_uji[3,i]}": self.menu_komentar_callback(x),
                 } for i in range(db_komentar_uji[0,:].size)
             ]
@@ -1552,7 +1587,7 @@ class ScreenInspectDimension(MDScreen):
 
     def exec_save(self):
         global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji, db_last_data
-        global mydb, dt_no_pol, selected_komponen_uji
+        global mydb, dt_no_pol, selected_row_komponen_uji
 
         try:
             tb_image_kendaraan = mydb.cursor()
@@ -1569,7 +1604,7 @@ class ScreenInspectDimension(MDScreen):
                 mycursor.execute(sql)
                 mydb.commit()
 
-            if self.ids[f'bt_komponen_uji{selected_komponen_uji}'].icon == "cancel":
+            if self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon == "cancel":
                 mycursor = mydb.cursor()
                 sql = f"UPDATE {TB_UJI} SET lulus_uji = '0' WHERE nopol = '{dt_no_pol}' AND id_image = '{id_image}' "
                 mycursor.execute(sql)
@@ -1585,7 +1620,7 @@ class ScreenInspectDimension(MDScreen):
             result_tb_uji = tb_uji.fetchone()
             mydb.commit()
             id_uji = result_tb_uji[0]
-            dt_selected_kode_komponen_uji = db_komponen_uji[1, selected_komponen_uji]
+            dt_selected_kode_komponen_uji = db_komponen_uji[1, selected_row_komponen_uji]
 
             for i in range(db_subkomponen_uji[0,:].size):                
                 kode_subkomponen_uji = db_subkomponen_uji[0,i]
@@ -1621,6 +1656,9 @@ class ScreenInspectVisual(MDScreen):
         self.ids.lb_unit_address.text = LB_UNIT_ADDRESS
     
     def on_enter(self):
+        global dt_no_antri, dt_no_pol, dt_no_uji
+
+        self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Uji Identitas: LULUS"
         self.exec_reload_komponen_uji()
 
     def menu_komentar_callback(self, text_item):
@@ -1635,12 +1673,12 @@ class ScreenInspectVisual(MDScreen):
     def on_komponen_uji_row_press(self, instance):
         global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
-        global db_komponen_uji, selected_komponen_uji
+        global db_komponen_uji, selected_row_komponen_uji
 
         try:
             self.ids.bt_dropdown_caller.disabled = True
             row = int(str(instance.id).replace("card_komponen_uji",""))
-            selected_komponen_uji = row
+            selected_row_komponen_uji = row
             self.exec_reload_subkomponen_uji(db_komponen_uji[1, row])
 
         except Exception as e:
@@ -1650,7 +1688,7 @@ class ScreenInspectVisual(MDScreen):
     def on_subkomponen_uji_row_press(self, instance):
         global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
-        global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji, selected_komponen_uji
+        global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji, selected_row_komponen_uji
         global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
 
         try:
@@ -1658,6 +1696,7 @@ class ScreenInspectVisual(MDScreen):
             row = int(str(instance.id).replace("card_subkomponen_uji",""))
             selected_row_subkomponen_uji = row
             selected_kode_subkomponen_uji = db_subkomponen_uji[0, row]
+            selected_nama_komponen_uji = db_komponen_uji[2, selected_row_komponen_uji]
 
             if(flags_subkomponen_uji[row]):
                 flags_subkomponen_uji[row] = False
@@ -1669,20 +1708,23 @@ class ScreenInspectVisual(MDScreen):
                 self.ids[f'bt_subkomponen_uji{row}'].md_bg_color = "#2CA02C"
 
             if(np.all(flags_subkomponen_uji == True)):
-                self.ids[f'bt_komponen_uji{selected_komponen_uji}'].icon = "check-bold"
-                self.ids[f'bt_komponen_uji{selected_komponen_uji}'].md_bg_color = "#2CA02C"
+                self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon = "check-bold"
+                self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].md_bg_color = "#2CA02C"
+                self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Uji Identitas: LULUS"
             else:
-                self.ids[f'bt_komponen_uji{selected_komponen_uji}'].icon = "cancel"
-                self.ids[f'bt_komponen_uji{selected_komponen_uji}'].md_bg_color = "#FF2A2A"
+                self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon = "cancel"
+                self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].md_bg_color = "#FF2A2A"
+                self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Uji Identitas: TIDAK LULUS pada komponen uji {selected_nama_komponen_uji}"
             
             self.reload_menu_komentar_uji(selected_kode_subkomponen_uji)
 
         except Exception as e:
             toast_msg = f'Error Execute Command from Table Subkomponen Uji Row: {e}'
-            toast(toast_msg)  
+            toast(toast_msg)   
 
     def exec_reload_komponen_uji(self):
         global mydb, db_komponen_uji
+        global window_size_x, window_size_y
 
         try:
             tb_komponen_uji = mydb.cursor()
@@ -1713,7 +1755,7 @@ class ScreenInspectVisual(MDScreen):
                         spacing = 10,
                         id=f'card_komponen_uji{i}',
                         size_hint_y=None,
-                        height="60dp",
+                        height=dp(int(60 * 800 / window_size_y)),
                         )
                 self.ids[f'card_komponen_uji{i}'] = card
                 layout_list.add_widget(card)
@@ -1761,7 +1803,7 @@ class ScreenInspectVisual(MDScreen):
                     id=f'card_subkomponen_uji{i}',
                     on_press = self.on_subkomponen_uji_row_press,
                     size_hint_y=None,
-                    height="60dp",
+                    height=dp(int(60 * 800 / window_size_y)),
                     )
                 self.ids[f'card_subkomponen_uji{i}'] = card
                 layout_list.add_widget(card)
@@ -1778,6 +1820,8 @@ class ScreenInspectVisual(MDScreen):
             print(toast_msg)
 
     def reload_menu_komentar_uji(self, selected_kode_subkomponen_uji=""):
+        global window_size_x, window_size_y
+
         try:
             print(f"reload menu komentar uji {selected_kode_subkomponen_uji}")
             tb_komentar_uji = mydb.cursor()
@@ -1794,7 +1838,7 @@ class ScreenInspectVisual(MDScreen):
                 {
                     "text": f"{db_komentar_uji[3,i]}",                   
                     "viewclass": "ListItem",
-                    "height": dp(54),
+                    "height": dp(int(60 * 800 / window_size_y)),
                     "on_release": lambda x=f"{db_komentar_uji[3,i]}": self.menu_komentar_callback(x),
                 } for i in range(db_komentar_uji[0,:].size)
             ]
@@ -1814,7 +1858,7 @@ class ScreenInspectVisual(MDScreen):
 
     def exec_save(self):
         global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji, db_last_data
-        global mydb, dt_no_pol, selected_komponen_uji
+        global mydb, dt_no_pol, selected_row_komponen_uji
 
         try:
             tb_image_kendaraan = mydb.cursor()
@@ -1823,7 +1867,7 @@ class ScreenInspectVisual(MDScreen):
             mydb.commit()
             id_image = result_tb_image_kendaraan[0]
 
-            if self.ids[f'bt_komponen_uji{selected_komponen_uji}'].icon == "cancel":
+            if self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon == "cancel":
                 mycursor = mydb.cursor()
                 sql = f"UPDATE {TB_UJI} SET lulus_uji = '0' WHERE nopol = '{dt_no_pol}' AND id_image = '{id_image}' "
                 mycursor.execute(sql)
@@ -1839,7 +1883,7 @@ class ScreenInspectVisual(MDScreen):
             result_tb_uji = tb_uji.fetchone()
             mydb.commit()
             id_uji = result_tb_uji[0]
-            dt_selected_kode_komponen_uji = db_komponen_uji[1, selected_komponen_uji]
+            dt_selected_kode_komponen_uji = db_komponen_uji[1, selected_row_komponen_uji]
 
             for i in range(db_subkomponen_uji[0,:].size):                
                 kode_subkomponen_uji = db_subkomponen_uji[0,i]
@@ -1875,6 +1919,9 @@ class ScreenInspectVisual2(MDScreen):
         self.ids.lb_unit_address.text = LB_UNIT_ADDRESS
     
     def on_enter(self):
+        global dt_no_antri, dt_no_pol, dt_no_uji
+
+        self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Uji Identitas: LULUS"
         self.exec_reload_komponen_uji()
 
     def menu_komentar_callback(self, text_item):
@@ -1889,12 +1936,12 @@ class ScreenInspectVisual2(MDScreen):
     def on_komponen_uji_row_press(self, instance):
         global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
-        global db_komponen_uji, selected_komponen_uji
+        global db_komponen_uji, selected_row_komponen_uji
 
         try:
             self.ids.bt_dropdown_caller.disabled = True
             row = int(str(instance.id).replace("card_komponen_uji",""))
-            selected_komponen_uji = row
+            selected_row_komponen_uji = row
             self.exec_reload_subkomponen_uji(db_komponen_uji[1, row])
 
         except Exception as e:
@@ -1904,7 +1951,7 @@ class ScreenInspectVisual2(MDScreen):
     def on_subkomponen_uji_row_press(self, instance):
         global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
-        global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji, selected_komponen_uji
+        global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji, selected_row_komponen_uji
         global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
 
         try:
@@ -1912,6 +1959,7 @@ class ScreenInspectVisual2(MDScreen):
             row = int(str(instance.id).replace("card_subkomponen_uji",""))
             selected_row_subkomponen_uji = row
             selected_kode_subkomponen_uji = db_subkomponen_uji[0, row]
+            selected_nama_komponen_uji = db_komponen_uji[2, selected_row_komponen_uji]
 
             if(flags_subkomponen_uji[row]):
                 flags_subkomponen_uji[row] = False
@@ -1923,11 +1971,13 @@ class ScreenInspectVisual2(MDScreen):
                 self.ids[f'bt_subkomponen_uji{row}'].md_bg_color = "#2CA02C"
 
             if(np.all(flags_subkomponen_uji == True)):
-                self.ids[f'bt_komponen_uji{selected_komponen_uji}'].icon = "check-bold"
-                self.ids[f'bt_komponen_uji{selected_komponen_uji}'].md_bg_color = "#2CA02C"
+                self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon = "check-bold"
+                self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].md_bg_color = "#2CA02C"
+                self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Uji Identitas: LULUS"
             else:
-                self.ids[f'bt_komponen_uji{selected_komponen_uji}'].icon = "cancel"
-                self.ids[f'bt_komponen_uji{selected_komponen_uji}'].md_bg_color = "#FF2A2A"
+                self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon = "cancel"
+                self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].md_bg_color = "#FF2A2A"
+                self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Uji Identitas: TIDAK LULUS pada komponen uji {selected_nama_komponen_uji}"
             
             self.reload_menu_komentar_uji(selected_kode_subkomponen_uji)
 
@@ -1937,6 +1987,7 @@ class ScreenInspectVisual2(MDScreen):
 
     def exec_reload_komponen_uji(self):
         global mydb, db_komponen_uji
+        global window_size_x, window_size_y
 
         try:
             tb_komponen_uji = mydb.cursor()
@@ -1967,7 +2018,7 @@ class ScreenInspectVisual2(MDScreen):
                         spacing = 10,
                         id=f'card_komponen_uji{i}',
                         size_hint_y=None,
-                        height="60dp",
+                        height=dp(int(60 * 800 / window_size_y)),
                         )
                 self.ids[f'card_komponen_uji{i}'] = card
                 layout_list.add_widget(card)
@@ -1983,6 +2034,7 @@ class ScreenInspectVisual2(MDScreen):
     def exec_reload_subkomponen_uji(self, kode_komponen_uji):
         global mydb, db_subkomponen_uji
         global flags_subkomponen_uji
+        global window_size_x, window_size_y
 
         try:
             tb_subkomponen_uji = mydb.cursor()
@@ -2015,7 +2067,7 @@ class ScreenInspectVisual2(MDScreen):
                     id=f'card_subkomponen_uji{i}',
                     on_press = self.on_subkomponen_uji_row_press,
                     size_hint_y=None,
-                    height="60dp",
+                    height=dp(int(60 * 800 / window_size_y)),
                     )
                 self.ids[f'card_subkomponen_uji{i}'] = card
                 layout_list.add_widget(card)
@@ -2032,6 +2084,8 @@ class ScreenInspectVisual2(MDScreen):
             print(toast_msg)
 
     def reload_menu_komentar_uji(self, selected_kode_subkomponen_uji=""):
+        global window_size_x, window_size_y
+
         try:
             print(f"reload menu komentar uji {selected_kode_subkomponen_uji}")
             tb_komentar_uji = mydb.cursor()
@@ -2048,7 +2102,7 @@ class ScreenInspectVisual2(MDScreen):
                 {
                     "text": f"{db_komentar_uji[3,i]}",                   
                     "viewclass": "ListItem",
-                    "height": dp(54),
+                    "height": dp(int(60 * 800 / window_size_y)),
                     "on_release": lambda x=f"{db_komentar_uji[3,i]}": self.menu_komentar_callback(x),
                 } for i in range(db_komentar_uji[0,:].size)
             ]
@@ -2068,7 +2122,7 @@ class ScreenInspectVisual2(MDScreen):
 
     def exec_save(self):
         global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji, db_last_data
-        global mydb, dt_no_pol, selected_komponen_uji
+        global mydb, dt_no_pol, selected_row_komponen_uji
 
         try:
             tb_image_kendaraan = mydb.cursor()
@@ -2077,7 +2131,7 @@ class ScreenInspectVisual2(MDScreen):
             mydb.commit()
             id_image = result_tb_image_kendaraan[0]
 
-            if self.ids[f'bt_komponen_uji{selected_komponen_uji}'].icon == "cancel":
+            if self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon == "cancel":
                 mycursor = mydb.cursor()
                 sql = f"UPDATE {TB_UJI} SET lulus_uji = '0' WHERE nopol = '{dt_no_pol}' AND id_image = '{id_image}' "
                 mycursor.execute(sql)
@@ -2093,7 +2147,7 @@ class ScreenInspectVisual2(MDScreen):
             result_tb_uji = tb_uji.fetchone()
             mydb.commit()
             id_uji = result_tb_uji[0]
-            dt_selected_kode_komponen_uji = db_komponen_uji[1, selected_komponen_uji]
+            dt_selected_kode_komponen_uji = db_komponen_uji[1, selected_row_komponen_uji]
 
             for i in range(db_subkomponen_uji[0,:].size):                
                 kode_subkomponen_uji = db_subkomponen_uji[0,i]
@@ -2129,6 +2183,9 @@ class ScreenInspectPit(MDScreen):
         self.ids.lb_unit_address.text = LB_UNIT_ADDRESS
     
     def on_enter(self):
+        global dt_no_antri, dt_no_pol, dt_no_uji
+
+        self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Uji Identitas: LULUS"
         self.exec_reload_komponen_uji()
 
     def menu_komentar_callback(self, text_item):
@@ -2143,12 +2200,12 @@ class ScreenInspectPit(MDScreen):
     def on_komponen_uji_row_press(self, instance):
         global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
-        global db_komponen_uji, selected_komponen_uji
+        global db_komponen_uji, selected_row_komponen_uji
 
         try:
             self.ids.bt_dropdown_caller.disabled = True
             row = int(str(instance.id).replace("card_komponen_uji",""))
-            selected_komponen_uji = row
+            selected_row_komponen_uji = row
             self.exec_reload_subkomponen_uji(db_komponen_uji[1, row])
 
         except Exception as e:
@@ -2158,7 +2215,7 @@ class ScreenInspectPit(MDScreen):
     def on_subkomponen_uji_row_press(self, instance):
         global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
-        global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji, selected_komponen_uji
+        global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji, selected_row_komponen_uji
         global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
 
         try:
@@ -2166,6 +2223,7 @@ class ScreenInspectPit(MDScreen):
             row = int(str(instance.id).replace("card_subkomponen_uji",""))
             selected_row_subkomponen_uji = row
             selected_kode_subkomponen_uji = db_subkomponen_uji[0, row]
+            selected_nama_komponen_uji = db_komponen_uji[2, selected_row_komponen_uji]
 
             if(flags_subkomponen_uji[row]):
                 flags_subkomponen_uji[row] = False
@@ -2177,11 +2235,13 @@ class ScreenInspectPit(MDScreen):
                 self.ids[f'bt_subkomponen_uji{row}'].md_bg_color = "#2CA02C"
 
             if(np.all(flags_subkomponen_uji == True)):
-                self.ids[f'bt_komponen_uji{selected_komponen_uji}'].icon = "check-bold"
-                self.ids[f'bt_komponen_uji{selected_komponen_uji}'].md_bg_color = "#2CA02C"
+                self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon = "check-bold"
+                self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].md_bg_color = "#2CA02C"
+                self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Uji Identitas: LULUS"
             else:
-                self.ids[f'bt_komponen_uji{selected_komponen_uji}'].icon = "cancel"
-                self.ids[f'bt_komponen_uji{selected_komponen_uji}'].md_bg_color = "#FF2A2A"
+                self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon = "cancel"
+                self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].md_bg_color = "#FF2A2A"
+                self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Uji Identitas: TIDAK LULUS pada komponen uji {selected_nama_komponen_uji}"
             
             self.reload_menu_komentar_uji(selected_kode_subkomponen_uji)
 
@@ -2191,6 +2251,7 @@ class ScreenInspectPit(MDScreen):
 
     def exec_reload_komponen_uji(self):
         global mydb, db_komponen_uji
+        global window_size_x, window_size_y
 
         try:
             tb_komponen_uji = mydb.cursor()
@@ -2221,7 +2282,7 @@ class ScreenInspectPit(MDScreen):
                         spacing = 10,
                         id=f'card_komponen_uji{i}',
                         size_hint_y=None,
-                        height="60dp",
+                        height=dp(int(60 * 800 / window_size_y)),
                         )
                 self.ids[f'card_komponen_uji{i}'] = card
                 layout_list.add_widget(card)
@@ -2237,6 +2298,7 @@ class ScreenInspectPit(MDScreen):
     def exec_reload_subkomponen_uji(self, kode_komponen_uji):
         global mydb, db_subkomponen_uji
         global flags_subkomponen_uji
+        global window_size_x, window_size_y
 
         try:
             tb_subkomponen_uji = mydb.cursor()
@@ -2269,7 +2331,7 @@ class ScreenInspectPit(MDScreen):
                     id=f'card_subkomponen_uji{i}',
                     on_press = self.on_subkomponen_uji_row_press,
                     size_hint_y=None,
-                    height="60dp",
+                    height=dp(int(60 * 800 / window_size_y)),
                     )
                 self.ids[f'card_subkomponen_uji{i}'] = card
                 layout_list.add_widget(card)
@@ -2289,6 +2351,8 @@ class ScreenInspectPit(MDScreen):
             print(toast_msg)
 
     def reload_menu_komentar_uji(self, selected_kode_subkomponen_uji=""):
+        global window_size_x, window_size_y
+
         try:
             print(f"reload menu komentar uji {selected_kode_subkomponen_uji}")
             tb_komentar_uji = mydb.cursor()
@@ -2305,7 +2369,7 @@ class ScreenInspectPit(MDScreen):
                 {
                     "text": f"{db_komentar_uji[3,i]}",                   
                     "viewclass": "ListItem",
-                    "height": dp(54),
+                    "height": dp(int(60 * 800 / window_size_y)),
                     "on_release": lambda x=f"{db_komentar_uji[3,i]}": self.menu_komentar_callback(x),
                 } for i in range(db_komentar_uji[0,:].size)
             ]
@@ -2328,7 +2392,7 @@ class ScreenInspectPit(MDScreen):
 
     def exec_save(self):
         global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji, db_last_data
-        global mydb, dt_no_pol, selected_komponen_uji
+        global mydb, dt_no_pol, selected_row_komponen_uji
 
         try:
             tb_image_kendaraan = mydb.cursor()
@@ -2337,7 +2401,7 @@ class ScreenInspectPit(MDScreen):
             mydb.commit()
             id_image = result_tb_image_kendaraan[0]
 
-            if self.ids[f'bt_komponen_uji{selected_komponen_uji}'].icon == "cancel":
+            if self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon == "cancel":
                 mycursor = mydb.cursor()
                 sql = f"UPDATE {TB_UJI} SET lulus_uji = '0' WHERE nopol = '{dt_no_pol}' AND id_image = '{id_image}' "
                 mycursor.execute(sql)
@@ -2353,7 +2417,7 @@ class ScreenInspectPit(MDScreen):
             result_tb_uji = tb_uji.fetchone()
             mydb.commit()
             id_uji = result_tb_uji[0]
-            dt_selected_kode_komponen_uji = db_komponen_uji[1, selected_komponen_uji]
+            dt_selected_kode_komponen_uji = db_komponen_uji[1, selected_row_komponen_uji]
 
             for i in range(db_subkomponen_uji[0,:].size):                
                 kode_subkomponen_uji = db_subkomponen_uji[0,i]
@@ -2393,12 +2457,14 @@ class ScreenRealtimeCctv(MDScreen):
         rtsp_url_array = np.array([rtsp_url_cam1, rtsp_url_cam2, rtsp_url_cam3, rtsp_url_cam4])
     
     def on_enter(self):
+        global window_size_x, window_size_y
+
         db_camera_list = np.array(["Depan", "Kiri", "Kanan", "Belakang"])
         self.menu_camera_items = [
             {
                 "text": f"{db_camera_list[i]}",                   
                 "viewclass": "ListItem",
-                "height": dp(54),
+                "height": dp(int(60 * 800 / window_size_y)),
                 "on_release": lambda x=i, y=db_camera_list[i]: self.menu_camera_callback(x, y),
             } for i in range(db_camera_list.size)
         ]
@@ -2544,12 +2610,14 @@ class ScreenRealtimePit(MDScreen):
         rtsp_url_array = np.array([rtsp_url_pit1, rtsp_url_pit2, rtsp_url_pit3, rtsp_url_pit4])
     
     def on_enter(self):
+        global window_size_x, window_size_y
+
         db_camera_list = np.array(["Depan", "Kiri", "Kanan", "Belakang"])
         self.menu_camera_items = [
             {
                 "text": f"{db_camera_list[i]}",                   
                 "viewclass": "ListItem",
-                "height": dp(54),
+                "height": dp(int(60 * 800 / window_size_y)),
                 "on_release": lambda x=i, y=db_camera_list[i]: self.menu_camera_callback(x, y),
             } for i in range(db_camera_list.size)
         ]
@@ -2710,14 +2778,16 @@ class VisualInspectionApp(MDApp):
         super().__init__(**kwargs)
 
     def build(self):
+        global window_size_x, window_size_y
         self.theme_cls.colors = colors
         self.theme_cls.primary_palette = "Gray"
         self.theme_cls.accent_palette = "Blue"
         self.theme_cls.theme_style = "Light"
         self.icon = 'assets/images/logo-visual-app.png'
         font_size_l = np.array([64, 30, 20, 16, 12, 12, 10, 8])
-        window_size = Window.size
-        font_size = np.round(font_size_l * 600 / window_size[1], 0)
+        window_size_y = Window.size[0]
+        window_size_x = Window.size[1]
+        font_size = np.round(font_size_l * 600 / window_size_x, 0)
 
         LabelBase.register(
             name="Orbitron-Regular",
