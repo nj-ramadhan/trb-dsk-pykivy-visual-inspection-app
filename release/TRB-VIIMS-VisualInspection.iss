@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "VIIMS - Visual Inspection Application"
-#define MyAppVersion "1.10.250206"
+#define MyAppVersion "1.11.250219"
 #define MyAppPublisher "PT. Tiga Ratu Berkarya"
 #define MyAppExeName "TRB-VIIMS-VisualInspectionApp.exe"
 #define MyAppAssocName "VIIMS - Visual Inspection Application Files"

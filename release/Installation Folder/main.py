@@ -32,17 +32,24 @@ colors = {  "Red"   : {"A200": "#FF2A2A","A500": "#FF8080","A700": "#FFD5D5",},
             "Dark"  : {"StatusBar": "101010","AppBar": "#E0E0E0","Background": "#111111","CardsDialogs": "#222222","FlatButtonDown": "#DDDDDD","Text": "#FFFFFF",},
         }
 
+config_name = 'config.ini'
 if getattr(sys, 'frozen', False):
-    app_path = os.path.dirname(os.path.abspath(__file__))
+    application_path = os.path.dirname(sys.executable)
+    running_mode = 'Frozen/executable'
 else:
-    app_path = os.path.dirname(os.path.abspath(__file__))
+    try:
+        app_full_path = os.path.realpath(__file__)
+        application_path = os.path.dirname(app_full_path)
+        running_mode = "Non-interactive (e.g. 'python myapp.py')"
+    except NameError:
+        application_path = os.getcwd()
+        running_mode = 'Interactive'
 
-config_path = os.path.join(app_path, 'config.ini')
-print(f"Path config.ini: {config_path}")
-
+config_full_path = os.path.join(application_path, config_name)
 config = configparser.ConfigParser()
-config.read(config_path)
+config.read(config_full_path)
 
+## App Setting
 IMG_LOGO_PEMKAB = config['app']['IMG_LOGO_PEMKAB']
 IMG_LOGO_DISHUB = config['app']['IMG_LOGO_DISHUB']
 LB_PEMKAB = config['app']['LB_PEMKAB']
@@ -50,6 +57,7 @@ LB_DISHUB = config['app']['LB_DISHUB']
 LB_UNIT = config['app']['LB_UNIT']
 LB_UNIT_ADDRESS = config['app']['LB_UNIT_ADDRESS']
 
+## SQL Setting
 DB_HOST = config['mysql']['DB_HOST']
 DB_USER = config['mysql']['DB_USER']
 DB_PASS = config['mysql']['DB_PASS']
@@ -69,6 +77,7 @@ TB_KOMENTAR_UJI = config['mysql']['TB_KOMENTAR_UJI']
 TB_UJI = config['mysql']['TB_UJI']
 TB_UJI_DETAIL = config['mysql']['TB_UJI_DETAIL']
 
+## System Setting
 RTSP_USER = config['setting']['RTSP_USER']
 RTSP_PASS = config['setting']['RTSP_PASS']
 RTSP_IP_DISPLAY_CAM1 = config['setting']['RTSP_IP_DISPLAY_CAM1']
@@ -230,7 +239,7 @@ class ScreenMain(MDScreen):
     def __init__(self, **kwargs):
         super(ScreenMain, self).__init__(**kwargs)
         global flag_conn_stat, flag_gate, dt_selected_camera
-        global dt_user, dt_foto_user, dt_no_antri, dt_no_pol, dt_no_uji, dt_sts_uji, dt_nama
+        global dt_user, dt_foto_user, dt_id_pendaftaran, dt_no_antri, dt_no_pol, dt_no_uji, dt_sts_uji, dt_nama
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna, dt_chasis, dt_no_mesin
         global dt_check_flag, dt_id_user, dt_verified_data, dt_verified_payment
         global dt_dash_antri, dt_dash_belum_uji, dt_dash_sudah_uji
@@ -244,6 +253,7 @@ class ScreenMain(MDScreen):
         dt_temp_nama = dt_temp_alamat = dt_temp_tgl_uji_terakhir = dt_temp_tgl_uji_habis = dt_temp_status_uji = ""
         dt_temp_id_merk = dt_temp_type = dt_temp_jenis_kendaraan = dt_temp_warna = dt_temp_chasis = dt_temp_mesin = dt_temp_bhn_bkr = dt_temp_jbb = ""
         dt_check_flag = dt_verified_data = dt_verified_payment = 0
+        dt_id_pendaftaran = 0
         dt_id_user = 1
         dt_dash_antri = dt_dash_belum_uji = dt_dash_sudah_uji = 0
         dt_selected_camera = 0
@@ -279,7 +289,7 @@ class ScreenMain(MDScreen):
                 
     def regular_update_display(self, dt):
         global flag_conn_stat, db_merk, db_bahan_bakar, db_warna
-        global dt_user, dt_no_antri, dt_no_pol, dt_no_uji, dt_nama, dt_jns_kend
+        global dt_user, dt_id_pendaftaran, dt_no_antri, dt_no_pol, dt_no_uji, dt_nama, dt_jns_kend
         global dt_chasis, dt_merk, dt_type, dt_no_mesin
         global dt_check_flag, dt_id_user, dt_foto_user, dt_verified_data, dt_verified_payment
         global dt_dash_antri, dt_dash_belum_uji, dt_dash_sudah_uji
@@ -323,7 +333,7 @@ class ScreenMain(MDScreen):
             screen_realtime_pit.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
             screen_realtime_pit.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
 
-            self.ids.lb_dash_pendaftaran.text = str(dt_dash_antri)
+            self.ids.lb_dash_antri.text = str(dt_dash_antri)
             self.ids.lb_dash_belum_uji.text = str(dt_dash_belum_uji)
             self.ids.lb_dash_sudah_uji.text = str(dt_dash_sudah_uji)
 
@@ -453,7 +463,7 @@ class ScreenMain(MDScreen):
             db_warna = np.array(result_tb_warna)
 
             tb_antrian = mydb.cursor()
-            tb_antrian.execute(f"SELECT noantrian, nopol, nouji, statusuji, merk, type, idjeniskendaraan, jbb, bahan_bakar, warna, check_flag FROM {TB_DATA}")
+            tb_antrian.execute(f"SELECT id, noantrian, nopol, nouji, statusuji, merk, type, idjeniskendaraan, jbb, bahan_bakar, warna, speed_flag FROM {TB_DATA}")
             result_tb_antrian = tb_antrian.fetchall()
             mydb.commit()
             if result_tb_antrian is None:
@@ -481,17 +491,17 @@ class ScreenMain(MDScreen):
             for i in range(db_antrian[0,:].size):
                 layout_list.add_widget(
                     MDCard(
-                        MDLabel(text=f"{db_antrian[0, i]}", size_hint_x= 0.05),
-                        MDLabel(text=f"{db_antrian[1, i]}", size_hint_x= 0.07),
-                        MDLabel(text=f"{db_antrian[2, i]}", size_hint_x= 0.08),
-                        MDLabel(text='Berkala' if db_antrian[3, i] == 'B' else 'Uji Ulang' if (db_antrian[3, i]) == 'U' else 'Baru' if (db_antrian[3, i]) == 'BR' else 'Numpang Uji' if (db_antrian[3, i]) == 'NB' else 'Mutasi', size_hint_x= 0.07),
-                        MDLabel(text='-' if db_antrian[4, i] == None else f"{db_merk[np.where(db_merk == db_antrian[4, i])[0][0],1]}" , size_hint_x= 0.08),
-                        MDLabel(text=f"{db_antrian[5, i]}", size_hint_x= 0.12),
-                        MDLabel(text=f"{db_antrian[6, i]}", size_hint_x= 0.15),
-                        MDLabel(text=f"{db_antrian[7, i]}", size_hint_x= 0.05),
-                        MDLabel(text='-' if db_antrian[8, i] == None else f"{db_bahan_bakar[np.where(db_bahan_bakar == db_antrian[8, i])[0][0],1]}" , size_hint_x= 0.08),
-                        MDLabel(text='-' if db_antrian[9, i] == None else f"{db_warna[np.where(db_warna == db_antrian[9, i])[0][0],1]}" , size_hint_x= 0.05),
-                        MDLabel(text='Lulus' if (int(db_antrian[10, i]) == 2) else 'Tidak Lulus' if (int(db_antrian[10, i]) == 1) else 'Belum Uji', size_hint_x= 0.05),
+                        MDLabel(text=f"{db_antrian[1, i]}", size_hint_x= 0.05),
+                        MDLabel(text=f"{db_antrian[2, i]}", size_hint_x= 0.07),
+                        MDLabel(text=f"{db_antrian[3, i]}", size_hint_x= 0.08),
+                        MDLabel(text='Berkala' if db_antrian[4, i] == 'B' else 'Uji Ulang' if (db_antrian[4, i]) == 'U' else 'Baru' if (db_antrian[4, i]) == 'BR' else 'Numpang Uji' if (db_antrian[3, i]) == 'NB' else 'Mutasi', size_hint_x= 0.07),
+                        MDLabel(text='-' if db_antrian[5, i] == None else f"{db_merk[np.where(db_merk == db_antrian[5, i])[0][0],1]}" , size_hint_x= 0.08),
+                        MDLabel(text=f"{db_antrian[6, i]}", size_hint_x= 0.12),
+                        MDLabel(text=f"{db_antrian[7, i]}", size_hint_x= 0.15),
+                        MDLabel(text=f"{db_antrian[8, i]}", size_hint_x= 0.05),
+                        MDLabel(text='-' if db_antrian[9, i] == None else f"{db_bahan_bakar[np.where(db_bahan_bakar == db_antrian[9, i])[0][0],1]}" , size_hint_x= 0.08),
+                        MDLabel(text='-' if db_antrian[10, i] == None else f"{db_warna[np.where(db_warna == db_antrian[10, i])[0][0],1]}" , size_hint_x= 0.05),
+                        MDLabel(text='Lulus' if (int(db_antrian[11, i]) == 2) else 'Tidak Lulus' if (int(db_antrian[11, i]) == 1) else 'Belum Uji', size_hint_x= 0.05),
 
                         ripple_behavior = True,
                         on_press = self.on_antrian_row_press,
@@ -508,23 +518,25 @@ class ScreenMain(MDScreen):
 
     def on_antrian_row_press(self, instance):
         global mydb, db_antrian, db_merk, db_bahan_bakar, db_warna
-        global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama, dt_sts_uji
+        global dt_id_pendaftaran, dt_no_antri, dt_no_pol, dt_no_uji, dt_sts_uji, dt_check_flag, dt_nama, dt_sts_uji
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
         global dt_check_flag, dt_id_user, dt_foto_user, dt_verified_data, dt_verified_payment
 
         try:
             row = int(str(instance.id).replace("card_antrian",""))
-            dt_no_antri             = db_antrian[0, row]
-            dt_no_pol               = db_antrian[1, row]
-            dt_no_uji               = db_antrian[2, row]
-            dt_sts_uji              = db_antrian[3, row]
-            dt_merk                 = db_antrian[4, row]
-            dt_type                 = db_antrian[5, row]
-            dt_jns_kend             = db_antrian[6, row]
-            dt_jbb                  = db_antrian[7, row]
-            dt_bhn_bkr              = db_antrian[8, row]
-            dt_warna                = db_antrian[9, row]
-            dt_check_flag           = db_antrian[10, row]
+            dt_id_pendaftaran       = db_antrian[0, row]
+            dt_no_antri             = db_antrian[1, row]
+            dt_no_pol               = db_antrian[2, row]
+            dt_no_uji               = db_antrian[3, row]
+            dt_sts_uji              = db_antrian[4, row]
+            dt_merk                 = db_antrian[5, row]
+            dt_type                 = db_antrian[6, row]
+            dt_jns_kend             = db_antrian[7, row]
+            dt_jbb                  = db_antrian[8, row]
+            dt_bhn_bkr              = db_antrian[9, row]
+            dt_warna                = db_antrian[10, row]
+            dt_check_flag           = db_antrian[11, row]
+            
 
             screen_antrian_new = self.screen_manager.get_screen('screen_antrian_new')
             screen_antrian_new.exec_fetch_master_data(dt_no_pol, dt_no_uji)
@@ -575,7 +587,6 @@ class ScreenMain(MDScreen):
         else:
             toast(f'Silahkan Login Untuk Melakukan Pengujian')
             
-
     def open_screen_menu(self):
         self.screen_manager.current = 'screen_menu'
 
@@ -649,7 +660,7 @@ class ScreenMenu(MDScreen):
         self.ids.lb_temp_jbb.text = str(dt_temp_jbb)
 
     def exec_verify_data(self):
-        global dt_no_antri, dt_verified_data, dt_verified_payment
+        global dt_id_pendaftaran, dt_no_antri, dt_verified_data, dt_verified_payment
         global dt_temp_no_uji, dt_temp_no_uji_new, dt_temp_no_wilayah, dt_temp_no_kendaraan, dt_temp_no_plat, dt_temp_no_pol
         global dt_temp_nama, dt_temp_no_hp, dt_temp_alamat, dt_temp_id_izin, dt_temp_wilayah, dt_temp_provinsi, dt_temp_kabupaten_kota, dt_temp_kecamatan
         global dt_temp_id_merk, dt_temp_id_subjenis, dt_temp_type, dt_temp_tahun_buat, dt_temp_silinder, dt_temp_warna, dt_temp_chasis, dt_temp_mesin, dt_temp_warna_plat
@@ -657,7 +668,7 @@ class ScreenMenu(MDScreen):
 
         try:
             mycursor = mydb.cursor()
-            sql = f"INSERT INTO {TB_DAFTAR_BERKALA} (NOANTRIAN, NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, SUBJENIS_ID, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, DAYAMOTOR, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah, TGL_LASTUJI) VALUES ('{dt_no_antri}', '{dt_temp_no_uji}','{dt_temp_no_uji_new}','{dt_temp_no_wilayah}','{dt_temp_no_kendaraan}','{dt_temp_no_plat}','{dt_temp_no_pol}','{dt_temp_nama}','{dt_temp_no_hp}','{dt_temp_alamat}','{dt_temp_id_izin}','{dt_temp_wilayah}','{dt_temp_provinsi}','{dt_temp_kabupaten_kota}','{dt_temp_kecamatan}','{dt_temp_id_merk}','{dt_temp_id_subjenis}','{dt_temp_type}','{dt_temp_tahun_buat}','{dt_temp_silinder}','{dt_temp_warna}','{dt_temp_chasis}','{dt_temp_mesin}','{dt_temp_warna_plat}','{dt_temp_bhn_bkr}','{dt_temp_jbb}','{dt_temp_daya_motor}','{dt_temp_status_penerbitan}','{dt_temp_jenis_kendaraan}','{dt_temp_kode_jenis_kendaraan}','{dt_temp_kode_wilayah}','{dt_temp_tgl_uji_terakhir}')"
+            sql = f"INSERT INTO {TB_DAFTAR_BERKALA} (ID, NOANTRIAN, NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, SUBJENIS_ID, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, DAYAMOTOR, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah, TGL_LASTUJI) VALUES ('{dt_id_pendaftaran}', '{dt_no_antri}', '{dt_temp_no_uji}','{dt_temp_no_uji_new}','{dt_temp_no_wilayah}','{dt_temp_no_kendaraan}','{dt_temp_no_plat}','{dt_temp_no_pol}','{dt_temp_nama}','{dt_temp_no_hp}','{dt_temp_alamat}','{dt_temp_id_izin}','{dt_temp_wilayah}','{dt_temp_provinsi}','{dt_temp_kabupaten_kota}','{dt_temp_kecamatan}','{dt_temp_id_merk}','{dt_temp_id_subjenis}','{dt_temp_type}','{dt_temp_tahun_buat}','{dt_temp_silinder}','{dt_temp_warna}','{dt_temp_chasis}','{dt_temp_mesin}','{dt_temp_warna_plat}','{dt_temp_bhn_bkr}','{dt_temp_jbb}','{dt_temp_daya_motor}','{dt_temp_status_penerbitan}','{dt_temp_jenis_kendaraan}','{dt_temp_kode_jenis_kendaraan}','{dt_temp_kode_wilayah}','{dt_temp_tgl_uji_terakhir}')"
             mycursor.execute(sql)
             mydb.commit()
             dt_verified_data = 1
@@ -1293,8 +1304,8 @@ class ScreenInspectId(MDScreen):
         self.screen_manager.current = 'screen_menu'
 
     def exec_save(self):
-        global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji, db_last_data
-        global mydb, dt_no_pol, selected_row_komponen_uji
+        global mydb, db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji, db_last_data
+        global dt_no_pol, selected_row_komponen_uji
 
         try:
             tb_image_kendaraan = mydb.cursor()
@@ -2774,11 +2785,9 @@ class VisualInspectionApp(MDApp):
         self.theme_cls.theme_style = "Light"
         self.icon = 'assets/images/logo-visual-app.png'
         font_size_l = np.array([64, 30, 20, 16, 12, 12, 10, 8])
-        print(Window.size)
         window_size_y = Window.size[0]
         window_size_x = Window.size[1]
         font_size = np.round(font_size_l * 600 / window_size_x, 0)
-        print(font_size)
 
         LabelBase.register(
             name="Orbitron-Regular",
