@@ -71,6 +71,7 @@ TB_DAFTAR_BERKALA = config['mysql']['TB_DAFTAR_BERKALA']
 TB_DAFTAR_BARU = config['mysql']['TB_DAFTAR_BARU']
 TB_DATA_MASTER = config['mysql']['TB_DATA_MASTER']
 TB_DATA_IMAGE = config['mysql']['TB_DATA_IMAGE']
+TB_DATA_KENDARAAN = config['mysql']['TB_DATA_KENDARAAN']
 TB_KOMPONEN_UJI = config['mysql']['TB_KOMPONEN_UJI']
 TB_SUBKOMPONEN_UJI = config['mysql']['TB_SUBKOMPONEN_UJI']
 TB_KOMENTAR_UJI = config['mysql']['TB_KOMENTAR_UJI']
@@ -119,16 +120,18 @@ class ScreenHome(MDScreen):
             self.ids.carousel.index += 1
             
         except Exception as e:
-            toast_msg = f'Error Update Display: {e}'
+            toast_msg = f'Gagal Memperbaharui Tampilan Carousel'
             toast(toast_msg)                
+            print(toast_msg, e)
 
     def exec_navigate_home(self):
         try:
             self.screen_manager.current = 'screen_home'
 
         except Exception as e:
-            toast_msg = f'Error Navigate to Home Screen: {e}'
-            toast(toast_msg)        
+            toast_msg = f'Gagal Berpindah ke Halaman Awal'
+            toast(toast_msg)  
+            print(toast_msg, e)      
 
     def exec_navigate_login(self):
         global dt_user
@@ -139,16 +142,18 @@ class ScreenHome(MDScreen):
                 toast(f"Anda sudah login sebagai {dt_user}")
 
         except Exception as e:
-            toast_msg = f'Error Navigate to Login Screen: {e}'
+            toast_msg = f'Gagal Berpindah ke Halaman Login'
             toast(toast_msg)  
+            print(toast_msg, e)  
 
     def exec_navigate_main(self):
         try:
             self.screen_manager.current = 'screen_main'
 
         except Exception as e:
-            toast_msg = f'Error Navigate to Main Screen: {e}'
-            toast(toast_msg)    
+            toast_msg = f'Gagal Berpindah ke Halaman Utama'
+            toast(toast_msg)
+            print(toast_msg, e)  
 
 class ScreenLogin(MDScreen):
     def __init__(self, **kwargs):
@@ -169,7 +174,9 @@ class ScreenLogin(MDScreen):
             self.ids.tx_password.text = ""    
 
         except Exception as e:
-            toast_msg = f'Error Login: {e}'
+            toast_msg = f'Gagal Masuk'
+            toast(toast_msg)  
+            print(toast_msg, e)  
 
     def exec_login(self):
         global mydb, db_users
@@ -205,15 +212,17 @@ class ScreenLogin(MDScreen):
 
         except Exception as e:
             toast_msg = f'Gagal masuk, silahkan isi nama user dan password yang sesuai'
-            toast(toast_msg)
+            toast(toast_msg)  
+            print(toast_msg, e)  
 
     def exec_navigate_home(self):
         try:
             self.screen_manager.current = 'screen_home'
 
         except Exception as e:
-            toast_msg = f'Error Navigate to Home Screen: {e}'
-            toast(toast_msg)        
+            toast_msg = f'Gagal Berpindah ke Halaman Awal'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def exec_navigate_login(self):
         global dt_user
@@ -224,16 +233,18 @@ class ScreenLogin(MDScreen):
                 toast(f"Anda sudah login sebagai {dt_user}")
 
         except Exception as e:
-            toast_msg = f'Error Navigate to Login Screen: {e}'
-            toast(toast_msg)    
+            toast_msg = f'Gagal Berpindah ke Halaman Login'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def exec_navigate_main(self):
         try:
             self.screen_manager.current = 'screen_main'
 
         except Exception as e:
-            toast_msg = f'Error Navigate to Main Screen: {e}'
-            toast(toast_msg)     
+            toast_msg = f'Gagal Berpindah ke Halaman Utama'
+            toast(toast_msg)
+            print(toast_msg, e)
 
 class ScreenMain(MDScreen):   
     def __init__(self, **kwargs):
@@ -338,10 +349,10 @@ class ScreenMain(MDScreen):
             self.ids.lb_dash_sudah_uji.text = str(dt_dash_sudah_uji)
 
             screen_menu.ids.bt_verify_data.disabled = True if dt_verified_data == 1 else False
-            if dt_verified_payment == 1 or dt_verified_data == 0:
-                screen_menu.ids.bt_verify_payment.disabled = True
-            elif dt_verified_payment == 0 and dt_verified_data == 1:
-                screen_menu.ids.bt_verify_payment.disabled = False
+            # if dt_verified_payment == 1 or dt_verified_data == 0:
+            #     screen_menu.ids.bt_verify_payment.disabled = True
+            # elif dt_verified_payment == 0 and dt_verified_data == 1:
+            #     screen_menu.ids.bt_verify_payment.disabled = False
 
             if(not flag_conn_stat):
                 self.ids.lb_comm.color = colors['Red']['A200']
@@ -395,8 +406,9 @@ class ScreenMain(MDScreen):
                 screen_antrian_new.ids.img_user.source = 'assets/images/icon-login.png'               
 
         except Exception as e:
-            toast_msg = f'Error Update Display: {e}'
-            toast(toast_msg)                
+            toast_msg = f'Gagal Memperbaharui Tampilan'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def regular_update_connection(self, dt):
         global flag_conn_stat
@@ -407,8 +419,9 @@ class ScreenMain(MDScreen):
             modbus_client.close()     
             
         except Exception as e:
-            toast_msg = f'{e}'
-            toast(toast_msg)   
+            toast_msg = f'Gagal Menyambungkan ke PLC'
+            toast(toast_msg)
+            print(toast_msg, e)
             flag_conn_stat = False
 
     def regular_get_data(self, dt):
@@ -427,16 +440,18 @@ class ScreenMain(MDScreen):
                 speed_val = speed_registers.registers[0]
                 
         except Exception as e:
-            toast_msg = f'Error GEt Data: {e}'
-            toast(toast_msg)     
+            toast_msg = f'Gagal Mengambil Data dari PLC'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def exec_reload_database(self):
         global mydb
         try:
             mydb = mysql.connector.connect(host = DB_HOST,user = DB_USER,password = DB_PASS,database = DB_NAME)
         except Exception as e:
-            toast_msg = f'Error Initiate Database: {e}'
-            toast(toast_msg)   
+            toast_msg = f'Gagal Menginisiasi Komunikasi ke Database'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def exec_reload_table(self):
         global mydb, db_antrian, db_merk, db_bahan_bakar, db_warna
@@ -476,15 +491,17 @@ class ScreenMain(MDScreen):
                 dt_dash_belum_uji = np.where(db_pendaftaran[:,10] == 0)[0].size
                 dt_dash_sudah_uji = np.where(db_pendaftaran[:,10] == 1)[0].size
         except Exception as e:
-            toast_msg = f'Error Fetch Database: {e}'
+            toast_msg = f'Gagal Mengambil Data dari Database'
             print(toast_msg)
+            print(toast_msg, e)
         
         try:
             layout_list = self.ids.layout_list
             layout_list.clear_widgets(children=None)
         except Exception as e:
-            toast_msg = f'Error Remove Widget: {e}'
+            toast_msg = f'Gagal Menghapus Widget'
             print(toast_msg)
+            print(toast_msg, e)
         
         try:
             layout_list = self.ids.layout_list
@@ -513,8 +530,9 @@ class ScreenMain(MDScreen):
                     )
 
         except Exception as e:
-            toast_msg = f'Error Reload Table: {e}'
+            toast_msg = f'Gagal Memperbaharui Data Tabel'
             print(toast_msg)
+            print(toast_msg, e)
 
     def on_antrian_row_press(self, instance):
         global mydb, db_antrian, db_merk, db_bahan_bakar, db_warna
@@ -537,15 +555,15 @@ class ScreenMain(MDScreen):
             dt_warna                = db_antrian[10, row]
             dt_check_flag           = db_antrian[11, row]
             
-
             screen_antrian_new = self.screen_manager.get_screen('screen_antrian_new')
             screen_antrian_new.exec_fetch_master_data(dt_no_pol, dt_no_uji)
 
             self.exec_start()
 
         except Exception as e:
-            toast_msg = f'Error Execute Command from Table Row: {e}'
-            toast(toast_msg)   
+            toast_msg = f'Gagal Mengeksekusi Perintah dari Baris Tabel'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def check_temp_data(self):
         global mydb, db_antrian, db_merk, db_bahan_bakar, db_warna
@@ -572,8 +590,9 @@ class ScreenMain(MDScreen):
             self.screen_manager.current = 'screen_antrian_new'
 
         except Exception as e:
-            toast_msg = f'Error Navigate to New Inspection Screen: {e}'
-            toast(toast_msg)  
+            toast_msg = f'Gagal Berpindah ke Halaman Tambah Inspeksi Baru'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def exec_start(self):
         global dt_check_flag, dt_no_antri, dt_user
@@ -601,8 +620,9 @@ class ScreenMain(MDScreen):
             self.screen_manager.current = 'screen_home'
 
         except Exception as e:
-            toast_msg = f'Error Navigate to Home Screen: {e}'
-            toast(toast_msg)        
+            toast_msg = f'Gagal Berpindah ke Halaman Awal'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def exec_navigate_login(self):
         global dt_user
@@ -613,16 +633,18 @@ class ScreenMain(MDScreen):
                 toast(f"Anda sudah login sebagai {dt_user}")
 
         except Exception as e:
-            toast_msg = f'Error Navigate to Login Screen: {e}'
-            toast(toast_msg)     
+            toast_msg = f'Gagal Berpindah ke Halaman Login'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def exec_navigate_main(self):
         try:
             self.screen_manager.current = 'screen_main'
 
         except Exception as e:
-            toast_msg = f'Error Navigate to Main Screen: {e}'
-            toast(toast_msg)   
+            toast_msg = f'Gagal Berpindah ke Halaman Utama'
+            toast(toast_msg)
+            print(toast_msg, e)
 
 class ScreenMenu(MDScreen):
     def __init__(self, **kwargs):
@@ -673,11 +695,13 @@ class ScreenMenu(MDScreen):
             mydb.commit()
             dt_verified_data = 1
             dt_verified_payment = 0
-            toast_msg = f'Berhasil Membuat Data Pengujian di tabel Daftar Berkala'
+            toast_msg = f'Berhasil Membuat Data Pengujian di Tabel Daftar Berkala'
             toast(toast_msg)
+            self.exec_verify_payment()
         except Exception as e:
-            toast_msg = f'Gagal Membuat Tabel Daftar Berkala: {e}'
+            toast_msg = f'Gagal Membuat Tabel Daftar Berkala'
             toast(toast_msg)
+            print(toast_msg, e)
 
     def exec_verify_payment(self):
         global dt_no_antri, dt_sts_uji, dt_verified_payment
@@ -697,11 +721,12 @@ class ScreenMenu(MDScreen):
             mycursor.execute(sql)
             mydb.commit()
             dt_verified_payment = 1
-            toast_msg = f'Berhasil Memverifikasi pembayaran'
+            toast_msg = f'Berhasil Memverifikasi Pembayaran'
             toast(toast_msg)
         except Exception as e:
-            toast_msg = f'Gagal Memverifikasi pembayaran: {e}'
-            toast(toast_msg)                
+            toast_msg = f'Gagal Memverifikasi Pembayaran'
+            toast(toast_msg)
+            print(toast_msg, e)
 
         try:
             today = str(time.strftime("%Y-%m-%d", time.localtime()))
@@ -709,9 +734,9 @@ class ScreenMenu(MDScreen):
             self.sftp_make_dir(make_dir_path)
 
         except Exception as e:
-            toast_msg = f'Gagal menemukan folder remote: {e}'
-            toast(toast_msg)    
-
+            toast_msg = f'Gagal Menemukan Folder Remote'
+            toast(toast_msg)  
+            print(toast_msg, e)  
 
         try:
             mycursor = mydb.cursor()
@@ -720,8 +745,9 @@ class ScreenMenu(MDScreen):
             mydb.commit()
 
         except Exception as e:
-            toast_msg = f'Gagal Menambahkan data ke Tabel Image Kendaraan: {e}'
-            toast(toast_msg)   
+            toast_msg = f'Gagal Menambahkan Data ke Tabel Image Kendaraan'
+            toast(toast_msg)
+            print(toast_msg, e)
 
         try:
             tb_image = mydb.cursor()
@@ -737,8 +763,9 @@ class ScreenMenu(MDScreen):
                 mycursor.execute(sql)
                 mydb.commit()        
         except Exception as e:
-            toast_msg = f'Gagal Menambahkan data ke Tabel Uji: {e}'
+            toast_msg = f'Gagal Menambahkan Data ke Tabel Uji'
             toast(toast_msg)
+            print(toast_msg, e)
 
     def sftp_make_dir(self, remote_path):
         ssh = paramiko.SSHClient()
@@ -747,11 +774,11 @@ class ScreenMenu(MDScreen):
         sftp = ssh.open_sftp()
         try:
             sftp.chdir(remote_path)  # Test if remote_path exists
-            toast(f'Direktori {remote_path} sudah ada')
+            toast(f'Direktori {remote_path} Sudah Ada')
         except IOError:
             sftp.mkdir(remote_path)  # Create remote_path
             sftp.chdir(remote_path)
-            toast(f'Berhasil membuat direktori {remote_path}')
+            toast(f'Berhasil Membuat Direktori {remote_path}')
         sftp.close()
         ssh.close()
 
@@ -764,17 +791,19 @@ class ScreenMenu(MDScreen):
                 if(flag_conn_stat):
                     flag_gate = True
                 else:
-                    toast("Tidak bisa membuka Portal karena PLC tidak terhubung") 
+                    toast("Tidak Bisa Membuka Portal Karena PLC Tidak Terhubung") 
             else:
-                toast_msg = f'Silahkan Verifikasi data dan pembayaran terlebih dahulu'
-                toast(toast_msg)                 
+                toast_msg = f'Silahkan Verifikasi Data dan Pembayaran Terlebih Dahulu'
+                toast(toast_msg)       
 
             if flag_conn_stat:
                 modbus_client.connect()
                 modbus_client.write_coil(3072, flag_gate, slave=1) #M0
                 modbus_client.close()
-        except:
-            toast("Error send exec_gate_open data to PLC Slave") 
+        except Exception as e:
+            toast_msg = f'Gagal Mengirim Perintah BUKA PORTAL ke PLC'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def exec_barrier_close(self):
         global flag_conn_stat, flag_gate
@@ -785,17 +814,19 @@ class ScreenMenu(MDScreen):
                 if(flag_conn_stat):
                     flag_gate = False
                 else:
-                    toast("Tidak bisa menutup Portal karena PLC tidak terhubung") 
+                    toast("Tidak Bisa Menutup Portal Karena PLC Tidak Terhubung") 
             else:
-                toast_msg = f'Silahkan Verifikasi data dan pembayaran terlebih dahulu'
+                toast_msg = f'Silahkan Verifikasi Data dan Pembayaran Terlebih Dahulu'
                 toast(toast_msg)      
 
             if flag_conn_stat:
                 modbus_client.connect()
                 modbus_client.write_coil(3073, not flag_gate, slave=1) #M1
                 modbus_client.close()
-        except:
-            toast("Error send exec_gate_close data to PLC Slave") 
+        except Exception as e:
+            toast_msg = f'Gagal Mengirim Perintah TUTUP PORTAL ke PLC'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def exec_barrier_stop(self):
         global flag_conn_stat
@@ -806,8 +837,10 @@ class ScreenMenu(MDScreen):
                 modbus_client.write_coil(3072, False, slave=1) #M0
                 modbus_client.write_coil(3073, False, slave=1) #M1
                 modbus_client.close()
-        except:
-            toast("Error send exec_gate_stop data to PLC Slave") 
+        except Exception as e:
+            toast_msg = f'Gagal Mengirim Perintah HENTIKAN PORTAL ke PLC'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def exec_inspect_id(self):
         global dt_verified_data, dt_verified_payment
@@ -816,12 +849,13 @@ class ScreenMenu(MDScreen):
             if dt_verified_data and dt_verified_payment:
                 self.screen_manager.current = 'screen_inspect_id'
             else:
-                toast_msg = f'Silahkan Verifikasi data dan pembayaran terlebih dahulu'
+                toast_msg = f'Silahkan Verifikasi Data dan Pembayaran Terlebih Dahulu'
                 toast(toast_msg)                 
 
         except Exception as e:
-            toast_msg = f'Error Navigate to Identity Inspection Screen: {e}'
-            toast(toast_msg) 
+            toast_msg = f'Gagal Berpindah ke Halaman Inspeksi Identitas'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def exec_inspect_dimension(self):
         global dt_verified_data, dt_verified_payment
@@ -830,12 +864,13 @@ class ScreenMenu(MDScreen):
             if dt_verified_data and dt_verified_payment:
                 self.screen_manager.current = 'screen_inspect_dimension'
             else:
-                toast_msg = f'Silahkan Verifikasi data dan pembayaran terlebih dahulu'
+                toast_msg = f'Silahkan Verifikasi Data dan Pembayaran Terlebih Dahulu'
                 toast(toast_msg)                 
 
         except Exception as e:
-            toast_msg = f'Error Navigate to Dimension Inspection Screen: {e}'
-            toast(toast_msg) 
+            toast_msg = f'Gagal Berpindah ke Halaman Inspeksi Dimensi'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def exec_capture(self):
         global dt_verified_data, dt_verified_payment
@@ -844,12 +879,13 @@ class ScreenMenu(MDScreen):
             if dt_verified_data and dt_verified_payment:
                 self.screen_manager.current = 'screen_realtime_cctv'
             else:
-                toast_msg = f'Silahkan Verifikasi data dan pembayaran terlebih dahulu'
+                toast_msg = f'Silahkan Verifikasi Data dan Pembayaran Terlebih Dahulu'
                 toast(toast_msg)         
 
         except Exception as e:
-            toast_msg = f'Error Navigate to Play Detect: {e}'
-            toast(toast_msg)    
+            toast_msg = f'Gagal Berpindah ke Halaman Pengambilan Foto Empat Sisi'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def exec_inspect_visual(self):
         global dt_verified_data, dt_verified_payment
@@ -858,12 +894,13 @@ class ScreenMenu(MDScreen):
             if dt_verified_data and dt_verified_payment:
                 self.screen_manager.current = 'screen_inspect_visual'
             else:
-                toast_msg = f'Silahkan Verifikasi data dan pembayaran terlebih dahulu'
+                toast_msg = f'Silahkan Verifikasi Data dan Pembayaran Terlebih Dahulu'
                 toast(toast_msg)           
 
         except Exception as e:
-            toast_msg = f'Error Navigate to Visual Inspection Screen: {e}'
-            toast(toast_msg)    
+            toast_msg = f'Gagal Berpindah ke Halaman Inspeksi Visual 1'
+            toast(toast_msg)
+            print(toast_msg, e) 
 
     def exec_inspect_visual2(self):
         global dt_verified_data, dt_verified_payment
@@ -872,12 +909,13 @@ class ScreenMenu(MDScreen):
             if dt_verified_data and dt_verified_payment:
                 self.screen_manager.current = 'screen_inspect_visual2'
             else:
-                toast_msg = f'Silahkan Verifikasi data dan pembayaran terlebih dahulu'
+                toast_msg = f'Silahkan Verifikasi Data dan Pembayaran Terlebih Dahulu'
                 toast(toast_msg)  
 
         except Exception as e:
-            toast_msg = f'Error Navigate to Visual Inspection Screen: {e}'
-            toast(toast_msg)    
+            toast_msg = f'Gagal Berpindah ke Halaman Inspeksi Visual 2'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def exec_inspect_pit(self):
         global dt_verified_data, dt_verified_payment
@@ -886,12 +924,13 @@ class ScreenMenu(MDScreen):
             if dt_verified_data and dt_verified_payment:
                 self.screen_manager.current = 'screen_inspect_pit'
             else:
-                toast_msg = f'Silahkan Verifikasi data dan pembayaran terlebih dahulu'
+                toast_msg = f'Silahkan Verifikasi Data dan Pembayaran Terlebih Dahulu'
                 toast(toast_msg)
 
         except Exception as e:
-            toast_msg = f'Error Navigate to Pit Inspection Screen: {e}'
-            toast(toast_msg)    
+            toast_msg = f'Gagal Berpindah ke Halaman Inspeksi Bawah Kendaraan'
+            toast(toast_msg)
+            print(toast_msg, e) 
 
     def exec_cancel(self):
         self.screen_manager.current = 'screen_main'
@@ -932,8 +971,9 @@ class ScreenAntrianNew(MDScreen):
             self.exec_navigate_main()
             
         except Exception as e:
-            toast_msg = f'Error find data: {e}'
-            toast(toast_msg) 
+            toast_msg = f'Gagal Memuat Data'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def exec_find(self):
         global mydb, db_users, db_merk, db_bahan_bakar, db_warna
@@ -966,8 +1006,9 @@ class ScreenAntrianNew(MDScreen):
             self.ids.bt_register.disabled = False
             
         except Exception as e:
-            toast_msg = f'Gagal menemukan data, silahkan isi nomor uji atau nomor polisi'
+            toast_msg = f'Gagal Menemukan Data, Silahkan Isi Nomor Uji atau Nomor Polisi dengan Benar'
             toast(toast_msg)
+            print(toast_msg, e)
 
     def exec_fetch_master_data(self, dt_find_no_pol, dt_find_no_uji):
         global mydb, db_users, db_merk, db_bahan_bakar, db_warna
@@ -984,13 +1025,13 @@ class ScreenAntrianNew(MDScreen):
             elif dt_find_no_uji != "":
                 mycursor.execute(f"SELECT NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, SUBJENIS_ID, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, DAYAMOTOR, TGL_UJI_TERAKHIR, STATUSUJI, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah FROM {TB_DATA_MASTER} WHERE NOUJI = '{dt_find_no_uji}' ")
             elif dt_find_no_uji == "" and dt_find_no_pol == "":
-                toast("Silahkan isi Nomor Uji atau Nomor Polisi")
+                toast("Silahkan Isi Nomor Uji atau Nomor Polisi dengan Benar")
             myresult = mycursor.fetchone()
             mydb.commit()
             db_master_data = np.array(myresult).T
 
             if myresult is None:
-                toast('Data tidak ditemukan di Database, silahkan ajukan pengujian baru')
+                toast('Data Tidak Ditemukan di Database, Silahkan Ajukan Pengujian Baru')
                 self.exec_cancel()
             else:
                 dt_temp_no_uji = db_master_data[0]
@@ -1035,8 +1076,10 @@ class ScreenAntrianNew(MDScreen):
                 dt_temp_tgl_uji_habis = str(last_uji_date.replace(month=month_to_add).strftime('%d-%m-%Y'))
             
         except Exception as e:
-            toast_msg = f'Gagal menemukan data : {e}'
+            toast_msg = f'Gagal Menemukan Data dari Database Master'
             toast(toast_msg)
+            print(toast_msg, e)
+
 
     def exec_register(self):
         global mydb, db_users, db_merk, db_bahan_bakar, db_warna
@@ -1056,8 +1099,9 @@ class ScreenAntrianNew(MDScreen):
             mycursor.execute(sql)
             mydb.commit()
         except Exception as e:
-            toast_msg = f'Error Create Tabel Antrian: {e}'
+            toast_msg = f'Gagal Mambuat Data Tabel Antrian Baru'
             toast(toast_msg)
+            print(toast_msg, e)
 
         self.exec_cancel()
 
@@ -1066,8 +1110,9 @@ class ScreenAntrianNew(MDScreen):
             self.screen_manager.current = 'screen_home'
 
         except Exception as e:
-            toast_msg = f'Error Navigate to Home Screen: {e}'
-            toast(toast_msg)        
+            toast_msg = f'Gagal Berpindah ke Halaman Awal'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def exec_navigate_login(self):
         global dt_user
@@ -1078,16 +1123,18 @@ class ScreenAntrianNew(MDScreen):
                 toast(f"Anda sudah login sebagai {dt_user}")
 
         except Exception as e:
-            toast_msg = f'Error Navigate to Login Screen: {e}'
-            toast(toast_msg)    
+            toast_msg = f'Gagal Berpindah ke Halaman Login'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def exec_navigate_main(self):
         try:
             self.screen_manager.current = 'screen_main'
 
         except Exception as e:
-            toast_msg = f'Error Navigate to Main Screen: {e}'
-            toast(toast_msg)     
+            toast_msg = f'Gagal Berpindah ke Halaman Utama'
+            toast(toast_msg)
+            print(toast_msg, e)
 
 class ScreenInspectId(MDScreen):        
     def __init__(self, **kwargs):
@@ -1114,8 +1161,9 @@ class ScreenInspectId(MDScreen):
         try:
             self.ids[f'tx_comment{selected_row_subkomponen_uji}'].text = text_item
         except Exception as e:
-            toast_msg = f'Error Execute Command from Menu Comment Callback: {e}'
-            toast(toast_msg)  
+            toast_msg = f'Gagal Mengeksekusi Perintah dari Menu Komentar'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def on_komponen_uji_row_press(self, instance):
         global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
@@ -1129,8 +1177,9 @@ class ScreenInspectId(MDScreen):
             self.exec_reload_subkomponen_uji(db_komponen_uji[1, row])
 
         except Exception as e:
-            toast_msg = f'Error Execute Command from Table Komponen Uji Row: {e}'
-            toast(toast_msg)  
+            toast_msg = f'Gagal Mengeksekusi Perintah dari Baris Tabel Komponen Uji'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def on_subkomponen_uji_row_press(self, instance):
         global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
@@ -1166,8 +1215,9 @@ class ScreenInspectId(MDScreen):
             self.reload_menu_komentar_uji(selected_kode_subkomponen_uji)
 
         except Exception as e:
-            toast_msg = f'Error Execute Command from Table Subkomponen Uji Row: {e}'
-            toast(toast_msg)  
+            toast_msg = f'Gagal Mengeksekusi Perintah dari Baris Tabel Subkomponen Uji'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def exec_reload_komponen_uji(self):
         global mydb, db_komponen_uji
@@ -1180,15 +1230,17 @@ class ScreenInspectId(MDScreen):
             mydb.commit()
             db_komponen_uji = np.array(result_tb_komponen_uji).T
         except Exception as e:
-            toast_msg = f'Error Fetch Table Komponen Uji: {e}'
+            toast_msg = f'Ggaal Mengambil Data dari Tabel Komponen Uji'
             print(toast_msg)
+            print(toast_msg, e)
 
         try:
             layout_list = self.ids.layout_list_komponen_uji
             layout_list.clear_widgets(children=None)
         except Exception as e:
-            toast_msg = f'Error Remove Widget: {e}'
+            toast_msg = f'Gagal Menghapus Widget'
             print(toast_msg)
+            print(toast_msg, e)
 
         try:           
             layout_list = self.ids.layout_list_komponen_uji
@@ -1212,8 +1264,9 @@ class ScreenInspectId(MDScreen):
                 card.add_widget(bt_check)
 
         except Exception as e:
-            toast_msg = f'Error Reload Table Komponen Uji: {e}'
+            toast_msg = f'Gagal Memperbaharui Tabel Komponen Uji'
             print(toast_msg)
+            print(toast_msg, e)
 
     def exec_reload_subkomponen_uji(self, kode_komponen_uji):
         global mydb, db_subkomponen_uji
@@ -1228,15 +1281,17 @@ class ScreenInspectId(MDScreen):
             db_subkomponen_uji = np.array(result_tb_subkomponen_uji).T
             flags_subkomponen_uji = np.ones(db_subkomponen_uji[0,:].size, dtype='bool')
         except Exception as e:
-            toast_msg = f'Error Fetch Table Subkomponen uji: {e}'
+            toast_msg = f'Gagal Mengambil Data dari Database Tabel Subkomponen Uji'
             print(toast_msg)
+            print(toast_msg, e)
 
         try:
             layout_list = self.ids.layout_list_subkomponen_uji
             layout_list.clear_widgets(children=None)
         except Exception as e:
-            toast_msg = f'Error Remove Widget: {e}'
+            toast_msg = f'Gagal Menghapus Widget'
             print(toast_msg)
+            print(toast_msg, e)
         
         try:           
             layout_list = self.ids.layout_list_subkomponen_uji
@@ -1263,8 +1318,9 @@ class ScreenInspectId(MDScreen):
                 card.add_widget(bt_check)
 
         except Exception as e:
-            toast_msg = f'Error Reload Table Sub Komponen Uji: {e}'
+            toast_msg = f'Gagal Memperbaharui Data Tabel Subkomponen Uji'
             print(toast_msg)
+            print(toast_msg, e)
 
     def reload_menu_komentar_uji(self, selected_kode_subkomponen_uji=""):
         global window_size_x, window_size_y
@@ -1279,7 +1335,7 @@ class ScreenInspectId(MDScreen):
 
             if(db_komentar_uji.size == 0 ):
                 self.ids.bt_dropdown_caller.disabled = True
-                toast('Tidak ada rekomendasi komentar, silahkan isi komentar sendiri')
+                toast('Tidak Ada Rekomendasi Komentar, Silahkan Isi Komentar Sendiri')
 
             self.menu_komentar_uji_items = [
                 {
@@ -1297,8 +1353,9 @@ class ScreenInspectId(MDScreen):
             )
 
         except Exception as e:
-            toast_msg = f'Error Show Komentar: {e}'
+            toast_msg = f'Gagal Menampilkan Rekomendasi Komentar'
             print(toast_msg)
+            print(toast_msg, e)
 
     def open_screen_menu(self):
         self.screen_manager.current = 'screen_menu'
@@ -1321,8 +1378,9 @@ class ScreenInspectId(MDScreen):
                 mydb.commit()
 
         except Exception as e:
-            toast_msg = f'Gagal Update data ke Tabel Uji: {e}'
+            toast_msg = f'Gagal Memperbaharui Data di Database Tabel Uji'
             toast(toast_msg)
+            print(toast_msg, e)
 
         try:
             tb_uji = mydb.cursor()
@@ -1341,13 +1399,14 @@ class ScreenInspectId(MDScreen):
                 mycursor.execute(sql)
                 mydb.commit()
 
-            toast_msg = f'Berhasil menyimpan data'
+            toast_msg = f'Berhasil Menyimpan Data'
             toast(toast_msg)            
 
             self.open_screen_menu()
         except Exception as e:
-            toast_msg = f'Gagal Menambahkan data ke Tabel Uji Detail: {e}'
+            toast_msg = f'Gagal Menambahkan Data ke Database Tabel Uji Detail'
             toast(toast_msg)
+            print(toast_msg, e)
 
     def exec_cancel(self):
         self.open_screen_menu()
@@ -1377,8 +1436,9 @@ class ScreenInspectDimension(MDScreen):
         try:
             self.ids[f'tx_comment{selected_row_subkomponen_uji}'].text = text_item
         except Exception as e:
-            toast_msg = f'Error Execute Command from Menu Comment Callback: {e}'
-            toast(toast_msg)  
+            toast_msg = f'Gagal Mengeksekusi Perintah dari Menu Komentar'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def on_komponen_uji_row_press(self, instance):
         global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
@@ -1392,8 +1452,9 @@ class ScreenInspectDimension(MDScreen):
             self.exec_reload_subkomponen_uji(db_komponen_uji[1, row])
 
         except Exception as e:
-            toast_msg = f'Error Execute Command from Table Komponen Uji Row: {e}'
-            toast(toast_msg)  
+            toast_msg = f'Gagal Mengeksekusi Perintah dari Baris Tabel Komponen Uji'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def on_subkomponen_uji_row_press(self, instance):
         global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
@@ -1429,8 +1490,9 @@ class ScreenInspectDimension(MDScreen):
             self.reload_menu_komentar_uji(selected_kode_subkomponen_uji)
 
         except Exception as e:
-            toast_msg = f'Error Execute Command from Table Subkomponen Uji Row: {e}'
-            toast(toast_msg)  
+            toast_msg = f'Gagal Mengeksekusi Perintah dari Baris Tabel Subkomponen Uji'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def exec_reload_komponen_uji(self):
         global mydb, db_komponen_uji
@@ -1443,15 +1505,17 @@ class ScreenInspectDimension(MDScreen):
             mydb.commit()
             db_komponen_uji = np.array(result_tb_komponen_uji).T
         except Exception as e:
-            toast_msg = f'Error Fetch Table Komponen Uji: {e}'
-            print(toast_msg)
+            toast_msg = f'Gagal Mengambil Data dari Database Tabel Komponen Uji'
+            toast(toast_msg)
+            print(toast_msg, e)
 
         try:
             layout_list = self.ids.layout_list_komponen_uji
             layout_list.clear_widgets(children=None)
         except Exception as e:
-            toast_msg = f'Error Remove Widget: {e}'
-            print(toast_msg)
+            toast_msg = f'Gagal Menghapus Widget'
+            toast(toast_msg)
+            print(toast_msg, e)
         
         try:           
             layout_list = self.ids.layout_list_komponen_uji
@@ -1475,12 +1539,13 @@ class ScreenInspectDimension(MDScreen):
                 card.add_widget(bt_check)
                 
         except Exception as e:
-            toast_msg = f'Error Reload Table Komponen Uji: {e}'
-            print(toast_msg)
+            toast_msg = f'Gagal Memperbaharui Tabel Komponen Uji'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def exec_reload_subkomponen_uji(self, kode_komponen_uji):
         global mydb, db_subkomponen_uji, dt_no_pol
-        global flags_subkomponen_uji, db_last_data
+        global flags_subkomponen_uji, db_last_data, dt_jns_kend
         global window_size_x, window_size_y
 
         try:
@@ -1491,15 +1556,17 @@ class ScreenInspectDimension(MDScreen):
             db_subkomponen_uji = np.array(result_tb_subkomponen_uji).T
             flags_subkomponen_uji = np.ones(db_subkomponen_uji[0,:].size, dtype='bool')
         except Exception as e:
-            toast_msg = f'Error Fetch Table Subkomponen uji: {e}'
-            print(toast_msg)
+            toast_msg = f'Gagal Mengambil Data dari Database Tabel Subkomponen Uji'
+            toast(toast_msg)
+            print(toast_msg, e)
 
         try:
             layout_list = self.ids.layout_list_subkomponen_uji
             layout_list.clear_widgets(children=None)
         except Exception as e:
-            toast_msg = f'Error Remove Widget: {e}'
-            print(toast_msg)
+            toast_msg = f'Gagal Menghapus Widget'
+            toast(toast_msg)
+            print(toast_msg, e)
         
         try:           
             layout_list = self.ids.layout_list_subkomponen_uji
@@ -1529,8 +1596,9 @@ class ScreenInspectDimension(MDScreen):
                 card.add_widget(bt_check)
 
         except Exception as e:
-            toast_msg = f'Error Reload Table Sub Komponen Uji: {e}'
-            print(toast_msg)
+            toast_msg = f'Gagal Memperbaharui Data Tabel Subkomponen Uji'
+            toast(toast_msg)
+            print(toast_msg, e)
 
         try:
             db_last_data = np.array([])
@@ -1545,8 +1613,30 @@ class ScreenInspectDimension(MDScreen):
 
                 self.ids[f'tx_value{i}'].text = str(last_data)
         except Exception as e:
-            toast_msg = f'Error Reload Last Data from Table Image Kendaraan: {e}'
-            print(toast_msg)
+            toast_msg = f'Gagal Mengambil Data Terakhir dari Database Tabel Image Kendaraan'
+            toast(toast_msg)
+            print(toast_msg, e)
+
+            try:
+                toast_msg = f'Trying Reload Data from Table Jenis Kendaraan'
+                print(toast_msg)
+
+                db_last_data = np.array([])
+                for i in range(db_subkomponen_uji[2,:].size):
+                    column_name = db_subkomponen_uji[2,i]
+                    for i in range(column_name):
+                        tb_jenis_kendaraan = mydb.cursor()
+                        tb_jenis_kendaraan.execute(f"SELECT {column_name[i]} FROM {TB_DATA_KENDARAAN} WHERE field = '{column_name[i]}' AND jenis = '{dt_jns_kend}' ORDER BY id DESC LIMIT 1")
+                        result_tb_jenis_kendaraan = tb_jenis_kendaraan.fetchone()
+                        mydb.commit()
+                        last_data = result_tb_jenis_kendaraan[0]
+                        db_last_data = np.append(db_last_data, last_data)
+
+                    self.ids[f'tx_value{i}'].text = str(last_data)
+            except Exception as e:
+                toast_msg = f'Gagal Mengambil Data Terakhir dari Database Tabel Jenis Kendaraan'
+                toast(toast_msg)
+                print(toast_msg, e)
 
     def reload_menu_komentar_uji(self, selected_kode_subkomponen_uji=""):
         global window_size_x, window_size_y
@@ -1561,7 +1651,7 @@ class ScreenInspectDimension(MDScreen):
 
             if(db_komentar_uji.size == 0 ):
                 self.ids.bt_dropdown_caller.disabled = True
-                toast('Tidak ada rekomendasi komentar, silahkan isi komentar sendiri')
+                toast('Tidak Ada Rekomendasi Komentar, Silahkan Isi Komentar Sendiri')
 
             self.menu_komentar_uji_items = [
                 {
@@ -1579,8 +1669,9 @@ class ScreenInspectDimension(MDScreen):
             )
 
         except Exception as e:
-            toast_msg = f'Error Show Komentar: {e}'
-            print(toast_msg)
+            toast_msg = f'Gagal Menampilkan Rekomendasi Komentar'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def open_screen_menu(self):
         self.screen_manager.current = 'screen_menu'
@@ -1611,8 +1702,9 @@ class ScreenInspectDimension(MDScreen):
                 mydb.commit()
 
         except Exception as e:
-            toast_msg = f'Gagal Update data ke Tabel Image Kendaraan dan Tabel Uji: {e}'
+            toast_msg = f'Gagal Update Data ke Tabel Image Kendaraan dan Tabel Uji'
             toast(toast_msg)
+            print(toast_msg, e)
 
         try:
             tb_uji = mydb.cursor()
@@ -1632,12 +1724,13 @@ class ScreenInspectDimension(MDScreen):
                 mydb.commit()
 
             toast_msg = f'Berhasil menyimpan data'
-            toast(toast_msg)            
+            toast(toast_msg)
 
             self.open_screen_menu()
         except Exception as e:
-            toast_msg = f'Gagal Menambahkan data ke Tabel Uji Detail: {e}'
+            toast_msg = f'Gagal Menambahkan Data ke Tabel Uji Detail'
             toast(toast_msg)
+            print(toast_msg, e)
 
     def exec_cancel(self):
         self.open_screen_menu()
@@ -1667,8 +1760,9 @@ class ScreenInspectVisual(MDScreen):
         try:
             self.ids[f'tx_comment{selected_row_subkomponen_uji}'].text = text_item
         except Exception as e:
-            toast_msg = f'Error Execute Command from Menu Comment Callback: {e}'
-            toast(toast_msg)  
+            toast_msg = f'Gagal Mengeksekusi Perintah dari Menu Komentar'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def on_komponen_uji_row_press(self, instance):
         global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
@@ -1682,8 +1776,9 @@ class ScreenInspectVisual(MDScreen):
             self.exec_reload_subkomponen_uji(db_komponen_uji[1, row])
 
         except Exception as e:
-            toast_msg = f'Error Execute Command from Table Komponen Uji Row: {e}'
-            toast(toast_msg)  
+            toast_msg = f'Gagal Mengeksekusi Perintah dari Baris Tabel Komponen Uji'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def on_subkomponen_uji_row_press(self, instance):
         global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
@@ -1719,8 +1814,9 @@ class ScreenInspectVisual(MDScreen):
             self.reload_menu_komentar_uji(selected_kode_subkomponen_uji)
 
         except Exception as e:
-            toast_msg = f'Error Execute Command from Table Subkomponen Uji Row: {e}'
-            toast(toast_msg)   
+            toast_msg = f'Gagal Mengeksekusi Perintah dari Baris Tabel Subkomponen Uji'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def exec_reload_komponen_uji(self):
         global mydb, db_komponen_uji
@@ -1733,15 +1829,18 @@ class ScreenInspectVisual(MDScreen):
             mydb.commit()
             db_komponen_uji = np.array(result_tb_komponen_uji).T
         except Exception as e:
-            toast_msg = f'Error Fetch Table Komponen Uji: {e}'
-            print(toast_msg)
+            toast_msg = f'Gagal Mengambil Data dari Database Tabel Komponen Uji'
+            toast(toast_msg)
+            print(toast_msg, e)
+            
 
         try:
             layout_list = self.ids.layout_list_komponen_uji
             layout_list.clear_widgets(children=None)
         except Exception as e:
-            toast_msg = f'Error Remove Widget: {e}'
-            print(toast_msg)
+            toast_msg = f'Gagal Menghapus Widget'
+            toast(toast_msg)
+            print(toast_msg, e)
         
         try:           
             layout_list = self.ids.layout_list_komponen_uji
@@ -1765,8 +1864,9 @@ class ScreenInspectVisual(MDScreen):
                 card.add_widget(bt_check)
                 
         except Exception as e:
-            toast_msg = f'Error Reload Table Komponen Uji: {e}'
-            print(toast_msg)
+            toast_msg = f'Gagal Memperbaharui Tabel Komponen Uji'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def exec_reload_subkomponen_uji(self, kode_komponen_uji):
         global mydb, db_subkomponen_uji
@@ -1780,15 +1880,17 @@ class ScreenInspectVisual(MDScreen):
             db_subkomponen_uji = np.array(result_tb_subkomponen_uji).T
             flags_subkomponen_uji = np.ones(db_subkomponen_uji[0,:].size, dtype='bool')
         except Exception as e:
-            toast_msg = f'Error Fetch Table Subkomponen Uji: {e}'
-            print(toast_msg)
+            toast_msg = f'Gagal Mengambil Data dari Database Tabel Subkomponen Uji'
+            toast(toast_msg)
+            print(toast_msg, e)
 
         try:
             layout_list = self.ids.layout_list_subkomponen_uji
             layout_list.clear_widgets(children=None)
         except Exception as e:
-            toast_msg = f'Error Remove Widget: {e}'
-            print(toast_msg)
+            toast_msg = f'Gagal Menghapus Widget'
+            toast(toast_msg)
+            print(toast_msg, e)
         
         try:           
             layout_list = self.ids.layout_list_subkomponen_uji
@@ -1816,8 +1918,9 @@ class ScreenInspectVisual(MDScreen):
                 card.add_widget(bt_check)
 
         except Exception as e:
-            toast_msg = f'Error Reload Table Sub Komponen Uji: {e}'
-            print(toast_msg)
+            toast_msg = f'Gagal Memperbaharui Data Tabel Subkomponen Uji'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def reload_menu_komentar_uji(self, selected_kode_subkomponen_uji=""):
         global window_size_x, window_size_y
@@ -1832,7 +1935,7 @@ class ScreenInspectVisual(MDScreen):
 
             if(db_komentar_uji.size == 0 ):
                 self.ids.bt_dropdown_caller.disabled = True
-                toast('Tidak ada rekomendasi komentar, silahkan isi komentar sendiri')
+                toast('Tidak Ada Rekomendasi Komentar, Silahkan Isi Komentar Sendiri')
 
             self.menu_komentar_uji_items = [
                 {
@@ -1850,8 +1953,9 @@ class ScreenInspectVisual(MDScreen):
             )
 
         except Exception as e:
-            toast_msg = f'Error Show Komentar: {e}'
-            print(toast_msg)
+            toast_msg = f'Gagal Menampilkan Rekomendasi Komentar'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def open_screen_menu(self):
         self.screen_manager.current = 'screen_menu'
@@ -1874,8 +1978,9 @@ class ScreenInspectVisual(MDScreen):
                 mydb.commit()
 
         except Exception as e:
-            toast_msg = f'Gagal Update data ke Tabel Uji: {e}'
+            toast_msg = f'Gagal Memperbaharui Data di Database Tabel Uji'
             toast(toast_msg)
+            print(toast_msg, e)
 
         try:
             tb_uji = mydb.cursor()
@@ -1899,8 +2004,9 @@ class ScreenInspectVisual(MDScreen):
 
             self.open_screen_menu()
         except Exception as e:
-            toast_msg = f'Gagal Menambahkan data ke Tabel Uji Detail: {e}'
+            toast_msg = f'Gagal Menambahkan Data ke Database Tabel Uji Detail'
             toast(toast_msg)
+            print(toast_msg, e)
 
     def exec_cancel(self):
         self.open_screen_menu()
@@ -1930,8 +2036,9 @@ class ScreenInspectVisual2(MDScreen):
         try:
             self.ids[f'tx_comment{selected_row_subkomponen_uji}'].text = text_item
         except Exception as e:
-            toast_msg = f'Error Execute Command from Menu Comment Callback: {e}'
-            toast(toast_msg)  
+            toast_msg = f'Gagal Mengeksekusi Perintah dari Menu Komentar'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def on_komponen_uji_row_press(self, instance):
         global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
@@ -1945,8 +2052,9 @@ class ScreenInspectVisual2(MDScreen):
             self.exec_reload_subkomponen_uji(db_komponen_uji[1, row])
 
         except Exception as e:
-            toast_msg = f'Error Execute Command from Table Komponen Uji Row: {e}'
-            toast(toast_msg)  
+            toast_msg = f'Gagal Mengeksekusi Perintah dari Baris Tabel Komponen Uji'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def on_subkomponen_uji_row_press(self, instance):
         global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
@@ -1982,8 +2090,9 @@ class ScreenInspectVisual2(MDScreen):
             self.reload_menu_komentar_uji(selected_kode_subkomponen_uji)
 
         except Exception as e:
-            toast_msg = f'Error Execute Command from Table Subkomponen Uji Row: {e}'
-            toast(toast_msg)  
+            toast_msg = f'Gagal Mengeksekusi Perintah dari Baris Tabel Subkomponen Uji'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def exec_reload_komponen_uji(self):
         global mydb, db_komponen_uji
@@ -1996,15 +2105,17 @@ class ScreenInspectVisual2(MDScreen):
             mydb.commit()
             db_komponen_uji = np.array(result_tb_komponen_uji).T
         except Exception as e:
-            toast_msg = f'Error Fetch Table Komponen Uji: {e}'
-            print(toast_msg)
+            toast_msg = f'Gagal Mengambil Data dari Database Tabel Komponen Uji'
+            toast(toast_msg)
+            print(toast_msg, e)
 
         try:
             layout_list = self.ids.layout_list_komponen_uji
             layout_list.clear_widgets(children=None)
         except Exception as e:
-            toast_msg = f'Error Remove Widget: {e}'
-            print(toast_msg)
+            toast_msg = f'Gagal Menghapus Widget'
+            toast(toast_msg)
+            print(toast_msg, e)
         
         try:           
             layout_list = self.ids.layout_list_komponen_uji
@@ -2028,8 +2139,9 @@ class ScreenInspectVisual2(MDScreen):
                 card.add_widget(bt_check)
                 
         except Exception as e:
-            toast_msg = f'Error Reload Table Komponen Uji: {e}'
-            print(toast_msg)
+            toast_msg = f'Gagal Memperbaharui Tabel Komponen Uji'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def exec_reload_subkomponen_uji(self, kode_komponen_uji):
         global mydb, db_subkomponen_uji
@@ -2044,15 +2156,17 @@ class ScreenInspectVisual2(MDScreen):
             db_subkomponen_uji = np.array(result_tb_subkomponen_uji).T
             flags_subkomponen_uji = np.ones(db_subkomponen_uji[0,:].size, dtype='bool')
         except Exception as e:
-            toast_msg = f'Error Fetch Table Subkomponen Uji: {e}'
-            print(toast_msg)
+            toast_msg = f'Gagal Mengambil Data dari Database Tabel Subkomponen Uji'
+            toast(toast_msg)
+            print(toast_msg, e)
 
         try:
             layout_list = self.ids.layout_list_subkomponen_uji
             layout_list.clear_widgets(children=None)
         except Exception as e:
-            toast_msg = f'Error Remove Widget: {e}'
-            print(toast_msg)
+            toast_msg = f'Gagal Menghapus Widget'
+            toast(toast_msg)
+            print(toast_msg, e)
         
         try:           
             layout_list = self.ids.layout_list_subkomponen_uji
@@ -2080,8 +2194,9 @@ class ScreenInspectVisual2(MDScreen):
                 card.add_widget(bt_check)
 
         except Exception as e:
-            toast_msg = f'Error Reload Table Sub Komponen Uji: {e}'
-            print(toast_msg)
+            toast_msg = f'Gagal Memperbaharui Data Tabel Subkomponen Uji'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def reload_menu_komentar_uji(self, selected_kode_subkomponen_uji=""):
         global window_size_x, window_size_y
@@ -2096,7 +2211,7 @@ class ScreenInspectVisual2(MDScreen):
 
             if(db_komentar_uji.size == 0 ):
                 self.ids.bt_dropdown_caller.disabled = True
-                toast('Tidak ada rekomendasi komentar, silahkan isi komentar sendiri')
+                toast('Tidak Ada Rekomendasi Komentar, Silahkan Isi Komentar Sendiri')
 
             self.menu_komentar_uji_items = [
                 {
@@ -2114,8 +2229,9 @@ class ScreenInspectVisual2(MDScreen):
             )
 
         except Exception as e:
-            toast_msg = f'Error Show Komentar: {e}'
-            print(toast_msg)
+            toast_msg = f'Gagal Menampilkan Rekomendasi Komentar'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def open_screen_menu(self):
         self.screen_manager.current = 'screen_menu'
@@ -2138,8 +2254,9 @@ class ScreenInspectVisual2(MDScreen):
                 mydb.commit()
 
         except Exception as e:
-            toast_msg = f'Gagal Update data ke Tabel Uji: {e}'
+            toast_msg = f'Gagal Memperbaharui Data di Database Tabel Uji'
             toast(toast_msg)
+            print(toast_msg, e)
 
         try:
             tb_uji = mydb.cursor()
@@ -2163,8 +2280,9 @@ class ScreenInspectVisual2(MDScreen):
 
             self.open_screen_menu()      
         except Exception as e:
-            toast_msg = f'Gagal Menambahkan data ke Tabel Uji Detail: {e}'
+            toast_msg = f'Gagal Menambahkan Data ke Database Tabel Uji Detail'
             toast(toast_msg)
+            print(toast_msg, e)
 
     def exec_cancel(self):
         self.open_screen_menu()
@@ -2194,8 +2312,9 @@ class ScreenInspectPit(MDScreen):
         try:
             self.ids[f'tx_comment{selected_row_subkomponen_uji}'].text = text_item
         except Exception as e:
-            toast_msg = f'Error Execute Command from Menu Comment Callback: {e}'
-            toast(toast_msg)  
+            toast_msg = f'Gagal Mengeksekusi Perintah dari Menu Komentar'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def on_komponen_uji_row_press(self, instance):
         global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
@@ -2209,8 +2328,9 @@ class ScreenInspectPit(MDScreen):
             self.exec_reload_subkomponen_uji(db_komponen_uji[1, row])
 
         except Exception as e:
-            toast_msg = f'Error Execute Command from Table Komponen Uji Row: {e}'
-            toast(toast_msg)  
+            toast_msg = f'Gagal Mengeksekusi Perintah dari Baris Tabel Komponen Uji'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def on_subkomponen_uji_row_press(self, instance):
         global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
@@ -2246,8 +2366,9 @@ class ScreenInspectPit(MDScreen):
             self.reload_menu_komentar_uji(selected_kode_subkomponen_uji)
 
         except Exception as e:
-            toast_msg = f'Error Execute Command from Table Subkomponen Uji Row: {e}'
-            toast(toast_msg)  
+            toast_msg = f'Gagal Mengeksekusi Perintah dari Baris Tabel Subkomponen Uji'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def exec_reload_komponen_uji(self):
         global mydb, db_komponen_uji
@@ -2260,15 +2381,17 @@ class ScreenInspectPit(MDScreen):
             mydb.commit()
             db_komponen_uji = np.array(result_tb_komponen_uji).T
         except Exception as e:
-            toast_msg = f'Error Fetch Table Komponen Uji: {e}'
-            print(toast_msg)
+            toast_msg = f'Gagal Mengambil Data dari Database Tabel Komponen Uji'
+            toast(toast_msg)
+            print(toast_msg, e)
 
         try:
             layout_list = self.ids.layout_list_komponen_uji
             layout_list.clear_widgets(children=None)
         except Exception as e:
-            toast_msg = f'Error Remove Widget: {e}'
-            print(toast_msg)
+            toast_msg = f'Gagal Menghapus Widget'
+            toast(toast_msg)
+            print(toast_msg, e)
         
         try:           
             layout_list = self.ids.layout_list_komponen_uji
@@ -2292,8 +2415,9 @@ class ScreenInspectPit(MDScreen):
                 card.add_widget(bt_check)
                 
         except Exception as e:
-            toast_msg = f'Error Reload Table Komponen Uji: {e}'
-            print(toast_msg)
+            toast_msg = f'Gagal Memperbaharui Tabel Komponen Uji'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def exec_reload_subkomponen_uji(self, kode_komponen_uji):
         global mydb, db_subkomponen_uji
@@ -2308,15 +2432,17 @@ class ScreenInspectPit(MDScreen):
             db_subkomponen_uji = np.array(result_tb_subkomponen_uji).T
             flags_subkomponen_uji = np.ones(db_subkomponen_uji[0,:].size, dtype='bool')
         except Exception as e:
-            toast_msg = f'Error Fetch Table Subkomponen Uji: {e}'
-            print(toast_msg)
+            toast_msg = f'Gagal Mengambil Data dari Database Tabel Subkomponen Uji'
+            toast(toast_msg)
+            print(toast_msg, e)
 
         try:
             layout_list = self.ids.layout_list_subkomponen_uji
             layout_list.clear_widgets(children=None)
         except Exception as e:
-            toast_msg = f'Error Remove Widget: {e}'
-            print(toast_msg)
+            toast_msg = f'Gagal Menghapus Widget'
+            toast(toast_msg)
+            print(toast_msg, e)
         
         try:           
             layout_list = self.ids.layout_list_subkomponen_uji
@@ -2347,8 +2473,9 @@ class ScreenInspectPit(MDScreen):
                 card.add_widget(bt_check)
 
         except Exception as e:
-            toast_msg = f'Error Reload Table Sub Komponen Uji: {e}'
-            print(toast_msg)
+            toast_msg = f'Gagal Memperbaharui Data Tabel Subkomponen Uji'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def reload_menu_komentar_uji(self, selected_kode_subkomponen_uji=""):
         global window_size_x, window_size_y
@@ -2363,7 +2490,7 @@ class ScreenInspectPit(MDScreen):
 
             if(db_komentar_uji.size == 0 ):
                 self.ids.bt_dropdown_caller.disabled = True
-                toast('Tidak ada rekomendasi komentar, silahkan isi komentar sendiri')
+                toast('Tidak Ada Rekomendasi Komentar, Silahkan Isi Komentar Sendiri')
 
             self.menu_komentar_uji_items = [
                 {
@@ -2381,8 +2508,9 @@ class ScreenInspectPit(MDScreen):
             )
 
         except Exception as e:
-            toast_msg = f'Error Show Komentar: {e}'
-            print(toast_msg)
+            toast_msg = f'Gagal Menampilkan Rekomendasi Komentar'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def open_screen_menu(self):
         self.screen_manager.current = 'screen_menu'
@@ -2408,8 +2536,9 @@ class ScreenInspectPit(MDScreen):
                 mydb.commit()
 
         except Exception as e:
-            toast_msg = f'Gagal Update data ke Tabel Uji: {e}'
+            toast_msg = f'Gagal Memperbaharui Data di Database Tabel Uji'
             toast(toast_msg)
+            print(toast_msg, e)
 
         try:
             tb_uji = mydb.cursor()
@@ -2433,8 +2562,9 @@ class ScreenInspectPit(MDScreen):
 
             self.open_screen_menu()
         except Exception as e:
-            toast_msg = f'Gagal Menambahkan data ke Tabel Uji Detail: {e}'
+            toast_msg = f'Gagal Menambahkan Data ke Database Tabel Uji Detail'
             toast(toast_msg)
+            print(toast_msg, e)
             
     def exec_cancel(self):
         self.open_screen_menu()
@@ -2487,13 +2617,15 @@ class ScreenRealtimeCctv(MDScreen):
             dt_selected_camera = camera_number
 
         except Exception as e:
-            toast_msg = f'Error Execute Command from Camera List: {e}'
-            toast(toast_msg)  
+            toast_msg = f'Gagal Mengeksekusi Perintah Dari Menu Kamera'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def exec_play_cctv(self):
         global rtsp_url_array, dt_selected_camera
         try:
             self.capture = cv2.VideoCapture(rtsp_url_array[dt_selected_camera])
+            # self.capture = cv2.VideoCapture(0)
             Clock.schedule_interval(self.update_frame, 1/30)
         except:
             pass
@@ -2513,10 +2645,11 @@ class ScreenRealtimeCctv(MDScreen):
 
             if ret:
                 # Membalik frame secara vertikal
-                zoom_factor = self.ids.sl_zoom.value
-                x_offs = self.ids.sl_x_offs.value
-                y_offs = self.ids.sl_y_offs.value
-                self.image_cctv = self.zoom_image(frame, zoom_factor, x_offs, y_offs)
+                # zoom_factor = self.ids.sl_zoom.value
+                # x_offs = self.ids.sl_x_offs.value
+                # y_offs = self.ids.sl_y_offs.value
+                # self.image_cctv = self.zoom_image(frame, zoom_factor, x_offs, y_offs)
+                self.image_cctv = self.zoom_image(frame)
 
                 frame = cv2.flip(self.image_cctv, 0)  # 0 untuk membalik secara vertikal
                 # OpenCV menggunakan format BGR, ubah ke RGB
@@ -2532,15 +2665,22 @@ class ScreenRealtimeCctv(MDScreen):
         except:
             pass
 
-    def zoom_image(self, img, zoom_factor=1.0, x_offs=0.5, y_offs=0.5):
-        y_size = img.shape[0]
-        x_size = img.shape[1]
+    def zoom_image(self, img, zoom_factor=1.0, x_offs=0., y_offs=0.):
+        # y_size = img.shape[0]
+        # x_size = img.shape[1]
+        y_size = 600
+        x_size = 600
 
         # define new boundaries
-        x1 = int(x_offs * x_size)
-        x2 = int(x_size - 0.5 * x_size * (1 - 1 / zoom_factor))
-        y1 = int(y_offs * y_size)
-        y2 = int(y_size - 0.5 * y_size * (1 - 1 / zoom_factor))
+        # x1 = int(x_offs * x_size)
+        # x2 = int(x_size - 0.5 * x_size * (1 - 1 / zoom_factor))
+        # y1 = int(y_offs * y_size)
+        # y2 = int(y_size - 0.5 * y_size * (1 - 1 / zoom_factor))
+
+        x1 = int(x_offs)
+        x2 = int(x_offs + x_size)
+        y1 = int(y_offs)
+        y2 = int(y_offs + y_size)
 
         # first crop image then scale
         img_cropped = img[y1:y2, x1:x2]
@@ -2578,8 +2718,9 @@ class ScreenRealtimeCctv(MDScreen):
             toast(f'Berhasil menyimpan gambar ke server')
             self.open_screen_menu()
         except Exception as e:
-            toast_msg = f'Gagal menyimpan gambar ke server: {e}'
-            toast(toast_msg)    
+            toast_msg = f'Gagal Menyimpan Gambar ke Server'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def open_screen_menu(self):
         self.screen_manager.current = 'screen_menu'
@@ -2589,8 +2730,9 @@ class ScreenRealtimeCctv(MDScreen):
             self.screen_manager.current = 'screen_menu'
 
         except Exception as e:
-            toast_msg = f'Error Navigate to Home Screen: {e}'
-            toast(toast_msg)        
+            toast_msg = f'Gagal Berpindah ke Halaman Awal'
+            toast(toast_msg)
+            print(toast_msg, e)
 
 class ScreenRealtimePit(MDScreen):        
     def __init__(self, **kwargs):
@@ -2640,12 +2782,13 @@ class ScreenRealtimePit(MDScreen):
             dt_selected_camera = camera_number
 
         except Exception as e:
-            toast_msg = f'Error Execute Command from Camera List: {e}'
+            toast_msg = f'Gagal Mengeksekusi Perintah Dari Menu Kamera'
             toast(toast_msg)  
 
     def exec_play_cctv(self):
         try:
             self.capture = cv2.VideoCapture(rtsp_url_array[dt_selected_camera])
+            # self.capture = cv2.VideoCapture(0)
             Clock.schedule_interval(self.update_frame, 1/30)
         except:
             pass
@@ -2685,8 +2828,10 @@ class ScreenRealtimePit(MDScreen):
             pass
 
     def zoom_image(self, img, zoom_factor=1.0, x_offs=0.5, y_offs=0.5):
-        y_size = img.shape[0]
-        x_size = img.shape[1]
+        # y_size = img.shape[0]
+        # x_size = img.shape[1]
+        y_size = 600
+        x_size = 600
 
         # define new boundaries
         x1 = int(x_offs * x_size)
@@ -2731,8 +2876,9 @@ class ScreenRealtimePit(MDScreen):
             toast(f'Berhasil menyimpan gambar ke server')
 
         except Exception as e:
-            toast_msg = f'Gagal menyimpan gambar ke server: {e}'
-            toast(toast_msg)    
+            toast_msg = f'Gagal Menyimpan Gambar ke Server'
+            toast(toast_msg)
+            print(toast_msg, e) 
 
         try:
             now = str(time.strftime("%Y-%m-%d %H:%M:%s", time.localtime()))
@@ -2753,8 +2899,9 @@ class ScreenRealtimePit(MDScreen):
             mydb.commit()
 
         except Exception as e:
-            toast_msg = f'Gagal menyimpan gambar ke server: {e}'
-            toast(toast_msg)   
+            toast_msg = f'Gagal Menyimpan Gambar ke Server'
+            toast(toast_msg)
+            print(toast_msg, e)
 
     def open_screen_menu(self):
         self.screen_manager.current = 'screen_menu'
@@ -2764,8 +2911,9 @@ class ScreenRealtimePit(MDScreen):
             self.screen_manager.current = 'screen_menu'
 
         except Exception as e:
-            toast_msg = f'Error Navigate to Home Screen: {e}'
-            toast(toast_msg)       
+            toast_msg = f'Gagal Berpindah ke Halaman Awal'
+            toast(toast_msg)
+            print(toast_msg, e)
 
 class ListItem(OneLineListItem):
     list_text = StringProperty()
