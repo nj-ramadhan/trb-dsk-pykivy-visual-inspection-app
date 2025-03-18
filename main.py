@@ -120,7 +120,7 @@ class ScreenHome(MDScreen):
             self.ids.carousel.index += 1
             
         except Exception as e:
-            toast_msg = f'Gagal Memperbaharui Tampilan'
+            toast_msg = f'Gagal Memperbaharui Tampilan Carousel'
             toast(toast_msg)                
             print(toast_msg, e)
 
@@ -349,10 +349,10 @@ class ScreenMain(MDScreen):
             self.ids.lb_dash_sudah_uji.text = str(dt_dash_sudah_uji)
 
             screen_menu.ids.bt_verify_data.disabled = True if dt_verified_data == 1 else False
-            if dt_verified_payment == 1 or dt_verified_data == 0:
-                screen_menu.ids.bt_verify_payment.disabled = True
-            elif dt_verified_payment == 0 and dt_verified_data == 1:
-                screen_menu.ids.bt_verify_payment.disabled = False
+            # if dt_verified_payment == 1 or dt_verified_data == 0:
+            #     screen_menu.ids.bt_verify_payment.disabled = True
+            # elif dt_verified_payment == 0 and dt_verified_data == 1:
+            #     screen_menu.ids.bt_verify_payment.disabled = False
 
             if(not flag_conn_stat):
                 self.ids.lb_comm.color = colors['Red']['A200']
