@@ -33,9 +33,13 @@
    'C:\\Users\\Nur '
    'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\EpsImagePlugin.py',
    'PYMODULE'),
-  ('PIL.FitsStubImagePlugin',
+  ('PIL.ExifTags',
    'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\FitsStubImagePlugin.py',
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\ExifTags.py',
+   'PYMODULE'),
+  ('PIL.FitsImagePlugin',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\FitsImagePlugin.py',
    'PYMODULE'),
   ('PIL.FliImagePlugin',
    'C:\\Users\\Nur '
@@ -93,6 +97,10 @@
    'C:\\Users\\Nur '
    'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\ImageChops.py',
    'PYMODULE'),
+  ('PIL.ImageCms',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\ImageCms.py',
+   'PYMODULE'),
   ('PIL.ImageColor',
    'C:\\Users\\Nur '
    'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\ImageColor.py',
@@ -117,9 +125,17 @@
    'C:\\Users\\Nur '
    'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\ImageFont.py',
    'PYMODULE'),
+  ('PIL.ImageMath',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\ImageMath.py',
+   'PYMODULE'),
   ('PIL.ImageMode',
    'C:\\Users\\Nur '
    'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\ImageMode.py',
+   'PYMODULE'),
+  ('PIL.ImageOps',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\ImageOps.py',
    'PYMODULE'),
   ('PIL.ImagePalette',
    'C:\\Users\\Nur '
@@ -144,6 +160,10 @@
   ('PIL.ImageTk',
    'C:\\Users\\Nur '
    'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\ImageTk.py',
+   'PYMODULE'),
+  ('PIL.ImageWin',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\ImageWin.py',
    'PYMODULE'),
   ('PIL.ImtImagePlugin',
    'C:\\Users\\Nur '
@@ -225,9 +245,9 @@
    'C:\\Users\\Nur '
    'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\PsdImagePlugin.py',
    'PYMODULE'),
-  ('PIL.PyAccess',
+  ('PIL.QoiImagePlugin',
    'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\PyAccess.py',
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\QoiImagePlugin.py',
    'PYMODULE'),
   ('PIL.SgiImagePlugin',
    'C:\\Users\\Nur '
@@ -276,6 +296,14 @@
   ('PIL._binary',
    'C:\\Users\\Nur '
    'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\_binary.py',
+   'PYMODULE'),
+  ('PIL._deprecate',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\_deprecate.py',
+   'PYMODULE'),
+  ('PIL._typing',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PIL\\_typing.py',
    'PYMODULE'),
   ('PIL._util',
    'C:\\Users\\Nur '
@@ -500,70 +528,6 @@
   ('certifi.core',
    'C:\\Users\\Nur '
    'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\certifi\\core.py',
-   'PYMODULE'),
-  ('cffi',
-   'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cffi\\__init__.py',
-   'PYMODULE'),
-  ('cffi._imp_emulation',
-   'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cffi\\_imp_emulation.py',
-   'PYMODULE'),
-  ('cffi._shimmed_dist_utils',
-   'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cffi\\_shimmed_dist_utils.py',
-   'PYMODULE'),
-  ('cffi.api',
-   'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cffi\\api.py',
-   'PYMODULE'),
-  ('cffi.cffi_opcode',
-   'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cffi\\cffi_opcode.py',
-   'PYMODULE'),
-  ('cffi.commontypes',
-   'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cffi\\commontypes.py',
-   'PYMODULE'),
-  ('cffi.cparser',
-   'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cffi\\cparser.py',
-   'PYMODULE'),
-  ('cffi.error',
-   'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cffi\\error.py',
-   'PYMODULE'),
-  ('cffi.ffiplatform',
-   'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cffi\\ffiplatform.py',
-   'PYMODULE'),
-  ('cffi.lock',
-   'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cffi\\lock.py',
-   'PYMODULE'),
-  ('cffi.model',
-   'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cffi\\model.py',
-   'PYMODULE'),
-  ('cffi.pkgconfig',
-   'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cffi\\pkgconfig.py',
-   'PYMODULE'),
-  ('cffi.recompiler',
-   'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cffi\\recompiler.py',
-   'PYMODULE'),
-  ('cffi.vengine_cpy',
-   'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cffi\\vengine_cpy.py',
-   'PYMODULE'),
-  ('cffi.vengine_gen',
-   'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cffi\\vengine_gen.py',
-   'PYMODULE'),
-  ('cffi.verifier',
-   'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\cffi\\verifier.py',
    'PYMODULE'),
   ('cgi',
    'C:\\Users\\Nur '
@@ -2244,10 +2208,6 @@
   ('imghdr',
    'C:\\Users\\Nur '
    'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\imghdr.py',
-   'PYMODULE'),
-  ('imp',
-   'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\imp.py',
    'PYMODULE'),
   ('importlib',
    'C:\\Users\\Nur '
@@ -4721,50 +4681,6 @@
   ('py_compile',
    'C:\\Users\\Nur '
    'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\py_compile.py',
-   'PYMODULE'),
-  ('pycparser',
-   'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\pycparser\\__init__.py',
-   'PYMODULE'),
-  ('pycparser.ast_transforms',
-   'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\pycparser\\ast_transforms.py',
-   'PYMODULE'),
-  ('pycparser.c_ast',
-   'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\pycparser\\c_ast.py',
-   'PYMODULE'),
-  ('pycparser.c_lexer',
-   'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\pycparser\\c_lexer.py',
-   'PYMODULE'),
-  ('pycparser.c_parser',
-   'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\pycparser\\c_parser.py',
-   'PYMODULE'),
-  ('pycparser.lextab',
-   'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\pycparser\\lextab.py',
-   'PYMODULE'),
-  ('pycparser.ply',
-   'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\pycparser\\ply\\__init__.py',
-   'PYMODULE'),
-  ('pycparser.ply.lex',
-   'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\pycparser\\ply\\lex.py',
-   'PYMODULE'),
-  ('pycparser.ply.yacc',
-   'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\pycparser\\ply\\yacc.py',
-   'PYMODULE'),
-  ('pycparser.plyparser',
-   'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\pycparser\\plyparser.py',
-   'PYMODULE'),
-  ('pycparser.yacctab',
-   'C:\\Users\\Nur '
-   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\pycparser\\yacctab.py',
    'PYMODULE'),
   ('pydoc',
    'C:\\Users\\Nur '
