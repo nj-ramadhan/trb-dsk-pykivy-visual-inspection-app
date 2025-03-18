@@ -1724,7 +1724,7 @@
  [],
  False,
  False,
- 1741055654,
+ 1742276511,
  [('run.exe',
    'C:\\Users\\Nur '
    'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\PyInstaller\\bootloader\\Windows-64bit-intel\\run.exe',

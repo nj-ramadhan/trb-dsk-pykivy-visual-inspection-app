@@ -2624,8 +2624,8 @@ class ScreenRealtimeCctv(MDScreen):
     def exec_play_cctv(self):
         global rtsp_url_array, dt_selected_camera
         try:
-            # self.capture = cv2.VideoCapture(rtsp_url_array[dt_selected_camera])
-            self.capture = cv2.VideoCapture(0)
+            self.capture = cv2.VideoCapture(rtsp_url_array[dt_selected_camera])
+            # self.capture = cv2.VideoCapture(0)
             Clock.schedule_interval(self.update_frame, 1/30)
         except:
             pass
@@ -2787,8 +2787,8 @@ class ScreenRealtimePit(MDScreen):
 
     def exec_play_cctv(self):
         try:
-            # self.capture = cv2.VideoCapture(rtsp_url_array[dt_selected_camera])
-            self.capture = cv2.VideoCapture(0)
+            self.capture = cv2.VideoCapture(rtsp_url_array[dt_selected_camera])
+            # self.capture = cv2.VideoCapture(0)
             Clock.schedule_interval(self.update_frame, 1/30)
         except:
             pass
