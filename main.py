@@ -293,6 +293,7 @@ class ScreenMain(MDScreen):
         self.ids.lb_unit_address.text = LB_UNIT_ADDRESS
 
         Clock.schedule_interval(self.regular_update_display, 1)
+        Clock.schedule_interval(self.regular_update_connection, 10)
 
     def on_enter(self):
         self.exec_reload_database()
@@ -2575,7 +2576,7 @@ class ScreenRealtimeCctv(MDScreen):
         Clock.schedule_once(self.delayed_init, 1)
 
     def delayed_init(self, dt):
-        global rtsp_url_array
+        global rtsp_url_cam_array
         global rtsp_url_cam1, rtsp_url_cam2, rtsp_url_cam3, rtsp_url_cam4
 
         self.ids.img_pemkab.source = f'assets/images/{IMG_LOGO_PEMKAB}'
@@ -2584,7 +2585,7 @@ class ScreenRealtimeCctv(MDScreen):
         self.ids.lb_dishub.text = LB_DISHUB
         self.ids.lb_unit.text = LB_UNIT
         self.ids.lb_unit_address.text = LB_UNIT_ADDRESS
-        rtsp_url_array = np.array([rtsp_url_cam1, rtsp_url_cam2, rtsp_url_cam3, rtsp_url_cam4])
+        rtsp_url_cam_array = np.array([rtsp_url_cam1, rtsp_url_cam2, rtsp_url_cam3, rtsp_url_cam4])
     
     def on_enter(self):
         global window_size_x, window_size_y
@@ -2622,9 +2623,8 @@ class ScreenRealtimeCctv(MDScreen):
             print(toast_msg, e)
 
     def exec_play_cctv(self):
-        global rtsp_url_array, dt_selected_camera
         try:
-            self.capture = cv2.VideoCapture(rtsp_url_array[dt_selected_camera])
+            self.capture = cv2.VideoCapture(rtsp_url_cam_array[dt_selected_camera])
             # self.capture = cv2.VideoCapture(0)
             Clock.schedule_interval(self.update_frame, 1/30)
         except:
@@ -2740,7 +2740,7 @@ class ScreenRealtimePit(MDScreen):
         Clock.schedule_once(self.delayed_init, 1)
     
     def delayed_init(self, dt):
-        global rtsp_url_array
+        global rtsp_url_pit_array
         global rtsp_url_pit1, rtsp_url_pit2, rtsp_url_pit3, rtsp_url_pit4
 
         self.ids.img_pemkab.source = f'assets/images/{IMG_LOGO_PEMKAB}'
@@ -2749,7 +2749,7 @@ class ScreenRealtimePit(MDScreen):
         self.ids.lb_dishub.text = LB_DISHUB
         self.ids.lb_unit.text = LB_UNIT
         self.ids.lb_unit_address.text = LB_UNIT_ADDRESS
-        rtsp_url_array = np.array([rtsp_url_pit1, rtsp_url_pit2, rtsp_url_pit3, rtsp_url_pit4])
+        rtsp_url_pit_array = np.array([rtsp_url_pit1, rtsp_url_pit2, rtsp_url_pit3, rtsp_url_pit4])
     
     def on_enter(self):
         global window_size_x, window_size_y
@@ -2787,7 +2787,7 @@ class ScreenRealtimePit(MDScreen):
 
     def exec_play_cctv(self):
         try:
-            self.capture = cv2.VideoCapture(rtsp_url_array[dt_selected_camera])
+            self.capture = cv2.VideoCapture(rtsp_url_pit_array[dt_selected_camera])
             # self.capture = cv2.VideoCapture(0)
             Clock.schedule_interval(self.update_frame, 1/30)
         except:

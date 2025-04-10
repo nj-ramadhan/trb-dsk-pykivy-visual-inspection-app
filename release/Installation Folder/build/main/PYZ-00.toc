@@ -2314,6 +2314,18 @@
    'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\inspect.py',
    'PYMODULE'),
   ('jaraco', '-', 'PYMODULE'),
+  ('jnius',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\jnius\\__init__.py',
+   'PYMODULE'),
+  ('jnius.env',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\jnius\\env.py',
+   'PYMODULE'),
+  ('jnius.reflect',
+   'C:\\Users\\Nur '
+   'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\jnius\\reflect.py',
+   'PYMODULE'),
   ('json',
    'C:\\Users\\Nur '
    'Jamiludin\\AppData\\Local\\Programs\\Python\\Python39\\lib\\json\\__init__.py',
