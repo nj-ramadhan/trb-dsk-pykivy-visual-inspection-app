@@ -2665,11 +2665,11 @@ class ScreenRealtimeCctv(MDScreen):
         except:
             pass
 
-    def zoom_image(self, img, zoom_factor=1.0, x_offs=0., y_offs=0.):
-        # y_size = img.shape[0]
-        # x_size = img.shape[1]
-        y_size = 600
-        x_size = 600
+    def zoom_image(self, img, zoom_factor=1.0, x_offs=0.0, y_offs=0.0):
+        y_size = img.shape[0]
+        x_size = img.shape[1]
+        # y_size = 600
+        # x_size = 600
 
         # define new boundaries
         # x1 = int(x_offs * x_size)
@@ -2713,7 +2713,10 @@ class ScreenRealtimeCctv(MDScreen):
             today = str(time.strftime("%Y-%m-%d", time.localtime()))
             local_path = f'assets/images/{dt_no_pol}-{dt_selected_camera + 1}.jpg'
             upload_dir_path = f'/var/www/ujikir/capture/{today}/{dt_sts_uji}-{dt_no_antri}/{dt_no_pol}-{dt_selected_camera + 1}.jpg'
-            cv2.imwrite(local_path, self.image_cctv)
+
+            # Resize to 600x600 before saving
+            resized_img = cv2.resize(self.image_cctv, (600, 600))
+            cv2.imwrite(local_path, resized_img)
             self.sftp_upload_file(local_path, upload_dir_path)
             toast(f'Berhasil menyimpan gambar ke server')
             self.open_screen_menu()
@@ -2827,11 +2830,11 @@ class ScreenRealtimePit(MDScreen):
         except:
             pass
 
-    def zoom_image(self, img, zoom_factor=1.0, x_offs=0.5, y_offs=0.5):
-        # y_size = img.shape[0]
-        # x_size = img.shape[1]
-        y_size = 600
-        x_size = 600
+    def zoom_image(self, img, zoom_factor=1.0, x_offs=0.0, y_offs=0.0):
+        y_size = img.shape[0]
+        x_size = img.shape[1]
+        # y_size = 600
+        # x_size = 600
 
         # define new boundaries
         x1 = int(x_offs * x_size)
@@ -2871,7 +2874,10 @@ class ScreenRealtimePit(MDScreen):
             today = str(time.strftime("%Y-%m-%d", time.localtime()))
             local_path = f'assets/images/{dt_no_pol}-{dt_selected_camera + 1}.jpg'
             upload_dir_path = f'/var/www/ujikir/capture/{today}/{dt_sts_uji}-{dt_no_antri}/{dt_no_pol}-pit-{dt_selected_camera + 1}.jpg'
-            cv2.imwrite(local_path, self.image_cctv)
+            
+            # Resize to 600x600 before saving
+            resized_img = cv2.resize(self.image_cctv, (600, 600))
+            cv2.imwrite(local_path, resized_img)
             self.sftp_upload_file(local_path, upload_dir_path)
             toast(f'Berhasil menyimpan gambar ke server')
 
