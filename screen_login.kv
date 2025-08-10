@@ -24,7 +24,7 @@
 				size_hint_x: 0.7
 
 				MDLabel:
-					id: title            
+					id: lb_title            
 					text: "VEHICLE INSPECTION INTEGRATION MANAGEMENT SYSTEM"
 					halign: "left"
 					valign: "middle"
@@ -33,8 +33,8 @@
 					text_color: "#FFFFFF"
 
 				MDLabel:
-					id: subtitle            
-					text: "VISUAL INSPECTION"
+					id: lb_subtitle            
+					text: "AXLE LOAD & BRAKE METER"
 					halign: "left"
 					valign: "middle"
 					font_style: 'H5'
@@ -44,8 +44,6 @@
 			MDBoxLayout:
 				orientation: "vertical"
 				size_hint_x: 0.15
-
-
 				MDLabel:
 					id: lb_time
 					text: "12:34:00"
@@ -128,7 +126,6 @@
 							size_hint_x: 0.15
 							allow_stretch: True 
 
-
 				MDBoxLayout:
 					orientation: "vertical"
 					size_hint_x: 0.9
@@ -144,7 +141,7 @@
 						
 					MDTextField:
 						id: tx_username
-						font_size: '40sp'
+						font_size: '30sp'
 						font_name: "Recharge"
 						font_name_hint_text:'Recharge'
 						icon_left: "account"
@@ -159,7 +156,7 @@
 
 					MDTextField:
 						id: tx_password
-						font_size: '40sp'
+						font_size: '30sp'
 						font_name: "Recharge"
 						font_name_hint_text:'Recharge'
 						icon_left: "lock"
@@ -175,7 +172,7 @@
 
 					MDBoxLayout:
 						orientation: "horizontal"
-						spacing: 100
+						spacing_x: 100
 						size_hint_y: 0.15
 
 						MDRectangleFlatIconButton:

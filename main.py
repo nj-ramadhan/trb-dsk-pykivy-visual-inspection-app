@@ -1,27 +1,48 @@
+import datetime
+import os, sys, time
+
+if getattr(sys, 'frozen', False):
+    application_path = os.path.dirname(sys.executable)
+    running_mode = 'Frozen/executable'
+else:
+    try:
+        app_full_path = os.path.realpath(__file__)
+        application_path = os.path.dirname(app_full_path)
+        running_mode = "Non-interactive"
+    except NameError:
+        application_path = os.getcwd()
+        running_mode = 'Interactive'
+
+logger_name = f'app.log'
+logger_dir = os.path.join(application_path, "logs")
+
 from kivy.config import Config
-Config.set('kivy', 'keyboard_mode', 'systemanddock')
+Config.set('kivy', 'keyboard_mode', 'system')
+
+from kivy.logger import Logger
 from kivy.clock import Clock
 from kivy.lang import Builder
 from kivy.core.window import Window
 from kivy.core.text import LabelBase
-from kivy.graphics.texture import Texture
 from kivy.uix.screenmanager import ScreenManager
 from kivymd.font_definitions import theme_font_styles
 from kivymd.uix.screen import MDScreen
 from kivymd.uix.label import MDLabel
-from kivymd.uix.button import MDIconButton
 from kivymd.uix.card import MDCard
+from kivymd.uix.button import MDIconButton
 from kivymd.uix.textfield import MDTextField
 from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.list import OneLineListItem
 from kivy.properties import StringProperty
+from kivy.graphics.texture import Texture
 from kivy.metrics import dp
 from kivymd.toast import toast
 from kivymd.app import MDApp
-import os, sys, time, datetime, numpy as np
+import cv2, numpy as np
 import configparser, hashlib, mysql.connector, paramiko
-import cv2
 from pymodbus.client import ModbusTcpClient
+from fpdf import FPDF
+from escpos.printer import Serial
 
 colors = {  "Red"   : {"A200": "#FF2A2A","A500": "#FF8080","A700": "#FFD5D5",},
             "Gray"  : {"200": "#CCCCCC","500": "#ECECEC","700": "#F9F9F9",},
@@ -33,23 +54,13 @@ colors = {  "Red"   : {"A200": "#FF2A2A","A500": "#FF8080","A700": "#FFD5D5",},
         }
 
 config_name = 'config.ini'
-if getattr(sys, 'frozen', False):
-    application_path = os.path.dirname(sys.executable)
-    running_mode = 'Frozen/executable'
-else:
-    try:
-        app_full_path = os.path.realpath(__file__)
-        application_path = os.path.dirname(app_full_path)
-        running_mode = "Non-interactive (e.g. 'python myapp.py')"
-    except NameError:
-        application_path = os.getcwd()
-        running_mode = 'Interactive'
-
 config_full_path = os.path.join(application_path, config_name)
 config = configparser.ConfigParser()
 config.read(config_full_path)
 
 ## App Setting
+APP_TITLE = config['app']['APP_TITLE']
+APP_SUBTITLE = config['app']['APP_SUBTITLE']
 IMG_LOGO_PEMKAB = config['app']['IMG_LOGO_PEMKAB']
 IMG_LOGO_DISHUB = config['app']['IMG_LOGO_DISHUB']
 LB_PEMKAB = config['app']['LB_PEMKAB']
@@ -58,29 +69,31 @@ LB_UNIT = config['app']['LB_UNIT']
 LB_UNIT_ADDRESS = config['app']['LB_UNIT_ADDRESS']
 
 ## SQL Setting
-DB_HOST = config['mysql']['DB_HOST']
-DB_USER = config['mysql']['DB_USER']
-DB_PASS = config['mysql']['DB_PASS']
-DB_NAME = config['mysql']['DB_NAME']
-TB_DATA = config['mysql']['TB_DATA']
-TB_USER = config['mysql']['TB_USER']
-TB_MERK = config['mysql']['TB_MERK']
-TB_BAHAN_BAKAR = config['mysql']['TB_BAHAN_BAKAR']
-TB_WARNA = config['mysql']['TB_WARNA']
-TB_DAFTAR_BERKALA = config['mysql']['TB_DAFTAR_BERKALA']
-TB_DAFTAR_BARU = config['mysql']['TB_DAFTAR_BARU']
-TB_DATA_MASTER = config['mysql']['TB_DATA_MASTER']
-TB_DATA_IMAGE = config['mysql']['TB_DATA_IMAGE']
-TB_DATA_KENDARAAN = config['mysql']['TB_DATA_KENDARAAN']
-TB_KOMPONEN_UJI = config['mysql']['TB_KOMPONEN_UJI']
-TB_SUBKOMPONEN_UJI = config['mysql']['TB_SUBKOMPONEN_UJI']
-TB_KOMENTAR_UJI = config['mysql']['TB_KOMENTAR_UJI']
-TB_UJI = config['mysql']['TB_UJI']
-TB_UJI_DETAIL = config['mysql']['TB_UJI_DETAIL']
+DB_HOST = "194.31.53.37"
+DB_USER = "Pndujikir2022!"
+DB_PASSWORD = "@Kirpnd2022!"
+
+DB_NAME = "pkbpandeglang"
+TB_DATA = "tb_cekident"
+TB_USER = "users"
+TB_MERK = "merk"
+TB_BAHAN_BAKAR = "bahanbakar"
+TB_WARNA = "warna"
+TB_DAFTAR_BERKALA = "temp_pendaftaranberkala"
+TB_DAFTAR_BARU = "temp_pendaftaranbr"
+TB_DATA_MASTER = "identkendaraan"
+TB_DATA_IMAGE = "image_kendaraan"
+TB_DATA_KENDARAAN = "tb_jeniskendaraan"
+TB_KOMPONEN_UJI = "komponen_uji"
+TB_SUBKOMPONEN_UJI = "subkomponen_uji"
+TB_KOMENTAR_UJI = "komentar_uji"
+TB_UJI = "uji"
+TB_UJI_DETAIL = "uji_detail"
 
 ## System Setting
-RTSP_USER = config['setting']['RTSP_USER']
-RTSP_PASS = config['setting']['RTSP_PASS']
+RTSP_USER = "admin"
+RTSP_PASS = "TRBIntegrated25"
+
 RTSP_IP_DISPLAY_CAM1 = config['setting']['RTSP_IP_DISPLAY_CAM1']
 RTSP_IP_DISPLAY_CAM2 = config['setting']['RTSP_IP_DISPLAY_CAM2']
 RTSP_IP_DISPLAY_CAM3 = config['setting']['RTSP_IP_DISPLAY_CAM3']
@@ -90,11 +103,12 @@ RTSP_IP_PIT_CAM2 = config['setting']['RTSP_IP_PIT_CAM2']
 RTSP_IP_PIT_CAM3 = config['setting']['RTSP_IP_PIT_CAM3']
 RTSP_IP_PIT_CAM4 = config['setting']['RTSP_IP_PIT_CAM4']
 
-FTP_HOST = config['setting']['FTP_HOST']
-FTP_USER = config['setting']['FTP_USER']
-FTP_PASS = config['setting']['FTP_PASS']
+FTP_HOST = "194.31.53.37"
+FTP_USER = "root"
+FTP_PASS = "@D15HUBp2022!"
 
 MODBUS_IP_PLC = config['setting']['MODBUS_IP_PLC']
+MODBUS_CLIENT = ModbusTcpClient(MODBUS_IP_PLC)
 
 class ScreenHome(MDScreen):
     def __init__(self, **kwargs):
@@ -102,6 +116,8 @@ class ScreenHome(MDScreen):
         Clock.schedule_once(self.delayed_init, 1)
     
     def delayed_init(self, dt):
+        self.ids.lb_title.text = APP_TITLE
+        self.ids.lb_subtitle.text = APP_SUBTITLE        
         self.ids.img_pemkab.source = f'assets/images/{IMG_LOGO_PEMKAB}'
         self.ids.img_dishub.source = f'assets/images/{IMG_LOGO_DISHUB}'
         self.ids.lb_pemkab.text = LB_PEMKAB
@@ -122,7 +138,7 @@ class ScreenHome(MDScreen):
         except Exception as e:
             toast_msg = f'Gagal Memperbaharui Tampilan Carousel'
             toast(toast_msg)                
-            print(toast_msg, e)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
 
     def exec_navigate_home(self):
         try:
@@ -131,7 +147,7 @@ class ScreenHome(MDScreen):
         except Exception as e:
             toast_msg = f'Gagal Berpindah ke Halaman Awal'
             toast(toast_msg)  
-            print(toast_msg, e)      
+            Logger.error(f"{self.name}: {toast_msg}, {e}")    
 
     def exec_navigate_login(self):
         global dt_user
@@ -161,6 +177,8 @@ class ScreenLogin(MDScreen):
         Clock.schedule_once(self.delayed_init, 1)
     
     def delayed_init(self, dt):
+        self.ids.lb_title.text = APP_TITLE
+        self.ids.lb_subtitle.text = APP_SUBTITLE           
         self.ids.img_pemkab.source = f'assets/images/{IMG_LOGO_PEMKAB}'
         self.ids.img_dishub.source = f'assets/images/{IMG_LOGO_DISHUB}'
         self.ids.lb_pemkab.text = LB_PEMKAB
@@ -174,9 +192,8 @@ class ScreenLogin(MDScreen):
             self.ids.tx_password.text = ""    
 
         except Exception as e:
-            toast_msg = f'Gagal Masuk'
-            toast(toast_msg)  
-            print(toast_msg, e)  
+            toast_msg = f'error Login: {e}'
+            Logger.error(f"{self.name}: {toast_msg}, {e}")  
 
     def exec_login(self):
         global mydb, db_users
@@ -213,7 +230,7 @@ class ScreenLogin(MDScreen):
         except Exception as e:
             toast_msg = f'Gagal masuk, silahkan isi nama user dan password yang sesuai'
             toast(toast_msg)  
-            print(toast_msg, e)  
+            Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
     def exec_navigate_home(self):
         try:
@@ -222,7 +239,7 @@ class ScreenLogin(MDScreen):
         except Exception as e:
             toast_msg = f'Gagal Berpindah ke Halaman Awal'
             toast(toast_msg)
-            print(toast_msg, e)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
 
     def exec_navigate_login(self):
         global dt_user
@@ -235,7 +252,7 @@ class ScreenLogin(MDScreen):
         except Exception as e:
             toast_msg = f'Gagal Berpindah ke Halaman Login'
             toast(toast_msg)
-            print(toast_msg, e)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
 
     def exec_navigate_main(self):
         try:
@@ -244,7 +261,7 @@ class ScreenLogin(MDScreen):
         except Exception as e:
             toast_msg = f'Gagal Berpindah ke Halaman Utama'
             toast(toast_msg)
-            print(toast_msg, e)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
 
 class ScreenMain(MDScreen):   
     def __init__(self, **kwargs):
@@ -256,13 +273,11 @@ class ScreenMain(MDScreen):
         global dt_dash_antri, dt_dash_belum_uji, dt_dash_sudah_uji
         global dt_temp_nama, dt_temp_alamat, dt_temp_tgl_uji_terakhir, dt_temp_tgl_uji_habis, dt_temp_status_uji
         global dt_temp_id_merk, dt_temp_type, dt_temp_jenis_kendaraan, dt_temp_warna, dt_temp_chasis, dt_temp_mesin, dt_temp_bhn_bkr, dt_temp_jbb
-        global rtsp_url_cam1, rtsp_url_cam2, rtsp_url_cam3, rtsp_url_cam4, rtsp_url_pit1, rtsp_url_pit2, rtsp_url_pit3, rtsp_url_pit4, modbus_client
+        global rtsp_url_cam1, rtsp_url_cam2, rtsp_url_cam3, rtsp_url_cam4, rtsp_url_pit1, rtsp_url_pit2, rtsp_url_pit3, rtsp_url_pit4
 
         flag_conn_stat = flag_gate = False
         dt_user = dt_foto_user = dt_no_antri = dt_no_pol = dt_no_uji = dt_sts_uji = dt_nama = ""
         dt_merk = dt_type = dt_jns_kend = dt_jbb = dt_bhn_bkr = dt_warna = dt_chasis = dt_no_mesin = ""
-        dt_temp_nama = dt_temp_alamat = dt_temp_tgl_uji_terakhir = dt_temp_tgl_uji_habis = dt_temp_status_uji = ""
-        dt_temp_id_merk = dt_temp_type = dt_temp_jenis_kendaraan = dt_temp_warna = dt_temp_chasis = dt_temp_mesin = dt_temp_bhn_bkr = dt_temp_jbb = ""
         dt_check_flag = dt_verified_data = dt_verified_payment = 0
         dt_id_pendaftaran = 0
         dt_id_user = 1
@@ -280,11 +295,11 @@ class ScreenMain(MDScreen):
         rtsp_url_pit3 = f'rtsp://{RTSP_USER}:{RTSP_PASS}@{RTSP_IP_PIT_CAM3}:554/Streaming/Channels/101'
         rtsp_url_pit4 = f'rtsp://{RTSP_USER}:{RTSP_PASS}@{RTSP_IP_PIT_CAM4}:554/Streaming/Channels/101'
 
-        modbus_client = ModbusTcpClient(MODBUS_IP_PLC)
-
         Clock.schedule_once(self.delayed_init, 1)
     
     def delayed_init(self, dt):
+        self.ids.lb_title.text = APP_TITLE
+        self.ids.lb_subtitle.text = APP_SUBTITLE          
         self.ids.img_pemkab.source = f'assets/images/{IMG_LOGO_PEMKAB}'
         self.ids.img_dishub.source = f'assets/images/{IMG_LOGO_DISHUB}'
         self.ids.lb_pemkab.text = LB_PEMKAB
@@ -310,7 +325,9 @@ class ScreenMain(MDScreen):
             screen_home = self.screen_manager.get_screen('screen_home')
             screen_login = self.screen_manager.get_screen('screen_login')
             screen_menu = self.screen_manager.get_screen('screen_menu')
-            screen_antrian_new = self.screen_manager.get_screen('screen_antrian_new')
+            screen_calibration = self.screen_manager.get_screen('screen_calibration')
+            screen_add_data = self.screen_manager.get_screen('screen_add_data')
+            screen_add_queue = self.screen_manager.get_screen('screen_add_queue')
             
             screen_inspect_id = self.screen_manager.get_screen('screen_inspect_id')
             screen_inspect_dimension = self.screen_manager.get_screen('screen_inspect_dimension')
@@ -328,8 +345,13 @@ class ScreenMain(MDScreen):
             screen_login.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
             screen_menu.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
             screen_menu.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
-            screen_antrian_new.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
-            screen_antrian_new.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
+            screen_calibration.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
+            screen_calibration.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
+            screen_add_data.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
+            screen_add_data.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
+            screen_add_queue.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
+            screen_add_queue.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
+
             screen_inspect_id.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
             screen_inspect_id.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
             screen_inspect_dimension.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
@@ -364,8 +386,12 @@ class ScreenMain(MDScreen):
                 screen_login.ids.lb_comm.text = 'PLC Tidak Terhubung'
                 screen_menu.ids.lb_comm.color = colors['Red']['A200']
                 screen_menu.ids.lb_comm.text = 'PLC Tidak Terhubung'
-                screen_antrian_new.ids.lb_comm.color = colors['Red']['A200']
-                screen_antrian_new.ids.lb_comm.text = 'PLC Tidak Terhubung'
+                screen_calibration.ids.lb_comm.color = colors['Red']['A200']
+                screen_calibration.ids.lb_comm.text = 'PLC Tidak Terhubung'
+                screen_add_data.ids.lb_comm.color = colors['Red']['A200']
+                screen_add_data.ids.lb_comm.text = 'PLC Tidak Terhubung'
+                screen_add_queue.ids.lb_comm.color = colors['Red']['A200']
+                screen_add_queue.ids.lb_comm.text = 'PLC Tidak Terhubung'
 
             else:
                 self.ids.lb_comm.color = colors['Blue']['200']
@@ -376,17 +402,26 @@ class ScreenMain(MDScreen):
                 screen_login.ids.lb_comm.text = 'PLC Terhubung'
                 screen_menu.ids.lb_comm.color = colors['Blue']['200']
                 screen_menu.ids.lb_comm.text = 'PLC Terhubung'
-                screen_antrian_new.ids.lb_comm.color = colors['Blue']['200']
-                screen_antrian_new.ids.lb_comm.text = 'PLC Terhubung'
+                screen_calibration.ids.lb_comm.color = colors['Blue']['200']
+                screen_calibration.ids.lb_comm.text = 'PLC Terhubung'
+                screen_add_data.ids.lb_comm.color = colors['Blue']['200']
+                screen_add_data.ids.lb_comm.text = 'PLC Terhubung'
+                screen_add_queue.ids.lb_comm.color = colors['Blue']['200']
+                screen_add_queue.ids.lb_comm.text = 'PLC Terhubung'
             
-            self.ids.bt_new_inspect.disabled = False if dt_user != '' else True
+            self.ids.bt_calibrate.disabled = False if dt_user != '' else True
+            #self.ids.bt_add_data.disabled = False if dt_user != '' else True
+            #elf.ids.bt_add_queue.disabled = False if dt_user != '' else True
             self.ids.bt_logout.disabled = False if dt_user != '' else True
 
             self.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
             screen_home.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
             screen_login.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
             screen_menu.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
-            screen_antrian_new.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
+            screen_calibration.ids.lb_operator.text = f'Login Sebagai: \n{dt_user}' if dt_user != '' else 'Silahkan Login'
+            screen_add_data.ids.lb_operator.text = f'Login Sebagai: \n{dt_user}' if dt_user != '' else 'Silahkan Login'
+            screen_add_queue.ids.lb_operator.text = f'Login Sebagai: \n{dt_user}' if dt_user != '' else 'Silahkan Login'
+
             screen_inspect_id.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
             screen_inspect_dimension.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
             screen_inspect_visual.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
@@ -396,68 +431,67 @@ class ScreenMain(MDScreen):
             screen_realtime_pit.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
 
             if dt_user != '':
-                self.ids.img_user.source = f'https://dishub.sorongkab.go.id/ujikir/foto_user/{dt_foto_user}'
-                screen_home.ids.img_user.source = f'https://dishub.sorongkab.go.id/ujikir/foto_user/{dt_foto_user}'
-                screen_login.ids.img_user.source = f'https://dishub.sorongkab.go.id/ujikir/foto_user/{dt_foto_user}'
-                screen_antrian_new.ids.img_user.source = f'https://dishub.sorongkab.go.id/ujikir/foto_user/{dt_foto_user}'
+                self.ids.img_user.source = f'https://{FTP_HOST}/system/storage/app/capture/{dt_foto_user}'
+                screen_home.ids.img_user.source = f'https://{FTP_HOST}/system/storage/app/capture/{dt_foto_user}'
+                screen_login.ids.img_user.source = f'https://{FTP_HOST}/system/storage/app/capture/{dt_foto_user}'
             else:
                 self.ids.img_user.source = 'assets/images/icon-login.png'
                 screen_home.ids.img_user.source = 'assets/images/icon-login.png'
                 screen_login.ids.img_user.source = 'assets/images/icon-login.png'
-                screen_antrian_new.ids.img_user.source = 'assets/images/icon-login.png'               
 
         except Exception as e:
             toast_msg = f'Gagal Memperbaharui Tampilan'
             toast(toast_msg)
-            print(toast_msg, e)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
 
     def regular_update_connection(self, dt):
         global flag_conn_stat
 
         try:
-            modbus_client.connect()
-            flag_conn_stat = modbus_client.connected
-            modbus_client.close()     
+            MODBUS_CLIENT.connect()
+            flag_conn_stat = MODBUS_CLIENT.connected
+            MODBUS_CLIENT.close()
             
         except Exception as e:
-            toast_msg = f'Gagal Menyambungkan ke PLC'
+            toast_msg = f'Gagal Memperbaharui Koneksi'
             toast(toast_msg)
-            print(toast_msg, e)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")  
             flag_conn_stat = False
 
-    def regular_get_data(self, dt):
-        global side_slip_val, axle_load_l_val, axle_load_r_val, speed_val
-        try:
-            if flag_conn_stat:
-                modbus_client.connect()
-                side_slip_registers = modbus_client.read_holding_registers(1612, 1, slave=1) #V1100
-                axle_load_registers = modbus_client.read_holding_registers(1712, 2, slave=1) #V1200 - V1201
-                speed_registers = modbus_client.read_holding_registers(1812, 1, slave=1) #V1360
-                modbus_client.close()
+    def unsigned_to_signed(self, val):
+        if val >= 32768:
+            return val - 65536
+        return val
 
-                side_slip_val = side_slip_registers.registers[0] / 10
-                axle_load_l_val = axle_load_registers.registers[0]
-                axle_load_r_val = axle_load_registers.registers[1]
-                speed_val = speed_registers.registers[0]
-                
-        except Exception as e:
-            toast_msg = f'Gagal Mengambil Data dari PLC'
-            toast(toast_msg)
-            print(toast_msg, e)
+    def regular_get_data(self, dt):
+        pass
 
     def exec_reload_database(self):
         global mydb
         try:
-            mydb = mysql.connector.connect(host = DB_HOST,user = DB_USER,password = DB_PASS,database = DB_NAME)
+            mydb = mysql.connector.connect(host = DB_HOST,user = DB_USER,password = DB_PASSWORD,database = DB_NAME)
         except Exception as e:
-            toast_msg = f'Gagal Menginisiasi Komunikasi ke Database'
+            toast_msg = f'Gagal Menginisiasi Database'
             toast(toast_msg)
-            print(toast_msg, e)
+            Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
     def exec_reload_table(self):
-        global mydb, db_antrian, db_merk, db_bahan_bakar, db_warna
+        global mydb, db_antrian
+        global db_merk, db_bahan_bakar, db_warna
         global dt_dash_antri, dt_dash_belum_uji, dt_dash_sudah_uji
         global window_size_x, window_size_y
+
+        try:
+            tb_antrian = mydb.cursor()
+            today = str(time.strftime("%Y-%m-%d", time.localtime()))
+            delete_query = f"DELETE FROM {TB_DATA} WHERE DATE(tgl_daftar) != %s"
+            tb_antrian.execute(delete_query, (today,))
+            mydb.commit()
+            toast_msg = f'Berhasil menghapus data kemarin'
+        except Exception as e:
+            toast_msg = f'Gagal menghapus data kemarin'
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")  
 
         try:
             tb_merk = mydb.cursor()
@@ -479,7 +513,7 @@ class ScreenMain(MDScreen):
             db_warna = np.array(result_tb_warna)
 
             tb_antrian = mydb.cursor()
-            tb_antrian.execute(f"SELECT id, noantrian, nopol, nouji, statusuji, merk, type, idjeniskendaraan, jbb, bahan_bakar, warna, speed_flag FROM {TB_DATA}")
+            tb_antrian.execute(f"SELECT noantrian, nopol, nouji, statusuji, merk, type, idjeniskendaraan, jbb, berat_kosong, bahan_bakar, warna, check_flag FROM {TB_DATA}")
             result_tb_antrian = tb_antrian.fetchall()
             mydb.commit()
             if result_tb_antrian is None:
@@ -488,38 +522,39 @@ class ScreenMain(MDScreen):
             else:
                 db_antrian = np.array(result_tb_antrian).T
                 db_pendaftaran = np.array(result_tb_antrian)
-                dt_dash_antri = db_pendaftaran[:,10].size
-                dt_dash_belum_uji = np.where(db_pendaftaran[:,10] == 0)[0].size
-                dt_dash_sudah_uji = np.where(db_pendaftaran[:,10] == 1)[0].size
+                dt_dash_antri = db_pendaftaran[:,11].size
+                dt_dash_belum_uji = np.where(db_pendaftaran[:,11] == 0)[0].size
+                dt_dash_sudah_uji = np.where(db_pendaftaran[:,11] == 1)[0].size + np.where(db_pendaftaran[:,11] == 2)[0].size
         except Exception as e:
-            toast_msg = f'Gagal Mengambil Data dari Database'
-            print(toast_msg)
-            print(toast_msg, e)
-        
-        try:
+            toast_msg = f'Gagal mengambil data antrian harian'
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")  
+
+        try:            
             layout_list = self.ids.layout_list
             layout_list.clear_widgets(children=None)
         except Exception as e:
-            toast_msg = f'Gagal Menghapus Widget'
-            print(toast_msg)
-            print(toast_msg, e)
+            toast_msg = f'Gagal menghapus widget tabel'
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")   
         
-        try:
+        try:           
             layout_list = self.ids.layout_list
             for i in range(db_antrian[0,:].size):
                 layout_list.add_widget(
                     MDCard(
-                        MDLabel(text=f"{db_antrian[1, i]}", size_hint_x= 0.05),
-                        MDLabel(text=f"{db_antrian[2, i]}", size_hint_x= 0.07),
-                        MDLabel(text=f"{db_antrian[3, i]}", size_hint_x= 0.08),
-                        MDLabel(text='Berkala' if db_antrian[4, i] == 'B' else 'Uji Ulang' if (db_antrian[4, i]) == 'U' else 'Baru' if (db_antrian[4, i]) == 'BR' else 'Numpang Uji' if (db_antrian[3, i]) == 'NB' else 'Mutasi', size_hint_x= 0.07),
-                        MDLabel(text='-' if db_antrian[5, i] == None else f"{db_merk[np.where(db_merk == db_antrian[5, i])[0][0],1]}" , size_hint_x= 0.08),
-                        MDLabel(text=f"{db_antrian[6, i]}", size_hint_x= 0.12),
-                        MDLabel(text=f"{db_antrian[7, i]}", size_hint_x= 0.15),
+                        MDLabel(text=f"{db_antrian[0, i]}", size_hint_x= 0.05),
+                        MDLabel(text=f"{db_antrian[1, i]}", size_hint_x= 0.07),
+                        MDLabel(text=f"{db_antrian[2, i]}", size_hint_x= 0.08),
+                        MDLabel(text='Berkala' if db_antrian[3, i] == 'B' else 'Uji Ulang' if (db_antrian[3, i]) == 'U' else 'Baru' if (db_antrian[3, i]) == 'BR' else 'Numpang Uji' if (db_antrian[3, i]) == 'NB' else 'Mutasi', size_hint_x= 0.07),
+                        MDLabel(text='-' if db_antrian[4, i] == None else f"{db_merk[np.where(db_merk == db_antrian[4, i])[0][0],1]}" , size_hint_x= 0.08),
+                        MDLabel(text=f"{db_antrian[5, i]}", size_hint_x= 0.07),
+                        MDLabel(text=f"{db_antrian[6, i]}", size_hint_x= 0.15),
+                        MDLabel(text=f"{db_antrian[7, i]}", size_hint_x= 0.05),
                         MDLabel(text=f"{db_antrian[8, i]}", size_hint_x= 0.05),
                         MDLabel(text='-' if db_antrian[9, i] == None else f"{db_bahan_bakar[np.where(db_bahan_bakar == db_antrian[9, i])[0][0],1]}" , size_hint_x= 0.08),
-                        MDLabel(text='-' if db_antrian[10, i] == None else f"{db_warna[np.where(db_warna == db_antrian[10, i])[0][0],1]}" , size_hint_x= 0.05),
-                        MDLabel(text='Lulus' if (int(db_antrian[11, i]) == 2) else 'Tidak Lulus' if (int(db_antrian[11, i]) == 1) else 'Belum Uji', size_hint_x= 0.05),
+                        MDLabel(text='-' if db_antrian[10, i] == None else f"{db_warna[np.where(db_warna == db_antrian[10, i])[0][0],1]}" , size_hint_x= 0.11),
+                        MDLabel(text='Lulus' if (int(db_antrian[11, i]) == 2) else 'Tidak Lulus' if (int(db_antrian[11, i]) == 1) else 'Belum Uji', size_hint_x= 0.08),
 
                         ripple_behavior = True,
                         on_press = self.on_antrian_row_press,
@@ -529,42 +564,41 @@ class ScreenMain(MDScreen):
                         height=dp(int(60 * 800 / window_size_y)),
                         )
                     )
-
         except Exception as e:
-            toast_msg = f'Gagal Memperbaharui Data Tabel'
-            print(toast_msg)
-            print(toast_msg, e)
+            toast_msg = f'Gagal reload tabel'
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
     def on_antrian_row_press(self, instance):
         global mydb, db_antrian, db_merk, db_bahan_bakar, db_warna
-        global dt_id_pendaftaran, dt_no_antri, dt_no_pol, dt_no_uji, dt_sts_uji, dt_check_flag, dt_nama, dt_sts_uji
-        global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
-        global dt_check_flag, dt_id_user, dt_foto_user, dt_verified_data, dt_verified_payment
+        global dt_no_antri, dt_no_pol, dt_no_uji, dt_sts_uji
+        global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_brt_ksg, dt_bhn_bkr, dt_warna, dt_visual_flag
+        global dt_id_user, dt_foto_user
 
         try:
             row = int(str(instance.id).replace("card_antrian",""))
-            dt_id_pendaftaran       = db_antrian[0, row]
-            dt_no_antri             = db_antrian[1, row]
-            dt_no_pol               = db_antrian[2, row]
-            dt_no_uji               = db_antrian[3, row]
-            dt_sts_uji              = db_antrian[4, row]
-            dt_merk                 = db_antrian[5, row]
-            dt_type                 = db_antrian[6, row]
-            dt_jns_kend             = db_antrian[7, row]
-            dt_jbb                  = db_antrian[8, row]
+            dt_no_antri             = db_antrian[0, row]
+            dt_no_pol               = db_antrian[1, row]
+            dt_no_uji               = db_antrian[2, row]
+            dt_sts_uji              = db_antrian[3, row]
+            dt_merk                 = db_antrian[4, row]
+            dt_type                 = db_antrian[5, row]
+            dt_jns_kend             = db_antrian[6, row]
+            dt_jbb                  = db_antrian[7, row]
+            dt_brt_ksg              = db_antrian[8, row]
             dt_bhn_bkr              = db_antrian[9, row]
             dt_warna                = db_antrian[10, row]
-            dt_check_flag           = db_antrian[11, row]
-            
-            screen_antrian_new = self.screen_manager.get_screen('screen_antrian_new')
-            screen_antrian_new.exec_fetch_master_data(dt_no_pol, dt_no_uji)
+            dt_visual_flag          = db_antrian[11, row]
 
-            self.exec_start()
+            screen_add_queue = self.screen_manager.get_screen('screen_add_queue')
+            screen_add_queue.exec_fetch_master_data(dt_no_pol, dt_no_uji)
+
+            self.exec_navigate_menu()
 
         except Exception as e:
-            toast_msg = f'Gagal Mengeksekusi Perintah dari Baris Tabel'
+            toast_msg = f'Gagal mengeksekusi perintah dari baris tabel'
             toast(toast_msg)
-            print(toast_msg, e)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
 
     def check_temp_data(self):
         global mydb, db_antrian, db_merk, db_bahan_bakar, db_warna
@@ -588,7 +622,7 @@ class ScreenMain(MDScreen):
 
     def exec_new_inspect(self):
         try:
-            self.screen_manager.current = 'screen_antrian_new'
+            self.screen_manager.current = 'screen_add_queue'
 
         except Exception as e:
             toast_msg = f'Gagal Berpindah ke Halaman Tambah Inspeksi Baru'
@@ -607,8 +641,6 @@ class ScreenMain(MDScreen):
         else:
             toast(f'Silahkan Login Untuk Melakukan Pengujian')
             
-    def open_screen_menu(self):
-        self.screen_manager.current = 'screen_menu'
 
     def exec_logout(self):
         global dt_user
@@ -621,9 +653,1104 @@ class ScreenMain(MDScreen):
             self.screen_manager.current = 'screen_home'
 
         except Exception as e:
+            toast_msg = f'Terjadi kesalahan saat berpindah ke halaman Beranda'
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")  
+
+    def exec_navigate_login(self):
+        global dt_user
+        try:
+            if (dt_user == ""):
+                self.screen_manager.current = 'screen_login'
+            else:
+                toast_msg = f"Anda sudah login sebagai {dt_user}"
+                toast(toast_msg)
+                Logger.info(f"{self.name}: {toast_msg}")
+
+        except Exception as e:
+            toast_msg = f'Terjadi kesalahan saat berpindah ke halaman Login'
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")  
+
+    def exec_navigate_menu(self):
+        global dt_visual_flag, dt_brake_flag, dt_handbrake_flag, dt_no_antri, dt_user
+
+        if (dt_user != ''):
+            if (int(dt_visual_flag) == 0 or int(dt_brake_flag) == 0 or int(dt_handbrake_flag) == 0):
+                self.screen_manager.current = 'screen_menu'
+            else:
+                toast_msg = f'No. Antrian {dt_no_antri} Sudah Tes'
+                toast(toast_msg)
+                Logger.info(f"{self.name}: {toast_msg}")
+        else:
+            toast_msg = f'Silahkan Login Untuk Melakukan Pengujian'
+            toast(toast_msg)
+            Logger.info(f"{self.name}: {toast_msg}")      
+
+    def exec_navigate_calibration(self):
+        global dt_user
+        try:
+            self.screen_manager.current = 'screen_calibration'
+
+        except Exception as e:
+            toast_msg = f'Error Navigate to Calibration Screen: {e}'
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")  
+
+    def exec_navigate_add_data(self):
+        global dt_user
+        try:
+            self.screen_manager.current = 'screen_add_data'
+
+        except Exception as e:
+            toast_msg = f'Error Navigate to Add Data Screen: {e}'
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")  
+
+    def exec_navigate_add_queue(self):
+        global dt_user
+        try:
+            self.screen_manager.current = 'screen_add_queue'
+
+        except Exception as e:
+            toast_msg = f'Error Navigate to Add Queue Screen: {e}'
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")  
+
+    def exec_navigate_main(self):
+        try:
+            self.screen_manager.current = 'screen_main'
+
+        except Exception as e:
+            toast_msg = f'Terjadi kesalahan saat berpindah ke halaman Utama'
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")  
+
+class ScreenCalibration(MDScreen):
+    def __init__(self, **kwargs):
+        super(ScreenCalibration, self).__init__(**kwargs)
+        Clock.schedule_once(self.delayed_init, 1)
+    
+    def delayed_init(self, dt):
+        self.ids.lb_title.text = APP_TITLE
+        self.ids.lb_subtitle.text = APP_SUBTITLE
+        self.ids.img_pemkab.source = f'assets/images/{IMG_LOGO_PEMKAB}'
+        self.ids.img_dishub.source = f'assets/images/{IMG_LOGO_DISHUB}'
+        self.ids.lb_pemkab.text = LB_PEMKAB
+        self.ids.lb_dishub.text = LB_DISHUB
+        self.ids.lb_unit.text = LB_UNIT
+        self.ids.lb_unit_address.text = LB_UNIT_ADDRESS
+
+    def on_enter(self):
+        pass
+
+    def on_leave(self):
+        pass
+
+    def exec_calibrate_load_l_start(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_register(1722, 1, slave=1) #V1210
+                MODBUS_CLIENT.write_coil(3093, True, slave=1) #M21
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send exec_calibrate_load_l_start data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")  
+
+    def rel_calibrate_load_l_start(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_coil(3093, False, slave=1) #M21
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send rel_calibrate_load_l_start data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+
+    def exec_calibrate_load_l_zero(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_register(1724, 0, slave=1) #V1212
+                MODBUS_CLIENT.write_coil(3094, True, slave=1) #M22
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send exec_calibrate_load_l_zero data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")  
+
+    def rel_calibrate_load_l_zero(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_coil(3094, False, slave=1) # M22
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send rel_calibrate_load_l_zero data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
+
+    def exec_calibrate_load_l_value1(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_register(1726, int(self.ids.tx_calibrate_load_l_value1.text), slave=1) #V1214
+                MODBUS_CLIENT.write_coil(3095, True, slave=1) #M23
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send exec_calibrate_load_l_value1 data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")  
+
+    def rel_calibrate_load_l_value1(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_coil(3095, False, slave=1) # M23
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send rel_calibrate_load_l_value1 data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
+
+    def exec_calibrate_load_l_value2(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_register(1728, int(self.ids.tx_calibrate_load_l_value2.text), slave=1) #V1216
+                MODBUS_CLIENT.write_coil(3096, True, slave=1) #M24
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send exec_calibrate_load_l_value2 data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")  
+
+    def rel_calibrate_load_l_value2(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_coil(3096, False, slave=1) # M24
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send rel_calibrate_load_l_value2 data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
+
+    def exec_calibrate_load_l_stop(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_register(1730, 2, slave=1) #V1218
+                MODBUS_CLIENT.write_coil(3097, True, slave=1) #M25
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send exec_calibrate_load_l_stop data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+
+    def rel_calibrate_load_l_stop(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_coil(3097, False, slave=1) # M25
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send rel_calibrate_load_l_stop data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
+
+    def exec_calibrate_load_r_start(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_register(1752, 1, slave=1) #V1240
+                MODBUS_CLIENT.write_coil(3193, True, slave=1) #M121
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send exec_calibrate_load_r_start data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")  
+
+    def rel_calibrate_load_r_start(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_coil(3193, False, slave=1) # M121
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send rel_calibrate_load_r_start data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
+
+    def exec_calibrate_load_r_zero(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_register(1754, 0, slave=1) #V1242
+                MODBUS_CLIENT.write_coil(3194, True, slave=1) #M122
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send exec_calibrate_load_r_zero data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")  
+
+    def rel_calibrate_load_r_zero(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_coil(3194, False, slave=1) # M122
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send rel_calibrate_load_r_zero data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
+            
+    def exec_calibrate_load_r_value1(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_register(1756, int(self.ids.tx_calibrate_load_r_value1.text), slave=1) #V1244
+                MODBUS_CLIENT.write_coil(3195, True, slave=1) #M123
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send exec_calibrate_load_r_value1 data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")  
+
+    def rel_calibrate_load_r_value1(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_coil(3195, False, slave=1) # M123
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send rel_calibrate_load_r_value1 data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
+
+    def exec_calibrate_load_r_value2(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_register(1758, int(self.ids.tx_calibrate_load_r_value2.text), slave=1) #V1246
+                MODBUS_CLIENT.write_coil(3196, True, slave=1) #M124
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send exec_calibrate_load_r_value2 data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")  
+
+    def rel_calibrate_load_r_value2(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_coil(3196, False, slave=1) # M124
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send rel_calibrate_load_r_value2 data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
+
+    def exec_calibrate_load_r_stop(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_register(1760, 2, slave=1) #V1248
+                MODBUS_CLIENT.write_coil(3197, True, slave=1) #M125
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send exec_calibrate_load_r_stop data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+
+    def rel_calibrate_load_r_stop(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_coil(3197, False, slave=1) # M125
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send rel_calibrate_load_r_stop data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
+
+    def exec_calibrate_brake_l_start(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_register(1782, 1, slave=1) #V1270
+                MODBUS_CLIENT.write_coil(3293, True, slave=1) #M221
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send exec_calibrate_brake_l_start data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")  
+
+    def rel_calibrate_brake_l_start(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_coil(3293, False, slave=1) # M221
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send rel_calibrate_brake_l_start data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
+
+    def exec_calibrate_brake_l_zero(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_register(1784, 0, slave=1) #V1272
+                MODBUS_CLIENT.write_coil(3294, True, slave=1) #M222
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send exec_calibrate_brake_l_zero data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")  
+
+    def rel_calibrate_brake_l_zero(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_coil(3294, False, slave=1) # M222
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send rel_calibrate_brake_l_zero data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
+
+    def exec_calibrate_brake_l_value1(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_register(1786, int(self.ids.tx_calibrate_brake_l_value1.text), slave=1) #V1274
+                MODBUS_CLIENT.write_coil(3295, True, slave=1) #M223
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send exec_calibrate_brake_l_value1 data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")  
+
+    def rel_calibrate_brake_l_value1(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_coil(3295, False, slave=1) # M223
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send rel_calibrate_brake_l_value1 data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
+
+    def exec_calibrate_brake_l_value2(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_register(1788, int(self.ids.tx_calibrate_brake_l_value2.text), slave=1) #V1276
+                MODBUS_CLIENT.write_coil(3296, True, slave=1) #M224
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send exec_calibrate_brake_l_value2 data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")  
+
+    def rel_calibrate_brake_l_value2(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_coil(3296, False, slave=1) # M224
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send rel_calibrate_brake_l_value2 data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
+
+    def exec_calibrate_brake_l_stop(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_register(1790, 2, slave=1) #V1278
+                MODBUS_CLIENT.write_coil(3297, True, slave=1) #2M25
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send exec_calibrate_brake_l_stop data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+
+    def rel_calibrate_brake_l_stop(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_coil(3297, False, slave=1) # M225
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send rel_calibrate_brake_l_stop data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
+
+    def exec_calibrate_brake_r_start(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_register(1812, 1, slave=1) #V1300
+                MODBUS_CLIENT.write_coil(3393, True, slave=1) #M321
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send exec_calibrate_brake_r_start data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")  
+
+    def rel_calibrate_brake_r_start(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_coil(3393, False, slave=1) # M321
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send rel_calibrate_brake_r_start data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
+
+    def exec_calibrate_brake_r_zero(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_register(1814, 0, slave=1) #V1302
+                MODBUS_CLIENT.write_coil(3394, True, slave=1) #M322
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send exec_calibrate_brake_r_zero data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")  
+
+    def rel_calibrate_brake_r_zero(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_coil(3394, False, slave=1) # M322
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send rel_calibrate_brake_r_zero data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
+            
+    def exec_calibrate_brake_r_value1(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_register(1816, int(self.ids.tx_calibrate_brake_r_value1.text), slave=1) #V1304
+                MODBUS_CLIENT.write_coil(3395, True, slave=1) #M123
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send exec_calibrate_brake_r_value1 data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")  
+
+    def rel_calibrate_brake_r_value1(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_coil(3395, False, slave=1) # M323
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send rel_calibrate_brake_r_value1 data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
+
+    def exec_calibrate_brake_r_value2(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_register(1818, int(int(self.ids.tx_calibrate_brake_r_value2.text)), slave=1) #V1306
+                MODBUS_CLIENT.write_coil(3396, True, slave=1) #M324
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send exec_calibrate_brake_r_value2 data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")  
+
+    def rel_calibrate_brake_r_value2(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_coil(3396, False, slave=1) # M324
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send rel_calibrate_brake_r_value2 data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
+
+    def exec_calibrate_brake_r_stop(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_register(1820, 2, slave=1) #V1308
+                MODBUS_CLIENT.write_coil(3397, True, slave=1) #M325
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send exec_calibrate_brake_r_stop data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+
+    def rel_calibrate_brake_r_stop(self):
+        global flag_conn_stat
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_coil(3397, False, slave=1) # M325
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send rel_calibrate_brake_r_stop data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
+
+    def exec_motor_brake_on(self):
+        global flag_conn_stat
+        global flag_motor_brake
+        
+        flag_motor_brake = True
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_coil(3075, True, slave=1) #M3
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send exec_motor_brake_on data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")  
+
+    def rel_motor_brake_on(self):
+        global flag_conn_stat
+        global flag_motor_brake
+
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_coil(3075, False, slave=1) #M3
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send rel_motor_brake_on data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")  
+
+    def exec_motor_brake_off(self):
+        global flag_conn_stat
+        global flag_motor_brake
+
+        flag_motor_brake = False
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_coil(3076, True, slave=1) #M4
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send exec_motor_brake_off data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")  
+
+    def rel_motor_brake_off(self):
+        global flag_conn_stat
+        global flag_motor_brake
+
+        try:
+            if flag_conn_stat:
+                MODBUS_CLIENT.connect()
+                MODBUS_CLIENT.write_coil(3076, False, slave=1) #M4
+                MODBUS_CLIENT.close()
+        except Exception as e:
+            toast_msg = f"error send rel_motor_brake_on data to PLC Slave"
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")  
+
+    def exec_navigate_main(self):
+        try:
+            self.screen_manager.current = 'screen_main'
+
+        except Exception as e:
+            toast_msg = f'Terjadi kesalahan saat berpindah ke halaman Utama'
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")  
+
+
+class ScreenAddData(MDScreen):
+    def __init__(self, **kwargs):
+        super(ScreenAddData, self).__init__(**kwargs)
+        Clock.schedule_once(self.delayed_init, 1)
+    
+    def delayed_init(self, dt):
+        self.ids.lb_title.text = APP_TITLE
+        self.ids.lb_subtitle.text = APP_SUBTITLE
+        self.ids.img_pemkab.source = f'assets/images/{IMG_LOGO_PEMKAB}'
+        self.ids.img_dishub.source = f'assets/images/{IMG_LOGO_DISHUB}'
+        self.ids.lb_pemkab.text = LB_PEMKAB
+        self.ids.lb_dishub.text = LB_DISHUB
+        self.ids.lb_unit.text = LB_UNIT
+        self.ids.lb_unit_address.text = LB_UNIT_ADDRESS
+
+    def exec_cancel(self):
+        try:
+            self.screen_manager.current = 'screen_main'
+
+        except Exception as e:
+            toast_msg = f'Terjadi kesalahan saat berpindah ke halaman Utama'
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")  
+
+    def on_enter(self):
+        """Called when screen is entered — safe to initialize dropdowns here."""
+        Clock.schedule_once(self.load_dropdowns, 0.1)  # Small delay to ensure UI is loaded
+
+    def on_leave(self):
+        """Clean up menus to avoid memory leaks or errors."""
+        if hasattr(self, 'menu_merk') and self.menu_merk:
+            self.menu_merk.dismiss()
+            self.menu_merk = None
+        if hasattr(self, 'menu_bahan_bakar') and self.menu_bahan_bakar:
+            self.menu_bahan_bakar.dismiss()
+            self.menu_bahan_bakar = None
+        if hasattr(self, 'menu_warna') and self.menu_warna:
+            self.menu_warna.dismiss()
+            self.menu_warna = None
+
+    def load_dropdowns(self, dt=None):
+        """Initialize dropdown menus for Merk, Bahan Bakar, Warna."""
+        try:
+            # --- Merk Dropdown ---
+            tb_merk = mydb.cursor()
+            tb_merk.execute(f"SELECT ID, DESCRIPTION FROM {TB_MERK}")
+            result_tb_merk = tb_merk.fetchall()
+            if result_tb_merk:
+                self.merk_items = [
+                    {
+                        "viewclass": "OneLineListItem",
+                        "text": row[1],
+                        "on_release": lambda x=row[1], id=row[0]: self.set_merk(x, id),
+                    } for row in result_tb_merk
+                ]
+                self.menu_merk = MDDropdownMenu(
+                    caller=self.ids.drop_merk,
+                    items=self.merk_items,
+                    width_mult=4,  # You can adjust this
+                )
+            else:
+                self.menu_merk = None
+
+            # --- Bahan Bakar Dropdown ---
+            tb_bahan_bakar = mydb.cursor()
+            tb_bahan_bakar.execute(f"SELECT ID, DESCRIPTION FROM {TB_BAHAN_BAKAR}")
+            result_tb_bahan_bakar = tb_bahan_bakar.fetchall()
+            if result_tb_bahan_bakar:
+                self.bahan_bakar_items = [
+                    {
+                        "viewclass": "OneLineListItem",
+                        "text": row[1],
+                        "on_release": lambda x=row[1], id=row[0]: self.set_bahan_bakar(x, id),
+                    } for row in result_tb_bahan_bakar
+                ]
+                self.menu_bahan_bakar = MDDropdownMenu(
+                    caller=self.ids.drop_bahan_bakar,
+                    items=self.bahan_bakar_items,
+                    width_mult=4,
+                )
+            else:
+                self.menu_bahan_bakar = None
+
+            # --- Warna Dropdown ---
+            tb_warna = mydb.cursor()
+            tb_warna.execute(f"SELECT id_warna, nama FROM {TB_WARNA}")
+            result_tb_warna = tb_warna.fetchall()
+            if result_tb_warna:
+                self.warna_items = [
+                    {
+                        "viewclass": "OneLineListItem",
+                        "text": row[1],
+                        "on_release": lambda x=row[1], id=row[0]: self.set_warna(x, id),
+                    } for row in result_tb_warna
+                ]
+                self.menu_warna = MDDropdownMenu(
+                    caller=self.ids.drop_warna,
+                    items=self.warna_items,
+                    width_mult=4,
+                )
+            else:
+                self.menu_warna = None
+
+        except Exception as e:
+            toast(f"Error loading dropdowns: {str(e)}")
+            Logger.error(f"ScreenAddData: Failed to load dropdowns - {e}")
+
+    # Set functions for dropdown selection
+    def set_merk(self, text_item, id_item):
+        self.ids.drop_merk.text = text_item
+        self.ids.drop_merk.merk_id = id_item
+        if self.menu_merk:
+            self.menu_merk.dismiss()
+
+    def set_bahan_bakar(self, text_item, id_item):
+        self.ids.drop_bahan_bakar.text = text_item
+        self.ids.drop_bahan_bakar.bahan_bakar_id = id_item
+        if self.menu_bahan_bakar:
+            self.menu_bahan_bakar.dismiss()
+
+    def set_warna(self, text_item, id_item):
+        self.ids.drop_warna.text = text_item
+        self.ids.drop_warna.warna_id = id_item
+        if self.menu_warna:
+            self.menu_warna.dismiss()
+        
+    def exec_register(self):
+        try:
+            dt_temp_no_uji = self.ids.tx_nouji.text.strip()
+            dt_temp_no_pol = self.ids.tx_nopol.text.strip()
+
+            if not dt_temp_no_uji or not dt_temp_no_pol:
+                toast("Nomor Uji dan Nomor Regristasi tidak boleh kosong!")
+                return
+
+            mycursor = mydb.cursor()
+
+            check_nouji_sql = f"SELECT COUNT(*) FROM {TB_DATA_MASTER} WHERE NOUJI = %s"
+            mycursor.execute(check_nouji_sql, (dt_temp_no_uji,))
+            result_nouji = mycursor.fetchone()
+            
+            if result_nouji and result_nouji[0] > 0:
+                toast("Nomor Uji ini sudah terdaftar!")
+                Logger.warning(f"{self.name}: Upaya menambahkan duplikat NOUJI: {dt_temp_no_uji}")
+                return 
+
+            check_nopol_sql = f"SELECT COUNT(*) FROM {TB_DATA_MASTER} WHERE NOPOL = %s"
+            mycursor.execute(check_nopol_sql, (dt_temp_no_pol,))
+            result_nopol = mycursor.fetchone()
+
+            if result_nopol and result_nopol[0] > 0:
+                toast("Nomor Polisi ini sudah terdaftar!")
+                Logger.warning(f"{self.name}: Upaya menambahkan duplikat NOPOL: {dt_temp_no_pol}")
+                return 
+
+            dt_temp_no_uji_new = self.ids.tx_nouji.text.strip()
+            dt_temp_nama = self.ids.tx_nama.text.strip()
+            dt_temp_alamat = self.ids.tx_alamat.text.strip()
+            dt_temp_type = self.ids.tx_type.text.strip()
+            dt_temp_jenis_kendaraan = self.ids.tx_jeniskendaraan.text.strip()
+            dt_temp_jbb = self.ids.tx_jbb.text.strip()
+            dt_temp_brt_ksg = self.ids.tx_beratkosong.text.strip()
+            dt_temp_tgl_uji_terakhir = str(time.strftime("%Y/%m/%d %H:%M:%S", time.localtime()))
+
+            # self.ids.lb_temp_nama.text = f'{dt_temp_nama}'
+            # self.ids.lb_temp_alamat.text = f'{dt_temp_alamat}'
+            # self.ids.lb_temp_no_uji.text = f'{dt_temp_no_uji}'
+            # self.ids.lb_temp_no_pol.text = f'{dt_temp_no_pol}'
+            # self.ids.lb_temp_status_uji.text = 'Berkala' if dt_temp_status_uji == 'B' else 'Uji Ulang' if dt_temp_status_uji == 'U' else 'Baru' if dt_temp_status_uji == 'BR' else 'Numpang Uji' if dt_temp_status_uji == 'NB' else 'Mutasi'
+            # self.ids.lb_temp_tgl_uji_terakhir.text = f'{dt_temp_tgl_uji_terakhir}'
+            # self.ids.lb_temp_tgl_uji_habis.text = f'{dt_temp_tgl_uji_habis}'
+            # self.ids.lb_temp_merk.text = '-' if dt_temp_id_merk == None else f"{db_merk[np.where(db_merk == dt_temp_id_merk)[0][0],1]}"
+            # self.ids.lb_temp_type.text = f'{dt_temp_type}'
+            # self.ids.lb_temp_jenis_kendaraan.text = f'{dt_temp_jenis_kendaraan}'
+            # self.ids.lb_temp_warna.text = '-' if dt_temp_warna == None else f"{db_warna[np.where(db_warna == dt_temp_warna)[0][0],1]}"
+            # self.ids.lb_temp_chasis.text = f'{dt_temp_chasis}'
+            # self.ids.lb_temp_mesin.text = f'{dt_temp_mesin}'
+            # self.ids.lb_temp_bahan_bakar.text = '-' if dt_temp_bhn_bkr == None else f"{db_bahan_bakar[np.where(db_bahan_bakar == dt_temp_bhn_bkr)[0][0],1]}"
+            # self.ids.lb_temp_jbb.text = f'{dt_temp_jbb}'
+            # self.ids.lb_temp_berat_kosong.text = f'{dt_temp_brt_ksg}'
+
+            # Validate dropdowns have values selected
+            if not hasattr(self.ids.drop_merk, 'merk_id'):
+                toast("Pilih Merk!")
+                return
+            if not hasattr(self.ids.drop_bahan_bakar, 'bahan_bakar_id'):
+                toast("Pilih Bahan Bakar!")
+                return
+            if not hasattr(self.ids.drop_warna, 'warna_id'):
+                toast("Pilih Warna!")
+                return
+
+            dt_temp_id_merk = self.ids.drop_merk.merk_id
+            dt_temp_bhn_bkr = self.ids.drop_bahan_bakar.bahan_bakar_id
+            dt_temp_warna = self.ids.drop_warna.warna_id
+
+            # Insert into database
+            mycursor = mydb.cursor()
+            sql = f"""
+                INSERT INTO {TB_DATA_MASTER} 
+                (NOUJI, NEW_NOUJI, NOPOL, NAMA, ALAMAT, MERK_ID, TYPE, idjeniskendaraan, BHN_BAKAR, JBB, BERATKOSONG, WARNA_KEND, TGL_UJI_PERDANA, TGL_UJI_TERAKHIR) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """
+            values = (
+                dt_temp_no_uji,
+                dt_temp_no_uji_new,
+                dt_temp_no_pol,
+                dt_temp_nama,
+                dt_temp_alamat,
+                dt_temp_id_merk,
+                dt_temp_type,
+                dt_temp_jenis_kendaraan,
+                dt_temp_bhn_bkr,
+                dt_temp_jbb,
+                dt_temp_brt_ksg,
+                dt_temp_warna,
+                dt_temp_tgl_uji_terakhir,
+                dt_temp_tgl_uji_terakhir
+            )
+            mycursor.execute(sql, values)
+            mydb.commit()
+
+            toast("Data berhasil didaftarkan")
+            self.screen_manager.current = 'screen_main'
+
+        except Exception as e:
+            toast_msg = f'Terjadi kesalahan saat mendaftarkan data'
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+
+class ScreenAddQueue(MDScreen):
+    def __init__(self, **kwargs):
+        super(ScreenAddQueue, self).__init__(**kwargs)
+        Clock.schedule_once(self.delayed_init, 1)
+    
+    def delayed_init(self, dt):
+        self.ids.lb_title.text = APP_TITLE
+        self.ids.lb_subtitle.text = APP_SUBTITLE
+        self.ids.img_pemkab.source = f'assets/images/{IMG_LOGO_PEMKAB}'
+        self.ids.img_dishub.source = f'assets/images/{IMG_LOGO_DISHUB}'
+        self.ids.lb_pemkab.text = LB_PEMKAB
+        self.ids.lb_dishub.text = LB_DISHUB
+        self.ids.lb_unit.text = LB_UNIT
+        self.ids.lb_unit_address.text = LB_UNIT_ADDRESS
+
+    def on_enter(self):
+        pass
+
+    def on_leave(self):
+        pass
+
+    def exec_cancel(self):
+        global dt_temp_no_uji, dt_temp_no_uji_new, dt_temp_no_wilayah, dt_temp_no_kendaraan, dt_temp_no_plat, dt_temp_no_pol
+        global dt_temp_nama, dt_temp_no_hp, dt_temp_alamat, dt_temp_id_izin, dt_temp_wilayah, dt_temp_provinsi, dt_temp_kabupaten_kota, dt_temp_kecamatan
+        global dt_temp_id_merk, dt_temp_id_subjenis, dt_temp_type, dt_temp_tahun_buat, dt_temp_silinder, dt_temp_warna, dt_temp_chasis, dt_temp_mesin, dt_temp_warna_plat
+        global dt_temp_bhn_bkr, dt_temp_jbb, dt_temp_daya_motor, dt_temp_tgl_uji_terakhir, dt_temp_tgl_uji_habis, dt_temp_status_uji, dt_temp_status_penerbitan, dt_temp_jenis_kendaraan, dt_temp_kode_jenis_kendaraan, dt_temp_kode_wilayah
+
+        try:
+            dt_temp_no_uji = dt_temp_no_uji_new = dt_temp_no_wilayah = dt_temp_no_kendaraan = dt_temp_no_plat = dt_temp_no_pol = ""
+            dt_temp_nama = dt_temp_no_hp = dt_temp_alamat = dt_temp_id_izin = dt_temp_wilayah = dt_temp_provinsi = dt_temp_kabupaten_kota = dt_temp_kecamatan = ""
+            dt_temp_id_merk = dt_temp_id_subjenis = dt_temp_type = dt_temp_tahun_buat = dt_temp_silinder = dt_temp_warna = dt_temp_chasis = dt_temp_mesin = dt_temp_warna_plat = ""
+            dt_temp_bhn_bkr = dt_temp_jbb = dt_temp_daya_motor = dt_temp_tgl_uji_terakhir = dt_temp_tgl_uji_habis = dt_temp_status_uji = dt_temp_status_penerbitan = dt_temp_jenis_kendaraan = dt_temp_kode_jenis_kendaraan = dt_temp_kode_wilayah = ""
+
+            self.ids.tx_nopol.text = "" 
+            self.ids.tx_nouji.text = "" 
+            self.ids.lb_temp_nama.text = self.ids.lb_temp_alamat.text = ""
+            self.ids.lb_temp_no_uji.text = self.ids.lb_temp_no_pol.text = self.ids.lb_temp_status_uji.text = self.ids.lb_temp_tgl_uji_terakhir.text = self.ids.lb_temp_tgl_uji_habis.text = ""
+            self.ids.lb_temp_merk.text = self.ids.lb_temp_type.text = self.ids.lb_temp_jenis_kendaraan.text = self.ids.lb_temp_warna.text = ""
+            self.ids.lb_temp_chasis.text = self.ids.lb_temp_mesin.text = self.ids.lb_temp_bahan_bakar.text = self.ids.lb_temp_jbb.text = ""
+            self.ids.bt_register.disabled = True
+
+            self.exec_navigate_main()
+            
+        except Exception as e:
+            toast_msg = f'Gagal Memuat Data'
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+
+    def exec_find(self):
+        global mydb, db_users, db_merk, db_bahan_bakar, db_warna
+        global dt_id_user, dt_user, dt_foto_user
+        global dt_temp_no_uji, dt_temp_no_uji_new, dt_temp_no_wilayah, dt_temp_no_kendaraan, dt_temp_no_plat, dt_temp_no_pol
+        global dt_temp_nama, dt_temp_no_hp, dt_temp_alamat, dt_temp_id_izin, dt_temp_wilayah, dt_temp_provinsi, dt_temp_kabupaten_kota, dt_temp_kecamatan
+        global dt_temp_id_merk, dt_temp_id_subjenis, dt_temp_type, dt_temp_tahun_buat, dt_temp_silinder, dt_temp_warna, dt_temp_chasis, dt_temp_mesin, dt_temp_warna_plat
+        global dt_temp_bhn_bkr, dt_temp_jbb, dt_temp_daya_motor, dt_temp_tgl_uji_terakhir, dt_temp_tgl_uji_habis, dt_temp_status_uji, dt_temp_status_penerbitan, dt_temp_jenis_kendaraan, dt_temp_kode_jenis_kendaraan, dt_temp_kode_wilayah
+
+        try:
+            dt_find_no_pol = self.ids.tx_nopol.text
+            dt_find_no_uji = self.ids.tx_nouji.text
+            self.exec_fetch_master_data(dt_find_no_pol, dt_find_no_uji)
+
+            self.ids.lb_temp_nama.text = f'{dt_temp_nama}'
+            self.ids.lb_temp_alamat.text = f'{dt_temp_alamat}'
+            self.ids.lb_temp_no_uji.text = f'{dt_temp_no_uji}'
+            self.ids.lb_temp_no_pol.text = f'{dt_temp_no_pol}'
+            self.ids.lb_temp_status_uji.text = 'Berkala' if dt_temp_status_uji == 'B' else 'Uji Ulang' if dt_temp_status_uji == 'U' else 'Baru' if dt_temp_status_uji == 'BR' else 'Numpang Uji' if dt_temp_status_uji == 'NB' else 'Mutasi'
+            self.ids.lb_temp_tgl_uji_terakhir.text = f'{dt_temp_tgl_uji_terakhir}'
+            self.ids.lb_temp_tgl_uji_habis.text = f'{dt_temp_tgl_uji_habis}'
+            self.ids.lb_temp_merk.text = '-' if dt_temp_id_merk == None else f"{db_merk[np.where(db_merk == dt_temp_id_merk)[0][0],1]}"
+            self.ids.lb_temp_type.text = f'{dt_temp_type}'
+            self.ids.lb_temp_jenis_kendaraan.text = f'{dt_temp_jenis_kendaraan}'
+            self.ids.lb_temp_warna.text = '-' if dt_temp_warna == None else f"{db_warna[np.where(db_warna == dt_temp_warna)[0][0],1]}"
+            self.ids.lb_temp_chasis.text = f'{dt_temp_chasis}'
+            self.ids.lb_temp_mesin.text = f'{dt_temp_mesin}'
+            self.ids.lb_temp_bahan_bakar.text = '-' if dt_temp_bhn_bkr == None else f"{db_bahan_bakar[np.where(db_bahan_bakar == dt_temp_bhn_bkr)[0][0],1]}"
+            self.ids.lb_temp_jbb.text = f'{dt_temp_jbb}'
+            self.ids.lb_temp_berat_kosong.text = f'{dt_temp_brt_ksg}'
+            self.ids.bt_register.disabled = False
+            
+        except Exception as e:
+            toast_msg = f'Gagal Menemukan Data, Silahkan Isi Nomor Uji atau Nomor Polisi dengan Benar'
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+
+    def exec_fetch_master_data(self, dt_find_no_pol, dt_find_no_uji):
+        global mydb, db_users, db_merk, db_bahan_bakar, db_warna
+        global dt_id_user, dt_user, dt_foto_user
+        global dt_temp_no_uji, dt_temp_no_uji_new, dt_temp_no_wilayah, dt_temp_no_kendaraan, dt_temp_no_plat, dt_temp_no_pol
+        global dt_temp_nama, dt_temp_no_hp, dt_temp_alamat, dt_temp_id_izin, dt_temp_wilayah, dt_temp_provinsi, dt_temp_kabupaten_kota, dt_temp_kecamatan
+        global dt_temp_id_merk, dt_temp_id_subjenis, dt_temp_type, dt_temp_tahun_buat, dt_temp_silinder, dt_temp_warna, dt_temp_chasis, dt_temp_mesin, dt_temp_warna_plat
+        global dt_temp_bhn_bkr, dt_temp_jbb, dt_temp_brt_ksg, dt_temp_daya_motor, dt_temp_tgl_uji_terakhir, dt_temp_tgl_uji_habis, dt_temp_status_uji, dt_temp_status_penerbitan, dt_temp_jenis_kendaraan, dt_temp_kode_jenis_kendaraan, dt_temp_kode_wilayah
+
+        try:
+            mycursor = mydb.cursor()
+            if dt_find_no_pol != "" and dt_find_no_uji == "":
+                mycursor.execute(f"SELECT NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, idjeniskendaraan, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, BERATKOSONG, DAYAMOTOR, TGL_UJI_TERAKHIR, STATUSUJI, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah FROM {TB_DATA_MASTER} WHERE NOPOL = '{dt_find_no_pol}' ")
+            elif dt_find_no_uji != "":
+                mycursor.execute(f"SELECT NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, idjeniskendaraan, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, BERATKOSONG, DAYAMOTOR, TGL_UJI_TERAKHIR, STATUSUJI, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah FROM {TB_DATA_MASTER} WHERE NOUJI = '{dt_find_no_uji}' ")
+            elif dt_find_no_uji == "" and dt_find_no_pol == "":
+                toast("Silahkan Isi Nomor Uji atau Nomor Polisi dengan Benar")
+            myresult = mycursor.fetchone()
+            mydb.commit()
+            db_master_data = np.array(myresult).T
+
+            if myresult is None:
+                toast('Data Tidak Ditemukan di Database, Silahkan Ajukan Pengujian Baru')
+                self.exec_cancel()
+            else:
+                dt_temp_no_uji = db_master_data[0]
+                dt_temp_no_uji_new = db_master_data[1]
+                dt_temp_no_wilayah = db_master_data[2]
+                dt_temp_no_kendaraan = db_master_data[3]
+                dt_temp_no_plat = db_master_data[4]
+                dt_temp_no_pol = db_master_data[5]
+                dt_temp_nama = db_master_data[6]
+                dt_temp_no_hp = db_master_data[7]
+                dt_temp_alamat = db_master_data[8]
+                dt_temp_id_izin = db_master_data[9]
+                dt_temp_wilayah = db_master_data[10]
+                dt_temp_provinsi = db_master_data[11]
+                dt_temp_kabupaten_kota = db_master_data[12]
+                dt_temp_kecamatan = db_master_data[13]
+                dt_temp_id_merk = db_master_data[14]
+                dt_temp_id_subjenis = db_master_data[15]
+                dt_temp_type = db_master_data[16]
+                dt_temp_tahun_buat = db_master_data[17]
+                dt_temp_silinder = db_master_data[18]
+                dt_temp_warna = db_master_data[19]
+                dt_temp_chasis = db_master_data[20]
+                dt_temp_mesin = db_master_data[21]
+                dt_temp_warna_plat = db_master_data[22]
+                dt_temp_bhn_bkr = db_master_data[23]
+                dt_temp_jbb = db_master_data[24]
+                dt_temp_brt_ksg = db_master_data[25]
+                dt_temp_daya_motor = db_master_data[26]
+                
+                dt_temp_status_uji = db_master_data[28]
+                dt_temp_status_penerbitan = db_master_data[29]
+                dt_temp_jenis_kendaraan = db_master_data[30]
+                dt_temp_kode_jenis_kendaraan = db_master_data[31]
+                dt_temp_kode_wilayah = db_master_data[32]
+
+                if(db_master_data[26] is not None):
+                    last_uji_date = db_master_data[27]
+                else:
+                    last_uji_date = datetime.datetime(1900, 1, 1)
+
+                if(last_uji_date.month <= 6):
+                    year_replaced = last_uji_date.year
+                    month_replaced = last_uji_date.month + 6
+                    day_replaced = last_uji_date.day
+                else:
+                    year_replaced = last_uji_date.year + 1
+                    month_replaced = last_uji_date.month - 6
+                    day_replaced = last_uji_date.day
+                
+                if(last_uji_date.day > 29):
+                    if month_replaced == 2:
+                        day_replaced = 29
+                    if month_replaced == 4 or month_replaced == 6 or month_replaced == 9 or month_replaced == 11:
+                        day_replaced = 30
+                    
+                dt_temp_tgl_uji_terakhir = str(last_uji_date.strftime('%d-%m-%Y'))
+                dt_temp_tgl_uji_habis = str(last_uji_date.replace(month=month_replaced, year=year_replaced, day=day_replaced).strftime('%d-%m-%Y'))
+                
+        except Exception as e:
+            toast_msg = f'Gagal Menemukan Data dari Database Master'
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+
+    def exec_register(self):
+        global mydb, db_users, db_merk, db_bahan_bakar, db_warna
+        global dt_id_user, dt_user, dt_foto_user
+        global dt_temp_no_uji, dt_temp_no_uji_new, dt_temp_no_wilayah, dt_temp_no_kendaraan, dt_temp_no_plat, dt_temp_no_pol
+        global dt_temp_nama, dt_temp_no_hp, dt_temp_alamat, dt_temp_id_izin, dt_temp_wilayah, dt_temp_provinsi, dt_temp_kabupaten_kota, dt_temp_kecamatan
+        global dt_temp_id_merk, dt_temp_id_subjenis, dt_temp_type, dt_temp_tahun_buat, dt_temp_silinder, dt_temp_warna, dt_temp_chasis, dt_temp_mesin, dt_temp_warna_plat
+        global dt_temp_bhn_bkr, dt_temp_jbb, dt_temp_brt_ksg, dt_temp_daya_motor, dt_temp_tgl_uji_terakhir, dt_temp_tgl_uji_habis, dt_temp_status_uji, dt_temp_status_penerbitan, dt_temp_jenis_kendaraan, dt_temp_kode_jenis_kendaraan, dt_temp_kode_wilayah
+
+        try:
+            mycursor = mydb.cursor()
+            mycursor.execute(f"SELECT MAX(noantrian) FROM {TB_DATA}")
+            result = mycursor.fetchone()
+            last_noantrian = int(result[0]) if result[0] is not None else 0
+            noantrian = f"{last_noantrian + 1:04d}"
+
+            mycursor = mydb.cursor()
+            sql = f"INSERT INTO {TB_DATA} (noantrian, nopol, nouji, NEW_NOUJI, merk, type, idjeniskendaraan, jbb, berat_kosong, warna) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+            values = (noantrian, dt_temp_no_pol, dt_temp_no_uji, dt_temp_no_uji_new, dt_temp_id_merk, dt_temp_type, dt_temp_id_subjenis, dt_temp_jbb, dt_temp_brt_ksg, dt_temp_warna)
+            mycursor.execute(sql, values)
+            mydb.commit()
+
+        except Exception as e:
+            toast_msg = f'Gagal menambah data antrian baru'
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+
+        self.exec_cancel()
+
+    def exec_navigate_home(self):
+        try:
+            self.screen_manager.current = 'screen_home'
+
+        except Exception as e:
             toast_msg = f'Gagal Berpindah ke Halaman Awal'
             toast(toast_msg)
-            print(toast_msg, e)
+            Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
     def exec_navigate_login(self):
         global dt_user
@@ -636,7 +1763,7 @@ class ScreenMain(MDScreen):
         except Exception as e:
             toast_msg = f'Gagal Berpindah ke Halaman Login'
             toast(toast_msg)
-            print(toast_msg, e)
+            Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
     def exec_navigate_main(self):
         try:
@@ -645,7 +1772,7 @@ class ScreenMain(MDScreen):
         except Exception as e:
             toast_msg = f'Gagal Berpindah ke Halaman Utama'
             toast(toast_msg)
-            print(toast_msg, e)
+            Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
 class ScreenMenu(MDScreen):
     def __init__(self, **kwargs):
@@ -653,6 +1780,8 @@ class ScreenMenu(MDScreen):
         Clock.schedule_once(self.delayed_init, 1)
     
     def delayed_init(self, dt):
+        self.ids.lb_title.text = APP_TITLE
+        self.ids.lb_subtitle.text = APP_SUBTITLE        
         self.ids.img_pemkab.source = f'assets/images/{IMG_LOGO_PEMKAB}'
         self.ids.img_dishub.source = f'assets/images/{IMG_LOGO_DISHUB}'
         self.ids.lb_pemkab.text = LB_PEMKAB
@@ -731,7 +1860,7 @@ class ScreenMenu(MDScreen):
 
         try:
             today = str(time.strftime("%Y-%m-%d", time.localtime()))
-            make_dir_path = f'/var/www/ujikir/capture/{today}/{dt_sts_uji}-{dt_no_antri}'
+            make_dir_path = f'/var/www/system/storage/app/capture/{today}/{dt_sts_uji}-{dt_no_antri}'
             self.sftp_make_dir(make_dir_path)
 
         except Exception as e:
@@ -741,7 +1870,7 @@ class ScreenMenu(MDScreen):
 
         try:
             mycursor = mydb.cursor()
-            sql = f"INSERT INTO {TB_DATA_IMAGE} (noantrian, nouji, NEW_NOUJI, nopol, idjeniskendaraan, kd_jnskendaraan, kodewilayah, jbb, statusuji, statuspenerbitan, tgl_capture, useridphoto) VALUES ('{dt_no_antri}','{dt_temp_no_uji}','{dt_temp_no_uji_new}','{dt_temp_no_pol}','{dt_temp_jenis_kendaraan}','{dt_temp_kode_jenis_kendaraan}','{dt_temp_kode_wilayah}','{dt_temp_jbb}','{dt_temp_status_uji}','{dt_temp_status_penerbitan}','{dt_tgl_baru_uji}','{dt_user}','{dt_id_user}')"
+            sql = f"INSERT INTO {TB_DATA_IMAGE} (noantrian, nouji, NEW_NOUJI, nopol, idjeniskendaraan, kd_jeniskendaraan, kodewilayah, jbb, statusuji, statuspenerbitan, tgl_capture) VALUES ('{dt_no_antri}','{dt_temp_no_uji}','{dt_temp_no_uji_new}','{dt_temp_no_pol}','{dt_temp_jenis_kendaraan}','{dt_temp_kode_jenis_kendaraan}','{dt_temp_kode_wilayah}','{dt_temp_jbb}','{dt_temp_status_uji}','{dt_temp_status_penerbitan}','{dt_tgl_baru_uji}')"
             mycursor.execute(sql)
             mydb.commit()
 
@@ -752,7 +1881,7 @@ class ScreenMenu(MDScreen):
 
         try:
             tb_image = mydb.cursor()
-            tb_image.execute(f"SELECT id_image FROM {TB_DATA_IMAGE} WHERE nopol = '{dt_no_pol}' ORDER BY id DESC LIMIT 1")
+            tb_image.execute(f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = '{dt_no_pol}' ORDER BY id DESC LIMIT 1")
             result_tb_image = tb_image.fetchone()
             mydb.commit()
             id_image = result_tb_image[0]
@@ -1143,6 +2272,8 @@ class ScreenInspectId(MDScreen):
         Clock.schedule_once(self.delayed_init, 1)
     
     def delayed_init(self, dt):
+        self.ids.lb_title.text = APP_TITLE
+        self.ids.lb_subtitle.text = APP_SUBTITLE        
         self.ids.img_pemkab.source = f'assets/images/{IMG_LOGO_PEMKAB}'
         self.ids.img_dishub.source = f'assets/images/{IMG_LOGO_DISHUB}'
         self.ids.lb_pemkab.text = LB_PEMKAB
@@ -1385,7 +2516,7 @@ class ScreenInspectId(MDScreen):
 
         try:
             tb_uji = mydb.cursor()
-            tb_uji.execute(f"SELECT id_uji FROM {TB_UJI} WHERE nopol = '{dt_no_pol}' AND kode_kelompok_uji = 'V1' ORDER BY id DESC LIMIT 1")
+            tb_uji.execute(f"SELECT id_uji FROM {TB_UJI} WHERE nopol = '{dt_no_pol}' AND kode_kelompok_uji = 'V1' ORDER BY id_uji DESC LIMIT 1")
             result_tb_uji = tb_uji.fetchone()
             mydb.commit()
             id_uji = result_tb_uji[0]
@@ -1396,7 +2527,7 @@ class ScreenInspectId(MDScreen):
                 comment_subkomponen_uji = self.ids[f'tx_comment{i}'].text
 
                 mycursor = mydb.cursor()
-                sql = f"INSERT INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, komentar) VALUES ('{id_uji}', '{flags_subkomponen_uji[i]}','{dt_selected_kode_komponen_uji}','{kode_subkomponen_uji}','{comment_subkomponen_uji}')"
+                sql = f"INSERT INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES ('{id_uji}', '{int(flags_subkomponen_uji[i])}','{dt_selected_kode_komponen_uji}','{kode_subkomponen_uji}','{comment_subkomponen_uji}')"
                 mycursor.execute(sql)
                 mydb.commit()
 
@@ -1418,6 +2549,8 @@ class ScreenInspectDimension(MDScreen):
         Clock.schedule_once(self.delayed_init, 1)
     
     def delayed_init(self, dt):
+        self.ids.lb_title.text = APP_TITLE
+        self.ids.lb_subtitle.text = APP_SUBTITLE        
         self.ids.img_pemkab.source = f'assets/images/{IMG_LOGO_PEMKAB}'
         self.ids.img_dishub.source = f'assets/images/{IMG_LOGO_DISHUB}'
         self.ids.lb_pemkab.text = LB_PEMKAB
@@ -1742,6 +2875,8 @@ class ScreenInspectVisual(MDScreen):
         Clock.schedule_once(self.delayed_init, 1)
     
     def delayed_init(self, dt):
+        self.ids.lb_title.text = APP_TITLE
+        self.ids.lb_subtitle.text = APP_SUBTITLE        
         self.ids.img_pemkab.source = f'assets/images/{IMG_LOGO_PEMKAB}'
         self.ids.img_dishub.source = f'assets/images/{IMG_LOGO_DISHUB}'
         self.ids.lb_pemkab.text = LB_PEMKAB
@@ -2018,6 +3153,8 @@ class ScreenInspectVisual2(MDScreen):
         Clock.schedule_once(self.delayed_init, 1)
     
     def delayed_init(self, dt):
+        self.ids.lb_title.text = APP_TITLE
+        self.ids.lb_subtitle.text = APP_SUBTITLE        
         self.ids.img_pemkab.source = f'assets/images/{IMG_LOGO_PEMKAB}'
         self.ids.img_dishub.source = f'assets/images/{IMG_LOGO_DISHUB}'
         self.ids.lb_pemkab.text = LB_PEMKAB
@@ -2294,6 +3431,8 @@ class ScreenInspectPit(MDScreen):
         Clock.schedule_once(self.delayed_init, 1)
     
     def delayed_init(self, dt):
+        self.ids.lb_title.text = APP_TITLE
+        self.ids.lb_subtitle.text = APP_SUBTITLE        
         self.ids.img_pemkab.source = f'assets/images/{IMG_LOGO_PEMKAB}'
         self.ids.img_dishub.source = f'assets/images/{IMG_LOGO_DISHUB}'
         self.ids.lb_pemkab.text = LB_PEMKAB
@@ -2579,6 +3718,8 @@ class ScreenRealtimeCctv(MDScreen):
         global rtsp_url_cam_array
         global rtsp_url_cam1, rtsp_url_cam2, rtsp_url_cam3, rtsp_url_cam4
 
+        self.ids.lb_title.text = APP_TITLE
+        self.ids.lb_subtitle.text = APP_SUBTITLE
         self.ids.img_pemkab.source = f'assets/images/{IMG_LOGO_PEMKAB}'
         self.ids.img_dishub.source = f'assets/images/{IMG_LOGO_DISHUB}'
         self.ids.lb_pemkab.text = LB_PEMKAB
@@ -2712,7 +3853,7 @@ class ScreenRealtimeCctv(MDScreen):
         try:
             today = str(time.strftime("%Y-%m-%d", time.localtime()))
             local_path = f'assets/images/{dt_no_pol}-{dt_selected_camera + 1}.jpg'
-            upload_dir_path = f'/var/www/ujikir/capture/{today}/{dt_sts_uji}-{dt_no_antri}/{dt_no_pol}-{dt_selected_camera + 1}.jpg'
+            upload_dir_path = f'/var/www/system/storage/app/capture/{today}/{dt_sts_uji}-{dt_no_antri}/{dt_no_pol}-{dt_selected_camera + 1}.jpg'
 
             # Resize to 600x600 before saving
             resized_img = cv2.resize(self.image_cctv, (600, 600))
@@ -2745,7 +3886,9 @@ class ScreenRealtimePit(MDScreen):
     def delayed_init(self, dt):
         global rtsp_url_pit_array
         global rtsp_url_pit1, rtsp_url_pit2, rtsp_url_pit3, rtsp_url_pit4
-
+        
+        self.ids.lb_title.text = APP_TITLE
+        self.ids.lb_subtitle.text = APP_SUBTITLE
         self.ids.img_pemkab.source = f'assets/images/{IMG_LOGO_PEMKAB}'
         self.ids.img_dishub.source = f'assets/images/{IMG_LOGO_DISHUB}'
         self.ids.lb_pemkab.text = LB_PEMKAB
@@ -2873,7 +4016,7 @@ class ScreenRealtimePit(MDScreen):
         try:
             today = str(time.strftime("%Y-%m-%d", time.localtime()))
             local_path = f'assets/images/{dt_no_pol}-{dt_selected_camera + 1}.jpg'
-            upload_dir_path = f'/var/www/ujikir/capture/{today}/{dt_sts_uji}-{dt_no_antri}/{dt_no_pol}-pit-{dt_selected_camera + 1}.jpg'
+            upload_dir_path = f'/var/www/system/storage/app/capture/{today}/{dt_sts_uji}-{dt_no_antri}/{dt_no_pol}-pit-{dt_selected_camera + 1}.jpg'
             
             # Resize to 600x600 before saving
             resized_img = cv2.resize(self.image_cctv, (600, 600))
@@ -2930,6 +4073,7 @@ class RootScreen(ScreenManager):
 class VisualInspectionApp(MDApp):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        Window.bind(on_resize=self.on_window_resize)
 
     def build(self):
         global window_size_x, window_size_y
@@ -2937,11 +4081,10 @@ class VisualInspectionApp(MDApp):
         self.theme_cls.primary_palette = "Gray"
         self.theme_cls.accent_palette = "Blue"
         self.theme_cls.theme_style = "Light"
-        self.icon = 'assets/images/logo-visual-app.png'
-        font_size_l = np.array([64, 30, 20, 16, 12, 12, 10, 8])
+        self.icon = 'assets/images/logo-load-app.png'
         window_size_y = Window.size[0]
         window_size_x = Window.size[1]
-        font_size = np.round(font_size_l * 600 / window_size_x, 0)
+        self.set_dynamic_fonts(Window.size)
 
         LabelBase.register(
             name="Orbitron-Regular",
@@ -2955,41 +4098,100 @@ class VisualInspectionApp(MDApp):
             name="Recharge",
             fn_regular="assets/fonts/Recharge.otf") 
         
-        theme_font_styles.append('Display')
-        self.theme_cls.font_styles["Display"] = [
-            "Orbitron-Regular", font_size[0], False, 0.15]       
+        theme_font_styles.append('H1')
+        self.theme_cls.font_styles["H1"] = [
+            "Orbitron-Regular", 64, False, 0.15]       
 
+        theme_font_styles.append('H2')
+        self.theme_cls.font_styles["H2"] = [
+            "Orbitron-Regular", 32, False, 0.15] 
+        
         theme_font_styles.append('H4')
         self.theme_cls.font_styles["H4"] = [
-            "Recharge", font_size[1], False, 0.15] 
+            "Recharge", 30, False, 0.15] 
 
         theme_font_styles.append('H5')
         self.theme_cls.font_styles["H5"] = [
-            "Recharge", font_size[2], False, 0.15] 
+            "Recharge", 20, False, 0.15] 
 
         theme_font_styles.append('H6')
         self.theme_cls.font_styles["H6"] = [
-            "Recharge", font_size[3], False, 0.15] 
+            "Recharge", 16, False, 0.15] 
 
         theme_font_styles.append('Subtitle1')
         self.theme_cls.font_styles["Subtitle1"] = [
-            "Recharge", font_size[4], False, 0.15] 
+            "Recharge", 11, False, 0.15] 
 
         theme_font_styles.append('Body1')
         self.theme_cls.font_styles["Body1"] = [
-            "Recharge", font_size[5], False, 0.15] 
+            "Recharge", 10, False, 0.15] 
         
         theme_font_styles.append('Button')
         self.theme_cls.font_styles["Button"] = [
-            "Recharge", font_size[6], False, 0.15] 
+            "Recharge", 9, False, 0.15] 
 
         theme_font_styles.append('Caption')
         self.theme_cls.font_styles["Caption"] = [
-            "Recharge", font_size[7], False, 0.15]                                 
-            
+            "Recharge", 8, False, 0.15]       
+        
         Window.fullscreen = 'auto'
         Builder.load_file('main.kv')
         return RootScreen()
+
+    def on_window_resize(self, window, width, height):
+        Logger.info(f"Window size: {width}x{height}")
+        self.set_dynamic_fonts((width, height))
+        self.refresh_all_fonts()
+
+    def refresh_all_fonts(self):
+        # Refresh fonts for all screens in the ScreenManager
+        if hasattr(self, 'root') and hasattr(self.root, 'screens'):
+            for screen in self.root.screens:
+                self.refresh_fonts(screen)
+
+    def refresh_fonts(self, widget):
+        from kivymd.uix.label import MDLabel
+        if isinstance(widget, MDLabel):
+            original_style = widget.font_style
+            temp_style = "Body1" if original_style != "Body1" else "H6"
+            widget.font_style = temp_style
+            widget.font_style = original_style
+        if hasattr(widget, 'children'):
+            for child in widget.children:
+                self.refresh_fonts(child)
+
+    def set_dynamic_fonts(self, size):
+        try:
+            screen_size_x = Window.system_size[0]
+            screen_size_y = Window.system_size[1]
+        except AttributeError:
+            screen_size_x = Window._get_system_size()[0]
+            screen_size_y = Window._get_system_size()[1]
+        font_size_l = np.array([64, 32, 30, 20, 16, 11, 10, 9, 8])
+        scale = min(screen_size_x / 1920, screen_size_y / 1080)
+        font_size = np.round(font_size_l * scale, 0)
+        Logger.info(f"Font resized: {font_size_l} to {font_size}")
+        self.theme_cls.font_styles["H1"] = [
+            "Orbitron-Regular", font_size[0], False, 0.15]
+        self.theme_cls.font_styles["H2"] = [
+            "Orbitron-Regular", font_size[1], False, 0.15]
+        self.theme_cls.font_styles["H4"] = [
+            "Recharge", font_size[2], False, 0.15]
+        self.theme_cls.font_styles["H5"] = [
+            "Recharge", font_size[3], False, 0.15]
+        self.theme_cls.font_styles["H6"] = [
+            "Recharge", font_size[4], False, 0.15]
+        self.theme_cls.font_styles["Subtitle1"] = [
+            "Recharge", font_size[5], False, 0.15]
+        self.theme_cls.font_styles["Body1"] = [
+            "Recharge", font_size[6], False, 0.15]
+        self.theme_cls.font_styles["Button"] = [
+            "Recharge", font_size[7], False, 0.15]
+        self.theme_cls.font_styles["Caption"] = [
+            "Recharge", font_size[8], False, 0.15]       
+
+        if hasattr(self, 'root'):
+            self.refresh_fonts(self.root)
 
 if __name__ == '__main__':
     VisualInspectionApp().run()
