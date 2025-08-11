@@ -5,6 +5,7 @@ venv/
 build/
 dist/
 *.spec
+Output/
 
 # Ignore Python cache files
 __pycache__/

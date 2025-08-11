@@ -411,6 +411,16 @@
 			# 	on_press: root.exec_verify_payment()
 
 			MDRectangleFlatIconButton:
+				id: bt_save
+				icon: "floppy"
+				text: "SELESAI INSPEKSI"
+				md_bg_color: "#2CA02C"
+				theme_text_color: "Custom"
+				text_color: "#EEEEEE"
+				size_hint_x: 1
+				on_press: root.exec_save()
+
+			MDRectangleFlatIconButton:
 				id: bt_back
 				icon: "cancel"
 				text: "BATALKAN INSPEKSI"

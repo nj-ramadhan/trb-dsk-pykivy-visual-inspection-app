@@ -34,7 +34,7 @@
 
 				MDLabel:
 					id: lb_subtitle            
-					text: "AXLE LOAD & BRAKE METER"
+					text: "VISUAL INSPECTION"
 					halign: "left"
 					valign: "middle"
 					font_style: 'H5'
@@ -107,72 +107,24 @@
 							orientation: "horizontal"
 
 							MDLabel:
-								text: "KALIBRASI AXLE LOAD KIRI"
+								text: "SETTING KAMERA UTAMA"
 								halign: "center"
 								valign: "middle"
 								font_style: 'H6'
 								size_hint_x: 0.5
 
-							MDLabel:
-								text: "Realtime:"
-								halign: "right"
-								valign: "middle"
-								font_style: 'H2'
-								size_hint_x: 0.2
-
-							MDLabel:
-								id:lb_load_l_val
-								text: "..."
-								halign: "center"
-								valign: "middle"
-								font_style: 'H2'
-								size_hint_x: 0.3
-
-						MDRectangleFlatIconButton:
-							id: bt_exec_calibrate_load_l_start
-							type: "large"
-							icon: "play"
-							size_hint_x: 0.3
-							text:"MULAI KALIBRASI"
-							text_color: "#EEEEEE"
-							md_bg_color: "#2CA02C"
-							font_style: 'H6'
-							on_press: root.exec_calibrate_load_l_start()
-							on_release: root.rel_calibrate_load_l_start()
-
 						MDBoxLayout:
 							orientation: "horizontal"
 							MDLabel:
-								text: "Kalibrasi Nol"
+								text: "Kamera Depan"
 								halign: "left"
 								valign: "middle"
 								font_style: 'H6'
 								size_hint_x: 0.7
-							
-							MDRectangleFlatIconButton:
-								id: bt_exec_calibrate_load_l_zero
-								type: "large"
-								size_hint_x: 0.3
-								icon: "gauge"
-								text:"KALIBRASI"
-								text_color: "#EEEEEE"
-								md_bg_color: "#2CA02C"
-								font_style: 'H6'
-								on_press: root.exec_calibrate_load_l_zero()
-								on_release: root.rel_calibrate_load_l_zero()			
-
-						MDBoxLayout:
-							orientation: "horizontal"
-							MDLabel:
-								text: "Kalibrasi Nilai 1"
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-								size_hint_x: 0.3
 
 							MDTextField:
-								id: tx_calibrate_load_l_value1
-								hint_text: "Berat Beban Kalibrasi"
+								id: tx_set_camera_front
+								hint_text: "IP Kamera Depan"
 								halign: "left"
 								valign: "middle"
 								font_style: 'H6'
@@ -180,140 +132,31 @@
 								type: "number"
 								input_filter: 'int'
 								text_color_focus: "#4471C4"
-								on_text_validate: root.exec_calibrate_load_l_value1()
-							
+								on_text_validate: root.exec_set_camera_front()	
+
 							MDRectangleFlatIconButton:
-								id: bt_exec_calibrate_load_l_value1
+								id: bt_exec_set_camera_front
 								type: "large"
 								size_hint_x: 0.3
-								icon: "gauge"
-								text:"KALIBRASI"
+								icon: "wrench"
+								text:"SET"
 								text_color: "#EEEEEE"
 								md_bg_color: "#2CA02C"
 								font_style: 'H6'
-								on_press: root.exec_calibrate_load_l_value1()
-								on_release: root.rel_calibrate_load_l_value1()
+								on_press: root.exec_set_camera_front()		
 
 						MDBoxLayout:
 							orientation: "horizontal"
 							MDLabel:
-								text: "Kalibrasi Nilai 2"
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-								size_hint_x: 0.3
-
-							MDTextField:
-								id: tx_calibrate_load_l_value2
-								hint_text: "Berat Beban Kalibrasi"
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-								size_hint_x: 0.4
-								type: "number"
-								input_filter: 'int'
-								text_color_focus: "#4471C4"
-								on_text_validate: root.exec_calibrate_load_l_value2()
-							
-							MDRectangleFlatIconButton:
-								id: bt_exec_calibrate_load_l_value2
-								type: "large"
-								size_hint_x: 0.3
-								icon: "gauge"
-								text:"KALIBRASI"
-								text_color: "#EEEEEE"
-								md_bg_color: "#2CA02C"
-								font_style: 'H6'
-								on_press: root.exec_calibrate_load_l_value2()
-								on_release: root.rel_calibrate_load_l_value2()
-
-						MDRectangleFlatIconButton:
-							id: bt_exec_calibrate_load_l_stop
-							type: "large"
-							icon: "stop"
-							size_hint_x: 0.3
-							text:"STOP KALIBRASI"
-							text_color: "#EEEEEE"
-							md_bg_color: "#2CA02C"
-							font_style: 'H6'
-							on_press: root.exec_calibrate_load_l_stop()
-							on_release: root.rel_calibrate_load_l_stop()
-
-					MDBoxLayout:
-						orientation: "vertical"
-						padding:20
-						spacing:20
-						
-						MDBoxLayout:
-							orientation: "horizontal"
-
-							MDLabel:
-								text: "KALIBRASI AXLE LOAD KANAN"
-								halign: "center"
-								valign: "middle"
-								font_style: 'H6'
-								size_hint_x: 0.5
-
-							MDLabel:
-								text: "Realtime:"
-								halign: "right"
-								valign: "middle"
-								font_style: 'H2'
-								size_hint_x: 0.2
-
-							MDLabel:
-								id:lb_load_r_val
-								text: "..."
-								halign: "center"
-								valign: "middle"
-								font_style: 'H2'
-								size_hint_x: 0.3
-
-						MDRectangleFlatIconButton:
-							id: bt_exec_calibrate_load_r_start
-							type: "large"
-							icon: "play"
-							size_hint_x: 0.3
-							text:"MULAI KALIBRASI"
-							text_color: "#EEEEEE"
-							md_bg_color: "#2CA02C"
-							font_style: 'H6'
-							on_press: root.exec_calibrate_load_r_start()
-							on_release: root.rel_calibrate_load_r_start()
-
-						MDBoxLayout:
-							orientation: "horizontal"
-							MDLabel:
-								text: "Kalibrasi Nol"
+								text: "Kamera Kiri"
 								halign: "left"
 								valign: "middle"
 								font_style: 'H6'
 								size_hint_x: 0.7
-							
-							MDRectangleFlatIconButton:
-								id: bt_exec_calibrate_load_r_zero
-								type: "large"
-								size_hint_x: 0.3
-								icon: "gauge"
-								text:"KALIBRASI"
-								text_color: "#EEEEEE"
-								md_bg_color: "#2CA02C"
-								font_style: 'H6'
-								on_press: root.exec_calibrate_load_r_zero()	
-								on_release: root.rel_calibrate_load_r_zero()			
-
-						MDBoxLayout:
-							orientation: "horizontal"
-							MDLabel:
-								text: "Kalibrasi Nilai 1"
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-								size_hint_x: 0.3
 
 							MDTextField:
-								id: tx_calibrate_load_r_value1
-								hint_text: "Berat Beban Kalibrasi"
+								id: tx_set_camera_left
+								hint_text: "IP Kamera Kiri"
 								halign: "left"
 								valign: "middle"
 								font_style: 'H6'
@@ -321,32 +164,31 @@
 								type: "number"
 								input_filter: 'int'
 								text_color_focus: "#4471C4"
-								on_text_validate: root.exec_calibrate_load_r_value1()
-							
+								on_text_validate: root.exec_set_camera_left()
+
 							MDRectangleFlatIconButton:
-								id: bt_exec_calibrate_load_r_value1
+								id: bt_exec_set_camera_left
 								type: "large"
 								size_hint_x: 0.3
-								icon: "gauge"
-								text:"KALIBRASI"
+								icon: "wrench"
+								text:"SET"
 								text_color: "#EEEEEE"
 								md_bg_color: "#2CA02C"
 								font_style: 'H6'
-								on_press: root.exec_calibrate_load_r_value1()
-								on_release: root.rel_calibrate_load_r_value1()
+								on_press: root.exec_set_camera_left()
 
 						MDBoxLayout:
 							orientation: "horizontal"
 							MDLabel:
-								text: "Kalibrasi Nilai 2"
+								text: "Kamera Kanan"
 								halign: "left"
 								valign: "middle"
 								font_style: 'H6'
-								size_hint_x: 0.3
+								size_hint_x: 0.7
 
 							MDTextField:
-								id: tx_calibrate_load_r_value2
-								hint_text: "Berat Beban Kalibrasi"
+								id: tx_set_camera_right
+								hint_text: "IP Kamera Kanan"
 								halign: "left"
 								valign: "middle"
 								font_style: 'H6'
@@ -354,31 +196,50 @@
 								type: "number"
 								input_filter: 'int'
 								text_color_focus: "#4471C4"
-								on_text_validate: root.exec_calibrate_load_r_value2()
-							
+								on_text_validate: root.exec_set_camera_right()
+
 							MDRectangleFlatIconButton:
-								id: bt_exec_calibrate_load_r_value2
+								id: bt_exec_set_camera_right
 								type: "large"
 								size_hint_x: 0.3
-								icon: "gauge"
-								text:"KALIBRASI"
+								icon: "wrench"
+								text:"SET"
 								text_color: "#EEEEEE"
 								md_bg_color: "#2CA02C"
 								font_style: 'H6'
-								on_press: root.exec_calibrate_load_r_value2()
-								on_release: root.rel_calibrate_load_r_value2()
+								on_press: root.exec_set_camera_right()		
 
-						MDRectangleFlatIconButton:
-							id: bt_exec_calibrate_load_r_stop
-							type: "large"
-							icon: "stop"
-							size_hint_x: 0.3
-							text:"STOP KALIBRASI"
-							text_color: "#EEEEEE"
-							md_bg_color: "#2CA02C"
-							font_style: 'H6'
-							on_press: root.exec_calibrate_load_r_stop()
-							on_release: root.rel_calibrate_load_r_stop()
+						MDBoxLayout:
+							orientation: "horizontal"
+							MDLabel:
+								text: "Kamera Belakang"
+								halign: "left"
+								valign: "middle"
+								font_style: 'H6'
+								size_hint_x: 0.7
+
+							MDTextField:
+								id: tx_set_camera_back
+								hint_text: "IP Kamera Belakang"
+								halign: "left"
+								valign: "middle"
+								font_style: 'H6'
+								size_hint_x: 0.4
+								type: "number"
+								input_filter: 'int'
+								text_color_focus: "#4471C4"
+								on_text_validate: root.exec_set_camera_back()
+
+							MDRectangleFlatIconButton:
+								id: bt_exec_set_camera_back
+								type: "large"
+								size_hint_x: 0.3
+								icon: "wrench"
+								text:"SET"
+								text_color: "#EEEEEE"
+								md_bg_color: "#2CA02C"
+								font_style: 'H6'
+								on_press: root.exec_set_camera_back()
 
 				MDBoxLayout:
 					orientation: "vertical"
@@ -390,218 +251,29 @@
 						orientation: "vertical"
 						padding:20
 						spacing:20
-
-						MDBoxLayout:
-							orientation: "horizontal"
-
-							MDLabel:
-								text: "KALIBRASI BRAKE KIRI"
-								halign: "center"
-								valign: "middle"
-								font_style: 'H6'
-								size_hint_x: 0.5
-
-							MDLabel:
-								text: "Realtime:"
-								halign: "right"
-								valign: "middle"
-								font_style: 'H2'
-								size_hint_x: 0.2
-
-							MDLabel:
-								id:lb_brake_l_val
-								text: "..."
-								halign: "center"
-								valign: "middle"
-								font_style: 'H2'
-								size_hint_x: 0.3
-
-						MDRectangleFlatIconButton:
-							id: bt_exec_calibrate_brake_l_start
-							type: "large"
-							icon: "play"
-							size_hint_x: 0.3
-							text:"MULAI KALIBRASI"
-							text_color: "#EEEEEE"
-							md_bg_color: "#2CA02C"
-							font_style: 'H6'
-							on_press: root.exec_calibrate_brake_l_start()
-							on_release: root.rel_calibrate_brake_l_start()
-
-						MDBoxLayout:
-							orientation: "horizontal"
-							MDLabel:
-								text: "Kalibrasi Nol"
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-								size_hint_x: 0.7
-							
-							MDRectangleFlatIconButton:
-								id: bt_exec_calibrate_brake_l_zero
-								type: "large"
-								size_hint_x: 0.3
-								icon: "gauge"
-								text:"KALIBRASI"
-								text_color: "#EEEEEE"
-								md_bg_color: "#2CA02C"
-								font_style: 'H6'
-								on_press: root.exec_calibrate_brake_l_zero()
-								on_release: root.rel_calibrate_brake_l_zero()				
-
-						MDBoxLayout:
-							orientation: "horizontal"
-							MDLabel:
-								text: "Kalibrasi Nilai 1"
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-								size_hint_x: 0.3
-
-							MDTextField:
-								id: tx_calibrate_brake_l_value1
-								hint_text: "Berat Beban Kalibrasi"
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-								size_hint_x: 0.4
-								type: "number"
-								input_filter: 'int'
-								text_color_focus: "#4471C4"
-								on_text_validate: root.exec_calibrate_brake_l_value1()								
-							
-							MDRectangleFlatIconButton:
-								id: bt_exec_calibrate_brake_l_value1
-								type: "large"
-								size_hint_x: 0.3
-								icon: "gauge"
-								text:"KALIBRASI"
-								text_color: "#EEEEEE"
-								md_bg_color: "#2CA02C"
-								font_style: 'H6'
-								on_press: root.exec_calibrate_brake_l_value1()
-								on_release: root.rel_calibrate_brake_l_value1()	
-
-						MDBoxLayout:
-							orientation: "horizontal"
-							MDLabel:
-								text: "Kalibrasi Nilai 2"
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-								size_hint_x: 0.3
-
-							MDTextField:
-								id: tx_calibrate_brake_l_value2
-								hint_text: "Berat Beban Kalibrasi"
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-								size_hint_x: 0.4
-								type: "number"
-								input_filter: 'int'
-								text_color_focus: "#4471C4"
-								on_text_validate: root.exec_calibrate_brake_l_value2()								
-							
-							MDRectangleFlatIconButton:
-								id: bt_exec_calibrate_brake_l_value2
-								type: "large"
-								size_hint_x: 0.3
-								icon: "gauge"
-								text:"KALIBRASI"
-								text_color: "#EEEEEE"
-								md_bg_color: "#2CA02C"
-								font_style: 'H6'
-								on_press: root.exec_calibrate_brake_l_value2()
-								on_release: root.rel_calibrate_brake_l_value2()
-
-						MDRectangleFlatIconButton:
-							id: bt_exec_calibrate_brake_l_stop
-							type: "large"
-							icon: "stop"
-							size_hint_x: 0.3
-							text:"STOP KALIBRASI"
-							text_color: "#EEEEEE"
-							md_bg_color: "#2CA02C"
-							font_style: 'H6'
-							on_press: root.exec_calibrate_brake_l_stop()
-							on_release: root.rel_calibrate_brake_l_stop()
-
-					MDBoxLayout:
-						orientation: "vertical"
-						padding:20
-						spacing:20
 						
 						MDBoxLayout:
 							orientation: "horizontal"
 
 							MDLabel:
-								text: "KALIBRASI BRAKE KANAN"
+								text: "SETTING KAMERA KOLONG"
 								halign: "center"
 								valign: "middle"
 								font_style: 'H6'
 								size_hint_x: 0.5
 
-							MDLabel:
-								text: "Realtime:"
-								halign: "right"
-								valign: "middle"
-								font_style: 'H2'
-								size_hint_x: 0.2
-
-							MDLabel:
-								id:lb_brake_r_val
-								text: "..."
-								halign: "center"
-								valign: "middle"
-								font_style: 'H2'
-								size_hint_x: 0.3
-
-						MDRectangleFlatIconButton:
-							id: bt_exec_calibrate_brake_r_start
-							type: "large"
-							icon: "play"
-							size_hint_x: 0.3
-							text:"MULAI KALIBRASI"
-							text_color: "#EEEEEE"
-							md_bg_color: "#2CA02C"
-							font_style: 'H6'
-							on_press: root.exec_calibrate_brake_r_start()
-							on_release: root.rel_calibrate_brake_r_start()
-
 						MDBoxLayout:
 							orientation: "horizontal"
 							MDLabel:
-								text: "Kalibrasi Nol"
+								text: "Kamera Kolong Depan"
 								halign: "left"
 								valign: "middle"
 								font_style: 'H6'
 								size_hint_x: 0.7
-							
-							MDRectangleFlatIconButton:
-								id: bt_exec_calibrate_brake_r_zero
-								type: "large"
-								size_hint_x: 0.3
-								icon: "gauge"
-								text:"KALIBRASI"
-								text_color: "#EEEEEE"
-								md_bg_color: "#2CA02C"
-								font_style: 'H6'
-								on_press: root.exec_calibrate_brake_r_zero()
-								on_release: root.rel_calibrate_brake_r_zero()				
-
-						MDBoxLayout:
-							orientation: "horizontal"
-							MDLabel:
-								text: "Kalibrasi Nilai 1"
-								halign: "left"
-								valign: "middle"
-								font_style: 'H6'
-								size_hint_x: 0.3
 
 							MDTextField:
-								id: tx_calibrate_brake_r_value1
-								hint_text: "Berat Beban Kalibrasi"
+								id: tx_set_camera_pit_front
+								hint_text: "IP Kamera Kolong Depan"
 								halign: "left"
 								valign: "middle"
 								font_style: 'H6'
@@ -609,32 +281,31 @@
 								type: "number"
 								input_filter: 'int'
 								text_color_focus: "#4471C4"
-								on_text_validate: root.exec_calibrate_brake_r_value1()								
-							
+								on_text_validate: root.exec_set_camera_pit_front()	
+
 							MDRectangleFlatIconButton:
-								id: bt_exec_calibrate_brake_r_value1
+								id: bt_exec_set_camera_pit_front
 								type: "large"
 								size_hint_x: 0.3
-								icon: "gauge"
-								text:"KALIBRASI"
+								icon: "wrench"
+								text:"SET"
 								text_color: "#EEEEEE"
 								md_bg_color: "#2CA02C"
 								font_style: 'H6'
-								on_press: root.exec_calibrate_brake_r_value1()
-								on_release: root.rel_calibrate_brake_r_value1()
+								on_press: root.exec_set_camera_pit_front()		
 
 						MDBoxLayout:
 							orientation: "horizontal"
 							MDLabel:
-								text: "Kalibrasi Nilai 2"
+								text: "Kamera Kolong Kiri"
 								halign: "left"
 								valign: "middle"
 								font_style: 'H6'
-								size_hint_x: 0.3
+								size_hint_x: 0.7
 
 							MDTextField:
-								id: tx_calibrate_brake_r_value2
-								hint_text: "Berat Beban Kalibrasi"
+								id: tx_set_camera_pit_left
+								hint_text: "IP Kamera Kolong Kiri"
 								halign: "left"
 								valign: "middle"
 								font_style: 'H6'
@@ -642,58 +313,87 @@
 								type: "number"
 								input_filter: 'int'
 								text_color_focus: "#4471C4"
-								on_text_validate: root.exec_calibrate_brake_r_value2()								
-							
+								on_text_validate: root.exec_set_camera_pit_left()
+
 							MDRectangleFlatIconButton:
-								id: bt_exec_calibrate_brake_r_value2
+								id: bt_exec_set_camera_pit_left
 								type: "large"
 								size_hint_x: 0.3
-								icon: "gauge"
-								text:"KALIBRASI"
+								icon: "wrench"
+								text:"SET"
 								text_color: "#EEEEEE"
 								md_bg_color: "#2CA02C"
 								font_style: 'H6'
-								on_press: root.exec_calibrate_brake_r_value2()
-								on_release: root.rel_calibrate_brake_r_value2()
+								on_press: root.exec_set_camera_pit_left()
 
-						MDRectangleFlatIconButton:
-							id: bt_exec_calibrate_brake_r_stop
-							type: "large"
-							icon: "stop"
-							size_hint_x: 0.3
-							text:"STOP KALIBRASI"
-							text_color: "#EEEEEE"
-							md_bg_color: "#2CA02C"
-							font_style: 'H6'
-							on_press: root.exec_calibrate_brake_r_stop()
-							on_release: root.rel_calibrate_brake_r_stop()
+						MDBoxLayout:
+							orientation: "horizontal"
+							MDLabel:
+								text: "Kamera Kolong Kanan"
+								halign: "left"
+								valign: "middle"
+								font_style: 'H6'
+								size_hint_x: 0.7
+
+							MDTextField:
+								id: tx_set_camera_pit_right
+								hint_text: "IP Kamera Kolong Kanan"
+								halign: "left"
+								valign: "middle"
+								font_style: 'H6'
+								size_hint_x: 0.4
+								type: "number"
+								input_filter: 'int'
+								text_color_focus: "#4471C4"
+								on_text_validate: root.exec_set_camera_pit_right()
+
+							MDRectangleFlatIconButton:
+								id: bt_exec_set_camera_pit_right
+								type: "large"
+								size_hint_x: 0.3
+								icon: "wrench"
+								text:"SET"
+								text_color: "#EEEEEE"
+								md_bg_color: "#2CA02C"
+								font_style: 'H6'
+								on_press: root.exec_set_camera_pit_right()		
+
+						MDBoxLayout:
+							orientation: "horizontal"
+							MDLabel:
+								text: "Kamera Kolong Belakang"
+								halign: "left"
+								valign: "middle"
+								font_style: 'H6'
+								size_hint_x: 0.7
+
+							MDTextField:
+								id: tx_set_camera_pit_back
+								hint_text: "IP Kamera Kolong Belakang"
+								halign: "left"
+								valign: "middle"
+								font_style: 'H6'
+								size_hint_x: 0.4
+								type: "number"
+								input_filter: 'int'
+								text_color_focus: "#4471C4"
+								on_text_validate: root.exec_set_camera_pit_back()
+
+							MDRectangleFlatIconButton:
+								id: bt_exec_set_camera_pit_back
+								type: "large"
+								size_hint_x: 0.3
+								icon: "wrench"
+								text:"SET"
+								text_color: "#EEEEEE"
+								md_bg_color: "#2CA02C"
+								font_style: 'H6'
+								on_press: root.exec_set_camera_pit_back()
 
 			MDBoxLayout:
 				orientation: "horizontal"
 				spacing: 20
 				size_hint_y: 0.02
-
-				MDRectangleFlatIconButton:
-					id: bt_motor_brake_on
-					text: "MOTOR ON"
-					icon: "play"
-					theme_text_color: "Custom"
-					text_color: "#EEEEEE"
-					md_bg_color: "#FF2A2A"
-					size_hint_x: 0.3
-					on_press: root.exec_motor_brake_on()
-					on_release: root.rel_motor_brake_on()
-
-				MDRectangleFlatIconButton:
-					id: bt_motor_brake_off
-					text: "MOTOR OFF"
-					icon: "stop"
-					theme_text_color: "Custom"
-					text_color: "#EEEEEE"
-					md_bg_color: "#2CA02C"
-					size_hint_x: 0.3
-					on_press: root.exec_motor_brake_off()
-					on_release: root.rel_motor_brake_off()
 					
 				MDRectangleFlatIconButton:
 					id: bt_back
