@@ -2262,7 +2262,7 @@ class ScreenInspectDimension(MDScreen):
 
         try:
             tb_uji = mydb.cursor()
-            tb_uji.execute(f"SELECT id_uji FROM {TB_UJI} WHERE nopol = '{dt_no_pol}' AND kode_kelompok_uji = 'V1' ORDER BY id DESC LIMIT 1")
+            tb_uji.execute(f"SELECT id_uji FROM {TB_UJI} WHERE nopol = '{dt_no_pol}' AND kode_kelompok_uji = 'V1' ORDER BY id_uji DESC LIMIT 1")
             result_tb_uji = tb_uji.fetchone()
             mydb.commit()
             id_uji = result_tb_uji[0]
@@ -2273,7 +2273,7 @@ class ScreenInspectDimension(MDScreen):
                 comment_subkomponen_uji = self.ids[f'tx_comment{i}'].text
 
                 mycursor = mydb.cursor()
-                sql = f"INSERT INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, komentar) VALUES ('{id_uji}', '{flags_subkomponen_uji[i]}','{dt_selected_kode_komponen_uji}','{kode_subkomponen_uji}','{comment_subkomponen_uji}')"
+                sql = f"INSERT INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES ('{id_uji}', '{flags_subkomponen_uji[i]}','{dt_selected_kode_komponen_uji}','{kode_subkomponen_uji}','{comment_subkomponen_uji}')"
                 mycursor.execute(sql)
                 mydb.commit()
 
@@ -2576,7 +2576,7 @@ class ScreenInspectVisual(MDScreen):
 
         try:
             tb_uji = mydb.cursor()
-            tb_uji.execute(f"SELECT id_uji FROM {TB_UJI} WHERE nopol = '{dt_no_pol}' AND kode_kelompok_uji = 'V1' ORDER BY id DESC LIMIT 1")
+            tb_uji.execute(f"SELECT id_uji FROM {TB_UJI} WHERE nopol = '{dt_no_pol}' AND kode_kelompok_uji = 'V1' ORDER BY id_uji DESC LIMIT 1")
             result_tb_uji = tb_uji.fetchone()
             mydb.commit()
             id_uji = result_tb_uji[0]
@@ -2587,7 +2587,7 @@ class ScreenInspectVisual(MDScreen):
                 comment_subkomponen_uji = self.ids[f'tx_comment{i}'].text
 
                 mycursor = mydb.cursor()
-                sql = f"INSERT INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, komentar) VALUES ('{id_uji}', '{flags_subkomponen_uji[i]}','{dt_selected_kode_komponen_uji}','{kode_subkomponen_uji}','{comment_subkomponen_uji}')"
+                sql = f"INSERT INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES ('{id_uji}', '{flags_subkomponen_uji[i]}','{dt_selected_kode_komponen_uji}','{kode_subkomponen_uji}','{comment_subkomponen_uji}')"
                 mycursor.execute(sql)
                 mydb.commit()
 
@@ -2891,7 +2891,7 @@ class ScreenInspectVisual2(MDScreen):
 
         try:
             tb_uji = mydb.cursor()
-            tb_uji.execute(f"SELECT id_uji FROM {TB_UJI} WHERE nopol = '{dt_no_pol}' AND kode_kelompok_uji = 'V1' ORDER BY id DESC LIMIT 1")
+            tb_uji.execute(f"SELECT id_uji FROM {TB_UJI} WHERE nopol = '{dt_no_pol}' AND kode_kelompok_uji = 'V1' ORDER BY id_uji DESC LIMIT 1")
             result_tb_uji = tb_uji.fetchone()
             mydb.commit()
             id_uji = result_tb_uji[0]
@@ -2902,7 +2902,7 @@ class ScreenInspectVisual2(MDScreen):
                 comment_subkomponen_uji = self.ids[f'tx_comment{i}'].text
 
                 mycursor = mydb.cursor()
-                sql = f"INSERT INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, komentar) VALUES ('{id_uji}', '{flags_subkomponen_uji[i]}','{dt_selected_kode_komponen_uji}','{kode_subkomponen_uji}','{comment_subkomponen_uji}')"
+                sql = f"INSERT INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES ('{id_uji}', '{flags_subkomponen_uji[i]}','{dt_selected_kode_komponen_uji}','{kode_subkomponen_uji}','{comment_subkomponen_uji}')"
                 mycursor.execute(sql)
                 mydb.commit()
 
@@ -3208,7 +3208,7 @@ class ScreenInspectPit(MDScreen):
 
         try:
             tb_uji = mydb.cursor()
-            tb_uji.execute(f"SELECT id_uji FROM {TB_UJI} WHERE nopol = '{dt_no_pol}' AND kode_kelompok_uji = 'V1' ORDER BY id DESC LIMIT 1")
+            tb_uji.execute(f"SELECT id_uji FROM {TB_UJI} WHERE nopol = '{dt_no_pol}' AND kode_kelompok_uji = 'V1' ORDER BY id_uji DESC LIMIT 1")
             result_tb_uji = tb_uji.fetchone()
             mydb.commit()
             id_uji = result_tb_uji[0]
@@ -3219,7 +3219,7 @@ class ScreenInspectPit(MDScreen):
                 comment_subkomponen_uji = self.ids[f'tx_comment{i}'].text
 
                 mycursor = mydb.cursor()
-                sql = f"INSERT INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, komentar) VALUES ('{id_uji}', '{flags_subkomponen_uji[i]}','{dt_selected_kode_komponen_uji}','{kode_subkomponen_uji}','{comment_subkomponen_uji}')"
+                sql = f"INSERT INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES ('{id_uji}', '{flags_subkomponen_uji[i]}','{dt_selected_kode_komponen_uji}','{kode_subkomponen_uji}','{comment_subkomponen_uji}')"
                 mycursor.execute(sql)
                 mydb.commit()
 
@@ -3537,7 +3537,6 @@ class ScreenRealtimePit(MDScreen):
         ssh.close()
 
     def exec_save(self):
-        global mydb
         global dt_no_antri, dt_sts_uji, dt_no_pol, dt_selected_camera
         
         try:
