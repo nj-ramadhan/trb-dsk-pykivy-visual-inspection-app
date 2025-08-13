@@ -3377,18 +3377,47 @@ class ScreenRealtimeCctv(MDScreen):
         global dt_no_antri, dt_sts_uji, dt_no_pol, dt_selected_camera
         
         try:
-            today = str(time.strftime("%Y-%m-%d", time.localtime()))
-            local_path = f'assets/images/{dt_no_pol}-{dt_selected_camera + 1}.jpg'
-            upload_dir_path = f'/var/www/system/storage/app/capture/{today}/{dt_sts_uji}-{dt_no_antri}/{dt_no_pol}-{dt_selected_camera + 1}.jpg'
+            today = time.strftime("%Y-%m-%d", time.localtime())
+            file_name = f'assets/images/{dt_no_pol}-{dt_selected_camera + 1}.jpg'
+            local_path = os.path.join(application_path, file_name)
+            
+            upload_dir_path = f'/var/www/system/storage/app/capture/{today}/{dt_sts_uji}-{dt_no_antri}/{dt_no_pol}-pit-{dt_selected_camera + 1}.jpg'
+            
+            # Ensure the local directory exists
+            local_dir = os.path.dirname(local_path)
+            os.makedirs(local_dir, exist_ok=True)  # Creates assets/images if needed
 
             # Resize to 600x600 before saving
             resized_img = cv2.resize(self.image_cctv, (600, 600))
             cv2.imwrite(local_path, resized_img)
             self.sftp_upload_file(local_path, upload_dir_path)
             toast(f'Berhasil menyimpan gambar ke server')
-            self.open_screen_menu()
+
         except Exception as e:
             toast_msg = f'Gagal Menyimpan Gambar ke Server'
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
+
+        try:
+            now = str(time.strftime("%Y-%m-%d %H:%M:%s", time.localtime()))
+            image_filename = f'{dt_no_pol}-{dt_selected_camera + 1}.jpg'
+
+            tb_image_kendaraan = mydb.cursor()
+            tb_image_kendaraan.execute(f"SELECT id FROM {TB_DATA_IMAGE} ORDER BY id DESC LIMIT 1")
+            result_tb_image_kendaraan = tb_image_kendaraan.fetchone()
+            mydb.commit()
+            last_id = result_tb_image_kendaraan[0]
+
+            mycursor = mydb.cursor()
+            if(dt_selected_camera == 0):     
+                sql = f"UPDATE {TB_DATA_IMAGE} SET tgl_capture = '{now}', gambar = '{image_filename}' WHERE nopol = '{dt_no_pol}' AND id = '{last_id}' "
+            else:
+                sql = f"UPDATE {TB_DATA_IMAGE} SET tgl_capture{dt_selected_camera + 1} = '{now}', gambar{dt_selected_camera + 1} = '{image_filename}' WHERE nopol = '{dt_no_pol}' AND id = '{last_id}' "
+            mycursor.execute(sql)
+            mydb.commit()
+
+        except Exception as e:
+            toast_msg = f'Gagal Menyimpan Data Gambar ke Database Tabel Data Image'
             toast(toast_msg)
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
@@ -3540,10 +3569,16 @@ class ScreenRealtimePit(MDScreen):
         global dt_no_antri, dt_sts_uji, dt_no_pol, dt_selected_camera
         
         try:
-            today = str(time.strftime("%Y-%m-%d", time.localtime()))
-            local_path = f'assets/images/{dt_no_pol}-{dt_selected_camera + 1}.jpg'
+            today = time.strftime("%Y-%m-%d", time.localtime())
+            file_name = f'assets/images/{dt_no_pol}-{dt_selected_camera + 1}.jpg'
+            local_path = os.path.join(application_path, file_name)
+            
             upload_dir_path = f'/var/www/system/storage/app/capture/{today}/{dt_sts_uji}-{dt_no_antri}/{dt_no_pol}-pit-{dt_selected_camera + 1}.jpg'
             
+            # Ensure the local directory exists
+            local_dir = os.path.dirname(local_path)
+            os.makedirs(local_dir, exist_ok=True)  # Creates assets/images if needed
+
             # Resize to 600x600 before saving
             resized_img = cv2.resize(self.image_cctv, (600, 600))
             cv2.imwrite(local_path, resized_img)
@@ -3553,7 +3588,7 @@ class ScreenRealtimePit(MDScreen):
         except Exception as e:
             toast_msg = f'Gagal Menyimpan Gambar ke Server'
             toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}")  
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
 
         try:
             now = str(time.strftime("%Y-%m-%d %H:%M:%s", time.localtime()))
@@ -3569,12 +3604,12 @@ class ScreenRealtimePit(MDScreen):
             if(dt_selected_camera == 0):     
                 sql = f"UPDATE {TB_DATA_IMAGE} SET tgl_capture = '{now}', gambar = '{image_filename}' WHERE nopol = '{dt_no_pol}' AND id = '{last_id}' "
             else:
-                sql = f"UPDATE {TB_DATA_IMAGE} SET tgl_capture{dt_selected_camera + 1} = '{now}', gambar{dt_selected_camera + 1} = '{image_filename}' WHERE nopol = '{dt_no_pol}' AND id = '{last_id}' "
+                sql = f"UPDATE {TB_DATA_IMAGE} SET tgl_capture{dt_selected_camera + 5} = '{now}', gambar{dt_selected_camera + 5} = '{image_filename}' WHERE nopol = '{dt_no_pol}' AND id = '{last_id}' "
             mycursor.execute(sql)
             mydb.commit()
 
         except Exception as e:
-            toast_msg = f'Gagal Menyimpan Gambar ke Server'
+            toast_msg = f'Gagal Menyimpan Data Gambar ke Database Tabel Data Image'
             toast(toast_msg)
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
