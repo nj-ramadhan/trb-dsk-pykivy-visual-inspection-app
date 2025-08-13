@@ -3352,6 +3352,24 @@ class ScreenRealtimeCctv(MDScreen):
         # first crop image then scale
         img_cropped = img[y1:y2, x1:x2]
         return cv2.resize(img_cropped, None, fx=zoom_factor, fy=zoom_factor)
+
+    def center_crop(self, img, crop_width=600, crop_height=600):
+        h, w = img.shape[:2]
+        
+        # Compute center
+        center_y, center_x = h // 2, w // 2
+        
+        # Compute crop boundaries
+        start_x = max(0, center_x - crop_width // 2)
+        start_y = max(0, center_y - crop_height // 2)
+        end_x = start_x + crop_width
+        end_y = start_y + crop_height
+
+        # Ensure we don't go out of bounds
+        if end_x > w or end_y > h:
+            raise ValueError(f"Cannot crop {crop_width}x{crop_height} from image of size {w}x{h}. Image too small.")
+
+        return img[start_y:end_y, start_x:end_x]
     
     def sftp_upload_file(self, local_path, remote_path):
         ssh = paramiko.SSHClient()
@@ -3395,17 +3413,22 @@ class ScreenRealtimeCctv(MDScreen):
             if not os.access(images_dir, os.W_OK):
                 raise Exception(f"No write permission in: {images_dir}")
 
-            # Resize image before saving
-            resized_img = cv2.resize(self.image_cctv, (600, 600))
+            # Crop image before saving
+            try:
+                cropped_img = self.center_crop(self.image_cctv, 600, 600)
+            except ValueError as e:
+                toast(f"Gagal crop gambar: {e}")
+                Logger.error(f"{self.name}: {e}")
+                return
             
             # Write image
-            success = cv2.imwrite(local_path, resized_img)
+            success = cv2.imwrite(local_path, cropped_img)
             if not success:
                 raise Exception(f"cv2.imwrite failed. Check image data or disk space.")
 
             # Upload via SFTP
             today = time.strftime("%Y-%m-%d", time.localtime())
-            remote_path = f'/var/www/system/storage/app/capture/{today}/{dt_sts_uji}-{dt_no_antri}/{dt_no_pol}-dis-{dt_selected_camera + 1}.jpg'
+            remote_path = f'/var/www/system/storage/app/capture/{today}/{dt_sts_uji}-{dt_no_antri}/{dt_no_pol}-{dt_selected_camera + 1}.jpg'
             self.sftp_upload_file(local_path, remote_path)
 
             # Success toast
@@ -3417,21 +3440,27 @@ class ScreenRealtimeCctv(MDScreen):
             Logger.error(f"{self.name}: {toast_msg}, Error: {e}")
 
         try:
-            now = str(time.strftime("%Y-%m-%d %H:%M:%s", time.localtime()))
+            now = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
             image_filename = f'{dt_no_pol}-{dt_selected_camera + 1}.jpg'
 
             tb_image_kendaraan = mydb.cursor()
             tb_image_kendaraan.execute(f"SELECT id FROM {TB_DATA_IMAGE} ORDER BY id DESC LIMIT 1")
-            result_tb_image_kendaraan = tb_image_kendaraan.fetchone()
+            result = tb_image_kendaraan.fetchone()
             mydb.commit()
-            last_id = result_tb_image_kendaraan[0]
 
+            if not result:
+                raise Exception("No record found in database to update")
+            
+            last_id = result[0]
+
+            # ✅ Use parameterized query
             mycursor = mydb.cursor()
-            if(dt_selected_camera == 0):     
-                sql = f"UPDATE {TB_DATA_IMAGE} SET tgl_capture = '{now}', gambar = '{image_filename}' WHERE nopol = '{dt_no_pol}' AND id = '{last_id}' "
+            if dt_selected_camera == 0:
+                sql = f"UPDATE {TB_DATA_IMAGE} SET tgl_capture = %s, gambar = %s WHERE nopol = %s AND id = %s"
             else:
-                sql = f"UPDATE {TB_DATA_IMAGE} SET tgl_capture{dt_selected_camera + 1} = '{now}', gambar{dt_selected_camera + 1} = '{image_filename}' WHERE nopol = '{dt_no_pol}' AND id = '{last_id}' "
-            mycursor.execute(sql)
+                sql = f"UPDATE {TB_DATA_IMAGE} SET tgl_capture{dt_selected_camera + 1} = %s, gambar{dt_selected_camera + 1} = %s WHERE nopol = %s AND id = %s"
+
+            mycursor.execute(sql, (now, image_filename, dt_no_pol, last_id))
             mydb.commit()
 
         except Exception as e:
@@ -3562,7 +3591,25 @@ class ScreenRealtimePit(MDScreen):
         # first crop image then scale
         img_cropped = img[y1:y2, x1:x2]
         return cv2.resize(img_cropped, None, fx=zoom_factor, fy=zoom_factor)
-    
+
+    def center_crop(self, img, crop_width=600, crop_height=600):
+        h, w = img.shape[:2]
+        
+        # Compute center
+        center_y, center_x = h // 2, w // 2
+        
+        # Compute crop boundaries
+        start_x = max(0, center_x - crop_width // 2)
+        start_y = max(0, center_y - crop_height // 2)
+        end_x = start_x + crop_width
+        end_y = start_y + crop_height
+
+        # Ensure we don't go out of bounds
+        if end_x > w or end_y > h:
+            raise ValueError(f"Cannot crop {crop_width}x{crop_height} from image of size {w}x{h}. Image too small.")
+
+        return img[start_y:end_y, start_x:end_x]
+        
     def sftp_upload_file(self, local_path, remote_path):
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -3605,11 +3652,16 @@ class ScreenRealtimePit(MDScreen):
             if not os.access(images_dir, os.W_OK):
                 raise Exception(f"No write permission in: {images_dir}")
 
-            # Resize image before saving
-            resized_img = cv2.resize(self.image_cctv, (600, 600))
+            # Crop image before saving
+            try:
+                cropped_img = self.center_crop(self.image_cctv, 600, 600)
+            except ValueError as e:
+                toast(f"Gagal crop gambar: {e}")
+                Logger.error(f"{self.name}: {e}")
+                return
             
             # Write image
-            success = cv2.imwrite(local_path, resized_img)
+            success = cv2.imwrite(local_path, cropped_img)
             if not success:
                 raise Exception(f"cv2.imwrite failed. Check image data or disk space.")
 
@@ -3627,21 +3679,27 @@ class ScreenRealtimePit(MDScreen):
             Logger.error(f"{self.name}: {toast_msg}, Error: {e}")
 
         try:
-            now = str(time.strftime("%Y-%m-%d %H:%M:%s", time.localtime()))
+            now = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
             image_filename = f'{dt_no_pol}-{dt_selected_camera + 1}.jpg'
 
             tb_image_kendaraan = mydb.cursor()
             tb_image_kendaraan.execute(f"SELECT id FROM {TB_DATA_IMAGE} ORDER BY id DESC LIMIT 1")
-            result_tb_image_kendaraan = tb_image_kendaraan.fetchone()
+            result = tb_image_kendaraan.fetchone()
             mydb.commit()
-            last_id = result_tb_image_kendaraan[0]
 
+            if not result:
+                raise Exception("No record found in database to update")
+            
+            last_id = result[0]
+
+            # ✅ Use parameterized query
             mycursor = mydb.cursor()
-            if(dt_selected_camera == 0):     
-                sql = f"UPDATE {TB_DATA_IMAGE} SET tgl_capture = '{now}', gambar = '{image_filename}' WHERE nopol = '{dt_no_pol}' AND id = '{last_id}' "
+            if dt_selected_camera == 0:
+                sql = f"UPDATE {TB_DATA_IMAGE} SET tgl_capture = %s, gambar = %s WHERE nopol = %s AND id = %s"
             else:
-                sql = f"UPDATE {TB_DATA_IMAGE} SET tgl_capture{dt_selected_camera + 5} = '{now}', gambar{dt_selected_camera + 5} = '{image_filename}' WHERE nopol = '{dt_no_pol}' AND id = '{last_id}' "
-            mycursor.execute(sql)
+                sql = f"UPDATE {TB_DATA_IMAGE} SET tgl_capture{dt_selected_camera + 5} = %s, gambar{dt_selected_camera + 5} = %s WHERE nopol = %s AND id = %s"
+
+            mycursor.execute(sql, (now, image_filename, dt_no_pol, last_id))
             mydb.commit()
 
         except Exception as e:
