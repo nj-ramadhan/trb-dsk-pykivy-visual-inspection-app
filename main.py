@@ -3377,26 +3377,44 @@ class ScreenRealtimeCctv(MDScreen):
         global dt_no_antri, dt_sts_uji, dt_no_pol, dt_selected_camera
         
         try:
-            today = time.strftime("%Y-%m-%d", time.localtime())
-            file_name = f'assets/images/{dt_no_pol}-{dt_selected_camera + 1}.jpg'
-            local_path = os.path.join(application_path, file_name)
+            # Define base directory: C:\ProgramData\VIIMS
+            app_data_root = os.path.join(os.environ['PROGRAMDATA'], 'VIIMS')
             
-            upload_dir_path = f'/var/www/system/storage/app/capture/{today}/{dt_sts_uji}-{dt_no_antri}/{dt_no_pol}-pit-{dt_selected_camera + 1}.jpg'
+            # Define subdirectory: C:\ProgramData\VIIMS\assets\images
+            images_dir = os.path.join(app_data_root, 'assets', 'images')
             
-            # Ensure the local directory exists
-            local_dir = os.path.dirname(local_path)
-            os.makedirs(local_dir, exist_ok=True)  # Creates assets/images if needed
+            # Create filename: ABC-1.jpg
+            filename = f'{dt_no_pol}-{dt_selected_camera + 1}.jpg'
+            local_path = os.path.join(images_dir, filename)
+            
+            # ✅ Ensure the full directory path exists
+            os.makedirs(images_dir, exist_ok=True)
 
-            # Resize to 600x600 before saving
+            # Debug: Confirm path and permissions
+            print(f"[DEBUG] Saving image to: {local_path}")
+            if not os.access(images_dir, os.W_OK):
+                raise Exception(f"No write permission in: {images_dir}")
+
+            # Resize image before saving
             resized_img = cv2.resize(self.image_cctv, (600, 600))
-            cv2.imwrite(local_path, resized_img)
-            self.sftp_upload_file(local_path, upload_dir_path)
+            
+            # Write image
+            success = cv2.imwrite(local_path, resized_img)
+            if not success:
+                raise Exception(f"cv2.imwrite failed. Check image data or disk space.")
+
+            # Upload via SFTP
+            today = time.strftime("%Y-%m-%d", time.localtime())
+            remote_path = f'/var/www/system/storage/app/capture/{today}/{dt_sts_uji}-{dt_no_antri}/{dt_no_pol}-dis-{dt_selected_camera + 1}.jpg'
+            self.sftp_upload_file(local_path, remote_path)
+
+            # Success toast
             toast(f'Berhasil menyimpan gambar ke server')
 
         except Exception as e:
-            toast_msg = f'Gagal Menyimpan Gambar ke Server'
+            toast_msg = 'Gagal Menyimpan Gambar ke Server'
             toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}")
+            Logger.error(f"{self.name}: {toast_msg}, Error: {e}")
 
         try:
             now = str(time.strftime("%Y-%m-%d %H:%M:%s", time.localtime()))
@@ -3569,26 +3587,44 @@ class ScreenRealtimePit(MDScreen):
         global dt_no_antri, dt_sts_uji, dt_no_pol, dt_selected_camera
         
         try:
-            today = time.strftime("%Y-%m-%d", time.localtime())
-            file_name = f'assets/images/{dt_no_pol}-{dt_selected_camera + 1}.jpg'
-            local_path = os.path.join(application_path, file_name)
+            # Define base directory: C:\ProgramData\VIIMS
+            app_data_root = os.path.join(os.environ['PROGRAMDATA'], 'VIIMS')
             
-            upload_dir_path = f'/var/www/system/storage/app/capture/{today}/{dt_sts_uji}-{dt_no_antri}/{dt_no_pol}-pit-{dt_selected_camera + 1}.jpg'
+            # Define subdirectory: C:\ProgramData\VIIMS\assets\images
+            images_dir = os.path.join(app_data_root, 'assets', 'images')
             
-            # Ensure the local directory exists
-            local_dir = os.path.dirname(local_path)
-            os.makedirs(local_dir, exist_ok=True)  # Creates assets/images if needed
+            # Create filename: ABC-1.jpg
+            filename = f'{dt_no_pol}-{dt_selected_camera + 1}.jpg'
+            local_path = os.path.join(images_dir, filename)
+            
+            # ✅ Ensure the full directory path exists
+            os.makedirs(images_dir, exist_ok=True)
 
-            # Resize to 600x600 before saving
+            # Debug: Confirm path and permissions
+            print(f"[DEBUG] Saving image to: {local_path}")
+            if not os.access(images_dir, os.W_OK):
+                raise Exception(f"No write permission in: {images_dir}")
+
+            # Resize image before saving
             resized_img = cv2.resize(self.image_cctv, (600, 600))
-            cv2.imwrite(local_path, resized_img)
-            self.sftp_upload_file(local_path, upload_dir_path)
+            
+            # Write image
+            success = cv2.imwrite(local_path, resized_img)
+            if not success:
+                raise Exception(f"cv2.imwrite failed. Check image data or disk space.")
+
+            # Upload via SFTP
+            today = time.strftime("%Y-%m-%d", time.localtime())
+            remote_path = f'/var/www/system/storage/app/capture/{today}/{dt_sts_uji}-{dt_no_antri}/{dt_no_pol}-pit-{dt_selected_camera + 1}.jpg'
+            self.sftp_upload_file(local_path, remote_path)
+
+            # Success toast
             toast(f'Berhasil menyimpan gambar ke server')
 
         except Exception as e:
-            toast_msg = f'Gagal Menyimpan Gambar ke Server'
+            toast_msg = 'Gagal Menyimpan Gambar ke Server'
             toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}")
+            Logger.error(f"{self.name}: {toast_msg}, Error: {e}")
 
         try:
             now = str(time.strftime("%Y-%m-%d %H:%M:%s", time.localtime()))
