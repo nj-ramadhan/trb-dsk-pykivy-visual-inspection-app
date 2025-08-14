@@ -269,7 +269,7 @@ class ScreenMain(MDScreen):
         global flag_conn_stat, flag_gate, dt_selected_camera
         global dt_user, dt_foto_user, dt_id_pendaftaran, dt_no_antri, dt_no_pol, dt_no_uji, dt_sts_uji, dt_nama
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna, dt_chasis, dt_no_mesin
-        global dt_check_flag, dt_id_user, dt_verified_data, dt_verified_payment
+        global dt_visual_flag, dt_id_user, dt_verified_data, dt_verified_payment
         global dt_dash_antri, dt_dash_belum_uji, dt_dash_sudah_uji
         global dt_temp_nama, dt_temp_alamat, dt_temp_tgl_uji_terakhir, dt_temp_tgl_uji_habis, dt_temp_status_uji
         global dt_temp_id_merk, dt_temp_type, dt_temp_jenis_kendaraan, dt_temp_warna, dt_temp_chasis, dt_temp_mesin, dt_temp_bhn_bkr, dt_temp_jbb
@@ -278,7 +278,7 @@ class ScreenMain(MDScreen):
         flag_conn_stat = flag_gate = False
         dt_user = dt_foto_user = dt_no_antri = dt_no_pol = dt_no_uji = dt_sts_uji = dt_nama = ""
         dt_merk = dt_type = dt_jns_kend = dt_jbb = dt_bhn_bkr = dt_warna = dt_chasis = dt_no_mesin = ""
-        dt_check_flag = dt_verified_data = dt_verified_payment = 0
+        dt_visual_flag = dt_verified_data = dt_verified_payment = 0
         dt_id_pendaftaran = 0
         dt_id_user = 1
         dt_dash_antri = dt_dash_belum_uji = dt_dash_sudah_uji = 0
@@ -318,7 +318,7 @@ class ScreenMain(MDScreen):
         global flag_conn_stat, db_merk, db_bahan_bakar, db_warna
         global dt_user, dt_id_pendaftaran, dt_no_antri, dt_no_pol, dt_no_uji, dt_nama, dt_jns_kend
         global dt_chasis, dt_merk, dt_type, dt_no_mesin
-        global dt_check_flag, dt_id_user, dt_foto_user, dt_verified_data, dt_verified_payment
+        global dt_visual_flag, dt_id_user, dt_foto_user, dt_verified_data, dt_verified_payment
         global dt_dash_antri, dt_dash_belum_uji, dt_dash_sudah_uji
 
         try:
@@ -602,9 +602,9 @@ class ScreenMain(MDScreen):
 
     def check_temp_data(self):
         global mydb, db_antrian, db_merk, db_bahan_bakar, db_warna
-        global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama, dt_sts_uji
+        global dt_no_antri, dt_no_pol, dt_no_uji, dt_visual_flag, dt_nama, dt_sts_uji
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
-        global dt_check_flag, dt_id_user, dt_foto_user, dt_verified_data, dt_verified_payment
+        global dt_visual_flag, dt_id_user, dt_foto_user, dt_verified_data, dt_verified_payment
 
         mycursor = mydb.cursor()
         mycursor.execute(f"SELECT NOANTRIAN, NOUJI, NOPOL, STS_SPP FROM {TB_DAFTAR_BERKALA} WHERE NOANTRIAN = '{dt_no_antri}' ")
@@ -628,18 +628,6 @@ class ScreenMain(MDScreen):
             toast_msg = f'Gagal Berpindah ke Halaman Tambah Inspeksi Baru'
             toast(toast_msg)
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
-
-    def exec_start(self):
-        global dt_check_flag, dt_no_antri, dt_user
-
-        if (dt_user != ''):
-            self.check_temp_data()
-            if (int(dt_check_flag) == 0):
-                self.open_screen_menu()
-            else:
-                toast(f'No. Antrian {dt_no_antri} Sudah Melakukan Pengujian')
-        else:
-            toast(f'Silahkan Login Untuk Melakukan Pengujian')
             
     def exec_logout(self):
         global dt_user
@@ -672,10 +660,11 @@ class ScreenMain(MDScreen):
             Logger.error(f"{self.name}: {toast_msg}, {e}")  
 
     def exec_navigate_menu(self):
-        global dt_visual_flag, dt_brake_flag, dt_handbrake_flag, dt_no_antri, dt_user
+        global dt_visual_flag, dt_no_antri, dt_user
 
         if (dt_user != ''):
-            if (int(dt_visual_flag) == 0 or int(dt_brake_flag) == 0 or int(dt_handbrake_flag) == 0):
+            self.check_temp_data()
+            if (int(dt_visual_flag) == 0):
                 self.screen_manager.current = 'screen_menu'
             else:
                 toast_msg = f'No. Antrian {dt_no_antri} Sudah Tes'
@@ -1647,7 +1636,7 @@ class ScreenInspectId(MDScreen):
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
     def on_komponen_uji_row_press(self, instance):
-        global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
+        global dt_no_antri, dt_no_pol, dt_no_uji, dt_visual_flag, dt_nama
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
         global db_komponen_uji, selected_row_komponen_uji, flags_komponen_uji
 
@@ -1663,7 +1652,7 @@ class ScreenInspectId(MDScreen):
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
     def on_komponen_uji_bt_press(self, instance):
-        global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
+        global dt_no_antri, dt_no_pol, dt_no_uji, dt_visual_flag, dt_nama
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
         global db_komponen_uji, selected_row_komponen_uji, flags_komponen_uji
 
@@ -1688,7 +1677,7 @@ class ScreenInspectId(MDScreen):
             Logger.error(f"{self.name}: {toast_msg}, {e}")
 
     def on_subkomponen_uji_row_press(self, instance):
-        global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
+        global dt_no_antri, dt_no_pol, dt_no_uji, dt_visual_flag, dt_nama
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
         global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji, selected_row_komponen_uji
         global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
@@ -1958,7 +1947,7 @@ class ScreenInspectDimension(MDScreen):
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
     def on_komponen_uji_row_press(self, instance):
-        global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
+        global dt_no_antri, dt_no_pol, dt_no_uji, dt_visual_flag, dt_nama
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
         global db_komponen_uji, selected_row_komponen_uji
 
@@ -1974,7 +1963,7 @@ class ScreenInspectDimension(MDScreen):
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
     def on_komponen_uji_bt_press(self, instance):
-        global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
+        global dt_no_antri, dt_no_pol, dt_no_uji, dt_visual_flag, dt_nama
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
         global db_komponen_uji, selected_row_komponen_uji, flags_komponen_uji
 
@@ -1999,7 +1988,7 @@ class ScreenInspectDimension(MDScreen):
             Logger.error(f"{self.name}: {toast_msg}, {e}")
 
     def on_subkomponen_uji_row_press(self, instance):
-        global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
+        global dt_no_antri, dt_no_pol, dt_no_uji, dt_visual_flag, dt_nama
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
         global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji, selected_row_komponen_uji
         global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
@@ -2321,7 +2310,7 @@ class ScreenInspectVisual(MDScreen):
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
     def on_komponen_uji_row_press(self, instance):
-        global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
+        global dt_no_antri, dt_no_pol, dt_no_uji, dt_visual_flag, dt_nama
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
         global db_komponen_uji, selected_row_komponen_uji
 
@@ -2337,7 +2326,7 @@ class ScreenInspectVisual(MDScreen):
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
     def on_komponen_uji_bt_press(self, instance):
-        global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
+        global dt_no_antri, dt_no_pol, dt_no_uji, dt_visual_flag, dt_nama
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
         global db_komponen_uji, selected_row_komponen_uji, flags_komponen_uji
 
@@ -2362,7 +2351,7 @@ class ScreenInspectVisual(MDScreen):
             Logger.error(f"{self.name}: {toast_msg}, {e}")
 
     def on_subkomponen_uji_row_press(self, instance):
-        global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
+        global dt_no_antri, dt_no_pol, dt_no_uji, dt_visual_flag, dt_nama
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
         global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji, selected_row_komponen_uji
         global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
@@ -2635,7 +2624,7 @@ class ScreenInspectVisual2(MDScreen):
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
     def on_komponen_uji_row_press(self, instance):
-        global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
+        global dt_no_antri, dt_no_pol, dt_no_uji, dt_visual_flag, dt_nama
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
         global db_komponen_uji, selected_row_komponen_uji
 
@@ -2651,7 +2640,7 @@ class ScreenInspectVisual2(MDScreen):
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
     def on_komponen_uji_bt_press(self, instance):
-        global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
+        global dt_no_antri, dt_no_pol, dt_no_uji, dt_visual_flag, dt_nama
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
         global db_komponen_uji, selected_row_komponen_uji, flags_komponen_uji
 
@@ -2676,7 +2665,7 @@ class ScreenInspectVisual2(MDScreen):
             Logger.error(f"{self.name}: {toast_msg}, {e}")
 
     def on_subkomponen_uji_row_press(self, instance):
-        global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
+        global dt_no_antri, dt_no_pol, dt_no_uji, dt_visual_flag, dt_nama
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
         global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji, selected_row_komponen_uji
         global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
@@ -2950,7 +2939,7 @@ class ScreenInspectPit(MDScreen):
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
     def on_komponen_uji_row_press(self, instance):
-        global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
+        global dt_no_antri, dt_no_pol, dt_no_uji, dt_visual_flag, dt_nama
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
         global db_komponen_uji, selected_row_komponen_uji
 
@@ -2966,7 +2955,7 @@ class ScreenInspectPit(MDScreen):
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
     def on_komponen_uji_bt_press(self, instance):
-        global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
+        global dt_no_antri, dt_no_pol, dt_no_uji, dt_visual_flag, dt_nama
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
         global db_komponen_uji, selected_row_komponen_uji, flags_komponen_uji
 
@@ -2991,7 +2980,7 @@ class ScreenInspectPit(MDScreen):
             Logger.error(f"{self.name}: {toast_msg}, {e}")
 
     def on_subkomponen_uji_row_press(self, instance):
-        global dt_no_antri, dt_no_pol, dt_no_uji, dt_check_flag, dt_nama
+        global dt_no_antri, dt_no_pol, dt_no_uji, dt_visual_flag, dt_nama
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
         global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji, selected_row_komponen_uji
         global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
@@ -3397,32 +3386,35 @@ class ScreenRealtimeCctv(MDScreen):
         try:
             # Define base directory: C:\ProgramData\VIIMS
             app_data_root = os.path.join(os.environ['PROGRAMDATA'], 'VIIMS')
-            
             # Define subdirectory: C:\ProgramData\VIIMS\assets\images
             images_dir = os.path.join(app_data_root, 'assets', 'images')
-            
-            # Create filename: ABC-1.jpg
+            # Create filename
             filename = f'{dt_no_pol}-{dt_selected_camera + 1}.jpg'
             local_path = os.path.join(images_dir, filename)
-            
-            # ✅ Ensure the full directory path exists
+            # Ensure the full directory path exists
             os.makedirs(images_dir, exist_ok=True)
-
-            # Debug: Confirm path and permissions
-            print(f"[DEBUG] Saving image to: {local_path}")
             if not os.access(images_dir, os.W_OK):
                 raise Exception(f"No write permission in: {images_dir}")
 
-            # Crop image before saving
+            # Step 1: Get image dimensions
+            h, w = self.image_cctv.shape[:2]  # e.g., 1080 x 1280 (height, width)
+            # Desired crop size (larger than 600x600 before resize)
+            crop_size = 1000
+            # Check if image is big enough to crop 1000x1000
+            if h < crop_size or w < crop_size:
+                Logger.error(f"Gambar terlalu kecil untuk crop {crop_size}x{crop_size}")
+                return            
+            # Step 2: Center Crop image
             try:
-                cropped_img = self.center_crop(self.image_cctv, 600, 600)
+                cropped_img = self.center_crop(self.image_cctv, crop_size, crop_size)
             except ValueError as e:
-                toast(f"Gagal crop gambar: {e}")
                 Logger.error(f"{self.name}: {e}")
                 return
-            
-            # Write image
-            success = cv2.imwrite(local_path, cropped_img)
+            # Step 3: Resize cropped 1000x1000 → 600x600
+            resized_img = cv2.resize(cropped_img, (600, 600), interpolation=cv2.INTER_AREA)
+            # Step 4: Save with compression (JPEG quality 75)
+            encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 75]
+            success = cv2.imwrite(local_path, resized_img, encode_param)
             if not success:
                 raise Exception(f"cv2.imwrite failed. Check image data or disk space.")
 
@@ -3438,31 +3430,40 @@ class ScreenRealtimeCctv(MDScreen):
             toast_msg = 'Gagal Menyimpan Gambar ke Server'
             toast(toast_msg)
             Logger.error(f"{self.name}: {toast_msg}, Error: {e}")
-
         try:
             now = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
             image_filename = f'{dt_no_pol}-{dt_selected_camera + 1}.jpg'
 
             tb_image_kendaraan = mydb.cursor()
-            tb_image_kendaraan.execute(f"SELECT id FROM {TB_DATA_IMAGE} ORDER BY id DESC LIMIT 1")
+            tb_image_kendaraan.execute(f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = %s ORDER BY id DESC LIMIT 1", (dt_no_pol,))
             result = tb_image_kendaraan.fetchone()
-            mydb.commit()
-
             if not result:
                 raise Exception("No record found in database to update")
-            
             last_id = result[0]
 
-            # ✅ Use parameterized query
-            mycursor = mydb.cursor()
+            # Build dynamic column names
             if dt_selected_camera == 0:
-                sql = f"UPDATE {TB_DATA_IMAGE} SET tgl_capture = %s, gambar = %s WHERE nopol = %s AND id = %s"
+                tgl_col = "tgl_capture"
+                gambar_col = "gambar"
             else:
-                sql = f"UPDATE {TB_DATA_IMAGE} SET tgl_capture{dt_selected_camera + 1} = %s, gambar{dt_selected_camera + 1} = %s WHERE nopol = %s AND id = %s"
+                idx = dt_selected_camera + 1
+                tgl_col = f"tgl_capture{idx}"
+                gambar_col = f"gambar{idx}"
 
-            mycursor.execute(sql, (now, image_filename, dt_no_pol, last_id))
+            # Verify columns exist in table (optional but safe)
+            tb_image_kendaraan.execute(f"SHOW COLUMNS FROM {TB_DATA_IMAGE} LIKE '{tgl_col}'")
+            if tb_image_kendaraan.fetchone() is None:
+                raise Exception(f"Column '{tgl_col}' does not exist in {TB_DATA_IMAGE}")
+
+            # ✅ Safe UPDATE with parameterized query
+            sql = f"""
+                UPDATE {TB_DATA_IMAGE} 
+                SET `{tgl_col}` = %s, `{gambar_col}` = %s 
+                WHERE nopol = %s AND id = %s
+            """
+            tb_image_kendaraan.execute(sql, (now, image_filename, dt_no_pol, last_id))
             mydb.commit()
-
+            
         except Exception as e:
             toast_msg = f'Gagal Menyimpan Data Gambar ke Database Tabel Data Image'
             toast(toast_msg)
@@ -3629,39 +3630,42 @@ class ScreenRealtimePit(MDScreen):
             Logger.info(file)
         sftp.close()
         ssh.close()
-
+        
     def exec_save(self):
         global dt_no_antri, dt_sts_uji, dt_no_pol, dt_selected_camera
         
         try:
             # Define base directory: C:\ProgramData\VIIMS
             app_data_root = os.path.join(os.environ['PROGRAMDATA'], 'VIIMS')
-            
             # Define subdirectory: C:\ProgramData\VIIMS\assets\images
             images_dir = os.path.join(app_data_root, 'assets', 'images')
-            
-            # Create filename: ABC-1.jpg
+            # Create filename
             filename = f'{dt_no_pol}-{dt_selected_camera + 1}.jpg'
             local_path = os.path.join(images_dir, filename)
-            
-            # ✅ Ensure the full directory path exists
+            # Ensure the full directory path exists
             os.makedirs(images_dir, exist_ok=True)
-
-            # Debug: Confirm path and permissions
-            print(f"[DEBUG] Saving image to: {local_path}")
             if not os.access(images_dir, os.W_OK):
                 raise Exception(f"No write permission in: {images_dir}")
 
-            # Crop image before saving
+            # Step 1: Get image dimensions
+            h, w = self.image_cctv.shape[:2]  # e.g., 1080 x 1280 (height, width)
+            # Desired crop size (larger than 600x600 before resize)
+            crop_size = 1000
+            # Check if image is big enough to crop 1000x1000
+            if h < crop_size or w < crop_size:
+                Logger.error(f"Gambar terlalu kecil untuk crop {crop_size}x{crop_size}")
+                return            
+            # Step 2: Center Crop image
             try:
-                cropped_img = self.center_crop(self.image_cctv, 600, 600)
+                cropped_img = self.center_crop(self.image_cctv, crop_size, crop_size)
             except ValueError as e:
-                toast(f"Gagal crop gambar: {e}")
                 Logger.error(f"{self.name}: {e}")
                 return
-            
-            # Write image
-            success = cv2.imwrite(local_path, cropped_img)
+            # Step 3: Resize cropped 1000x1000 → 600x600
+            resized_img = cv2.resize(cropped_img, (600, 600), interpolation=cv2.INTER_AREA)
+            # Step 4: Save with compression (JPEG quality 75)
+            encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 75]
+            success = cv2.imwrite(local_path, resized_img, encode_param)
             if not success:
                 raise Exception(f"cv2.imwrite failed. Check image data or disk space.")
 
@@ -3683,23 +3687,29 @@ class ScreenRealtimePit(MDScreen):
             image_filename = f'{dt_no_pol}-{dt_selected_camera + 1}.jpg'
 
             tb_image_kendaraan = mydb.cursor()
-            tb_image_kendaraan.execute(f"SELECT id FROM {TB_DATA_IMAGE} ORDER BY id DESC LIMIT 1")
+            tb_image_kendaraan.execute(f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = %s ORDER BY id DESC LIMIT 1", (dt_no_pol,))
             result = tb_image_kendaraan.fetchone()
-            mydb.commit()
-
             if not result:
                 raise Exception("No record found in database to update")
-            
             last_id = result[0]
 
-            # ✅ Use parameterized query
-            mycursor = mydb.cursor()
-            if dt_selected_camera == 0:
-                sql = f"UPDATE {TB_DATA_IMAGE} SET tgl_capture = %s, gambar = %s WHERE nopol = %s AND id = %s"
-            else:
-                sql = f"UPDATE {TB_DATA_IMAGE} SET tgl_capture{dt_selected_camera + 5} = %s, gambar{dt_selected_camera + 5} = %s WHERE nopol = %s AND id = %s"
+            # Build dynamic column names
+            idx = dt_selected_camera + 5
+            tgl_col = f"tgl_capture{idx}"
+            gambar_col = f"gambar{idx}"
 
-            mycursor.execute(sql, (now, image_filename, dt_no_pol, last_id))
+            # Verify columns exist in table (optional but safe)
+            tb_image_kendaraan.execute(f"SHOW COLUMNS FROM {TB_DATA_IMAGE} LIKE '{tgl_col}'")
+            if tb_image_kendaraan.fetchone() is None:
+                raise Exception(f"Column '{tgl_col}' does not exist in {TB_DATA_IMAGE}")
+
+            # Safe UPDATE with parameterized query
+            sql = f"""
+                UPDATE {TB_DATA_IMAGE} 
+                SET `{tgl_col}` = %s, `{gambar_col}` = %s 
+                WHERE nopol = %s AND id = %s
+            """
+            tb_image_kendaraan.execute(sql, (now, image_filename, dt_no_pol, last_id))
             mydb.commit()
 
         except Exception as e:
