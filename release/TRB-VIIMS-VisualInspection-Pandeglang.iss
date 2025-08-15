@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "VIIMS - Visual Inspection Application - Pandeglang"
-#define MyAppVersion "1.19.250814"
+#define MyAppVersion "1.19.250815"
 #define MyAppPublisher "PT. Tiga Ratu Berkarya"
 #define MyAppExeName "TRB-VIIMS-VisualInspectionApp-Pandeglang.exe"
 #define MyAppAssocName "VIIMS - Visual Inspection Application Files - Pandeglang"
