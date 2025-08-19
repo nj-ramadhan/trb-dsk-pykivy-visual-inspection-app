@@ -1316,26 +1316,66 @@ class ScreenMenu(MDScreen):
         self.ids.lb_unit_address.text = LB_UNIT_ADDRESS
 
     def on_enter(self):
-        global db_antrian, db_merk, db_bahan_bakar, db_warna
+        global db_merk, db_bahan_bakar, db_warna
+        global dt_no_antri, dt_no_pol, dt_no_uji
         global dt_temp_nama, dt_temp_alamat, dt_temp_tgl_uji_terakhir, dt_temp_tgl_uji_habis, dt_temp_status_uji
         global dt_temp_id_merk, dt_temp_type, dt_temp_jenis_kendaraan, dt_temp_warna, dt_temp_chasis, dt_temp_mesin, dt_temp_bhn_bkr, dt_temp_jbb
+
+        merk_text = '-'
+        if dt_temp_id_merk is not None:
+            try:
+                indices = np.where(db_merk[:, 0].astype(str) == str(dt_temp_id_merk))[0]
+                if indices.size > 0:
+                    merk_text = db_merk[indices[0], 1]
+                else:
+                    merk_text = "ID Merk Tidak Valid"
+                    Logger.warning(f"Merk ID {dt_temp_id_merk} not found in db_merk.")
+            except Exception as e:
+                merk_text = "Error Merk"
+                Logger.error(f"Error processing merk: {e}")
+
+        warna_text = '-'
+        if dt_temp_warna is not None:
+            try:
+                indices = np.where(db_warna[:, 0].astype(str) == str(dt_temp_warna))[0]
+                if indices.size > 0:
+                    warna_text = db_warna[indices[0], 1]
+                else:
+                    warna_text = "ID Warna Tidak Valid"
+                    Logger.warning(f"Warna ID {dt_temp_warna} not found in db_warna.")
+            except Exception as e:
+                warna_text = "Error Warna"
+                Logger.error(f"Error processing warna: {e}")
+                
+        bahan_bakar_text = '-'
+        if dt_temp_bhn_bkr is not None:
+            try:
+                indices = np.where(db_bahan_bakar[:, 0].astype(str) == str(dt_temp_bhn_bkr))[0]
+                if indices.size > 0:
+                    bahan_bakar_text = db_bahan_bakar[indices[0], 1]
+                else:
+                    bahan_bakar_text = "ID B.Bakar Tidak Valid"
+                    Logger.warning(f"Bahan Bakar ID {dt_temp_bhn_bkr} not found in db_bahan_bakar.")
+            except Exception as e:
+                bahan_bakar_text = "Error B.Bakar"
+                Logger.error(f"Error processing bahan bakar: {e}")
 
         self.ids.lb_no_antrian.text = str(dt_no_antri)
         self.ids.lb_no_pol.text = str(dt_no_pol)
         self.ids.lb_no_uji.text = str(dt_no_uji)
-        self.ids.lb_temp_nama.text = str(dt_temp_nama)
-        self.ids.lb_temp_alamat.text = str(dt_temp_alamat)
+        self.ids.lb_temp_nama.text = str(dt_temp_nama) if dt_temp_nama else '-'
+        self.ids.lb_temp_alamat.text = str(dt_temp_alamat) if dt_temp_alamat else '-'
         self.ids.lb_temp_status_uji.text = 'Berkala' if dt_temp_status_uji == 'B' else 'Uji Ulang' if dt_temp_status_uji == 'U' else 'Baru' if dt_temp_status_uji == 'BR' else 'Numpang Uji' if dt_temp_status_uji == 'NB' else 'Mutasi'
         self.ids.lb_temp_tgl_uji_terakhir.text = f'{dt_temp_tgl_uji_terakhir}'
         self.ids.lb_temp_tgl_uji_habis.text = f'{dt_temp_tgl_uji_habis}'
-        self.ids.lb_temp_merk.text = '-' if dt_temp_id_merk == None else f"{db_merk[np.where(db_merk == dt_temp_id_merk)[0][0],1]}"
-        self.ids.lb_temp_type.text = str(dt_temp_type)
-        self.ids.lb_temp_jenis_kendaraan.text = str(dt_temp_jenis_kendaraan)
-        self.ids.lb_temp_warna.text = '-' if dt_temp_warna == None else f"{db_warna[np.where(db_warna == dt_temp_warna)[0][0],1]}"
-        self.ids.lb_temp_chasis.text = str(dt_temp_chasis)
-        self.ids.lb_temp_mesin.text = str(dt_temp_mesin)
-        self.ids.lb_temp_bahan_bakar.text = '-' if dt_temp_bhn_bkr == None else f"{db_bahan_bakar[np.where(db_bahan_bakar == dt_temp_bhn_bkr)[0][0],1]}"
-        self.ids.lb_temp_jbb.text = str(dt_temp_jbb)
+        self.ids.lb_temp_merk.text = merk_text
+        self.ids.lb_temp_type.text = str(dt_temp_type) if dt_temp_type else '-'
+        self.ids.lb_temp_jenis_kendaraan.text = str(dt_temp_jenis_kendaraan) if dt_temp_jenis_kendaraan else '-'
+        self.ids.lb_temp_warna.text = warna_text
+        self.ids.lb_temp_chasis.text = str(dt_temp_chasis) if dt_temp_chasis else '-'
+        self.ids.lb_temp_mesin.text = str(dt_temp_mesin) if dt_temp_mesin else '-'
+        self.ids.lb_temp_bahan_bakar.text = bahan_bakar_text
+        self.ids.lb_temp_jbb.text = str(dt_temp_jbb) if dt_temp_jbb else '-'
 
     def exec_verify_data(self):
         global dt_id_pendaftaran, dt_no_antri, dt_verified_data, dt_verified_payment
