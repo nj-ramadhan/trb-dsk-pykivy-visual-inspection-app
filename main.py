@@ -619,7 +619,7 @@ class ScreenMain(MDScreen):
             toast_msg = f'Sudah ada data untuk No. Antrian {dt_no_antri}, No. Uji {dt_no_uji}, Silahkan lanjutkan pengujian'
             toast(toast_msg)
             dt_verified_data = 1
-            dt_verified_payment = myresult[3]
+            dt_verified_payment = int(myresult[3])
 
     def exec_add_queue(self):
         try:
@@ -1385,15 +1385,15 @@ class ScreenMenu(MDScreen):
         global dt_temp_bhn_bkr, dt_temp_jbb, dt_temp_daya_motor, dt_temp_tgl_uji_terakhir, dt_temp_status_penerbitan, dt_temp_jenis_kendaraan, dt_temp_kode_jenis_kendaraan, dt_temp_kode_wilayah
 
         try:
-            mycursor = mydb.cursor()
-            sql = f"INSERT INTO {TB_DAFTAR_BERKALA} (ID, NOANTRIAN, NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, SUBJENIS_ID, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, DAYAMOTOR, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah, TGL_LASTUJI) VALUES ('{dt_id_pendaftaran}', '{dt_no_antri}', '{dt_temp_no_uji}','{dt_temp_no_uji_new}','{dt_temp_no_wilayah}','{dt_temp_no_kendaraan}','{dt_temp_no_plat}','{dt_temp_no_pol}','{dt_temp_nama}','{dt_temp_no_hp}','{dt_temp_alamat}','{dt_temp_id_izin}','{dt_temp_wilayah}','{dt_temp_provinsi}','{dt_temp_kabupaten_kota}','{dt_temp_kecamatan}','{dt_temp_id_merk}','{dt_temp_id_subjenis}','{dt_temp_type}','{dt_temp_tahun_buat}','{dt_temp_silinder}','{dt_temp_warna}','{dt_temp_chasis}','{dt_temp_mesin}','{dt_temp_warna_plat}','{dt_temp_bhn_bkr}','{dt_temp_jbb}','{dt_temp_daya_motor}','{dt_temp_status_penerbitan}','{dt_temp_jenis_kendaraan}','{dt_temp_kode_jenis_kendaraan}','{dt_temp_kode_wilayah}','{dt_temp_tgl_uji_terakhir}')"
-            mycursor.execute(sql)
-            mydb.commit()
-            dt_verified_data = 1
-            dt_verified_payment = 0
-            toast_msg = f'Berhasil Membuat Data Pengujian di Tabel Daftar Berkala'
-            toast(toast_msg)
-            self.exec_verify_payment()
+            if dt_verified_data == 0:
+                mycursor = mydb.cursor()
+                sql = f"INSERT INTO {TB_DAFTAR_BERKALA} (ID, NOANTRIAN, NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, SUBJENIS_ID, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, DAYAMOTOR, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah, TGL_LASTUJI) VALUES ('{dt_id_pendaftaran}', '{dt_no_antri}', '{dt_temp_no_uji}','{dt_temp_no_uji_new}','{dt_temp_no_wilayah}','{dt_temp_no_kendaraan}','{dt_temp_no_plat}','{dt_temp_no_pol}','{dt_temp_nama}','{dt_temp_no_hp}','{dt_temp_alamat}','{dt_temp_id_izin}','{dt_temp_wilayah}','{dt_temp_provinsi}','{dt_temp_kabupaten_kota}','{dt_temp_kecamatan}','{dt_temp_id_merk}','{dt_temp_id_subjenis}','{dt_temp_type}','{dt_temp_tahun_buat}','{dt_temp_silinder}','{dt_temp_warna}','{dt_temp_chasis}','{dt_temp_mesin}','{dt_temp_warna_plat}','{dt_temp_bhn_bkr}','{dt_temp_jbb}','{dt_temp_daya_motor}','{dt_temp_status_penerbitan}','{dt_temp_jenis_kendaraan}','{dt_temp_kode_jenis_kendaraan}','{dt_temp_kode_wilayah}','{dt_temp_tgl_uji_terakhir}')"
+                mycursor.execute(sql)
+                mydb.commit()
+                dt_verified_data = 1
+                toast_msg = f'Berhasil Membuat Data Pengujian di Tabel Daftar Berkala'
+                toast(toast_msg)
+                self.exec_verify_payment()
         except Exception as e:
             toast_msg = f'Gagal Membuat Tabel Daftar Berkala'
             toast(toast_msg)
@@ -1419,37 +1419,37 @@ class ScreenMenu(MDScreen):
             dt_verified_payment = 1
             toast_msg = f'Berhasil Memverifikasi Pembayaran'
             toast(toast_msg)
+
+            try:
+                today = str(time.strftime("%Y-%m-%d", time.localtime()))
+                make_dir_path = f'/var/www/system/storage/app/capture/{today}/{dt_sts_uji}-{dt_no_antri}'
+                self.sftp_make_dir(make_dir_path)
+
+            except Exception as e:
+                toast_msg = f'Gagal Menemukan Folder Remote'
+                toast(toast_msg)  
+                Logger.error(f"{self.name}: {toast_msg}, {e}") 
+
+            try:
+                mycursor = mydb.cursor()
+                sql = f"INSERT INTO {TB_DATA_IMAGE} (noantrian, nouji, NEW_NOUJI, nopol, idjeniskendaraan, kd_jeniskendaraan, kodewilayah, jbb, statusuji, statuspenerbitan, tgl_capture, trfstat) VALUES ('{dt_no_antri}','{dt_temp_no_uji}','{dt_temp_no_uji_new}','{dt_temp_no_pol}','{dt_temp_jenis_kendaraan}','{dt_temp_kode_jenis_kendaraan}','{dt_temp_kode_wilayah}','{dt_temp_jbb}','{dt_temp_status_uji}','{dt_temp_status_penerbitan}','{dt_tgl_baru_uji}','0')"
+                mycursor.execute(sql)
+                mydb.commit()
+
+            except Exception as e:
+                toast_msg = f'Gagal Menambahkan Data ke Tabel Image Kendaraan'
+                toast(toast_msg)
+                Logger.error(f"{self.name}: {toast_msg}, {e}") 
+
         except Exception as e:
             toast_msg = f'Gagal Memverifikasi Pembayaran'
             toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
-
-        try:
-            today = str(time.strftime("%Y-%m-%d", time.localtime()))
-            make_dir_path = f'/var/www/system/storage/app/capture/{today}/{dt_sts_uji}-{dt_no_antri}'
-            self.sftp_make_dir(make_dir_path)
-
-        except Exception as e:
-            toast_msg = f'Gagal Menemukan Folder Remote'
-            toast(toast_msg)  
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
-
-        try:
-            mycursor = mydb.cursor()
-            sql = f"INSERT INTO {TB_DATA_IMAGE} (noantrian, nouji, NEW_NOUJI, nopol, idjeniskendaraan, kd_jeniskendaraan, kodewilayah, jbb, statusuji, statuspenerbitan, tgl_capture) VALUES ('{dt_no_antri}','{dt_temp_no_uji}','{dt_temp_no_uji_new}','{dt_temp_no_pol}','{dt_temp_jenis_kendaraan}','{dt_temp_kode_jenis_kendaraan}','{dt_temp_kode_wilayah}','{dt_temp_jbb}','{dt_temp_status_uji}','{dt_temp_status_penerbitan}','{dt_tgl_baru_uji}')"
-            mycursor.execute(sql)
-            mydb.commit()
-
-        except Exception as e:
-            toast_msg = f'Gagal Menambahkan Data ke Tabel Image Kendaraan'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
 
         try:
             tb_image = mydb.cursor()
             tb_image.execute(f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = '{dt_no_pol}' ORDER BY id DESC LIMIT 1")
             result_tb_image = tb_image.fetchone()
-            mydb.commit()
             id_image = result_tb_image[0]
 
             array_kode_kelompok = np.array(['V1', 'V2', 'P2P3', 'P4'])
