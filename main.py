@@ -1,5 +1,6 @@
 import datetime
 import os, sys, time
+import threading
 
 if getattr(sys, 'frozen', False):
     application_path = os.path.dirname(sys.executable)
@@ -619,7 +620,7 @@ class ScreenMain(MDScreen):
             toast_msg = f'Sudah ada data untuk No. Antrian {dt_no_antri}, No. Uji {dt_no_uji}, Silahkan lanjutkan pengujian'
             toast(toast_msg)
             dt_verified_data = 1
-            dt_verified_payment = int(myresult[3])
+            dt_verified_payment = int(myresult[3]) if myresult[3] is not None else 0
 
     def exec_add_queue(self):
         try:
@@ -665,7 +666,8 @@ class ScreenMain(MDScreen):
 
         if (dt_user != ''):
             self.check_temp_data()
-            if (int(dt_visual_flag) == 0):
+            # if (int(dt_visual_flag) == 0):
+            if dt_visual_flag is None or int(dt_visual_flag) == 0: #dc
                 self.screen_manager.current = 'screen_menu'
             else:
                 toast_msg = f'No. Antrian {dt_no_antri} Sudah Tes'
@@ -1315,6 +1317,86 @@ class ScreenMenu(MDScreen):
         self.ids.lb_unit.text = LB_UNIT
         self.ids.lb_unit_address.text = LB_UNIT_ADDRESS
 
+    # def on_enter(self):
+    #     # Saat masuk ke layar ini, panggil fungsi untuk memulai pengambilan data di latar belakang
+    #     self.start_database_reload()
+        
+    # def start_database_reload(self):
+    #     """Memulai thread baru untuk memuat data dari database."""
+    #     # Tampilkan indikator loading jika perlu (opsional)
+    #     # self.ids.spinner.active = True 
+    #     threading.Thread(target=self._reload_data_thread).start()
+
+    # def _reload_data_thread(self):
+    #     """
+    #     Fungsi ini berjalan di background thread.
+    #     Tugasnya hanya mengambil data dari database.
+    #     """
+    #     global db_antrian, db_merk, db_bahan_bakar, db_warna, dt_dash_antri, dt_dash_belum_uji, dt_dash_sudah_uji
+
+    #     try:
+    #         # Pastikan koneksi DB dibuat di thread ini, bukan dibagi dari thread utama
+    #         mydb_thread = mysql.connector.connect(host=DB_HOST, user=DB_USER, password=DB_PASSWORD, database=DB_NAME)
+    #         cursor = mydb_thread.cursor()
+            
+    #         # --- Proses pengambilan data Anda (sama seperti di exec_reload_table) ---
+    #         cursor.execute(f"SELECT ID, DESCRIPTION FROM {TB_MERK}")
+    #         db_merk = np.array(cursor.fetchall())
+
+    #         cursor.execute(f"SELECT ID, DESCRIPTION FROM {TB_BAHAN_BAKAR}")
+    #         db_bahan_bakar = np.array(cursor.fetchall())
+            
+    #         cursor.execute(f"SELECT id_warna, nama FROM {TB_WARNA}")
+    #         db_warna = np.array(cursor.fetchall())
+
+    #         cursor.execute(f"SELECT COUNT(*) FROM {TB_DATA}")
+    #         result_count = cursor.fetchone()
+    #         dt_dash_antri = result_count[0] if result_count else 0
+            
+    #         cursor.execute(f"SELECT noantrian, nopol, ... FROM {TB_DATA} WHERE check_flag = 0") # Query lengkap Anda
+    #         result_antrian = cursor.fetchall()
+    #         db_antrian = np.array(result_antrian).T
+            
+    #         dt_dash_belum_uji = db_antrian.shape[1] if db_antrian.size > 0 else 0
+    #         dt_dash_sudah_uji = dt_dash_antri - dt_dash_belum_uji
+
+    #         # Data berhasil diambil, jadwalkan pembaruan UI di thread utama
+    #         Clock.schedule_once(lambda dt: self.update_ui_with_data())
+
+    #     except Exception as e:
+    #         Logger.error(f"ScreenMain: Gagal memuat data di background thread: {e}")
+    #         Clock.schedule_once(lambda dt: toast(f"Gagal memuat data: {e}"))
+    #     finally:
+    #         if 'mydb_thread' in locals() and mydb_thread.is_connected():
+    #             cursor.close()
+    #             mydb_thread.close()
+
+    # def update_ui_with_data(self):
+    #     """
+    #     Fungsi ini dipanggil di main thread untuk memperbarui widget UI.
+    #     Ini aman karena tidak ada operasi database di sini.
+    #     """
+    #     global db_antrian
+
+        
+    #     layout_list = self.ids.layout_list
+    #     layout_list.clear_widgets()
+
+    #     try:
+    #         if db_antrian.size == 0:
+    #             # Tampilkan pesan jika tidak ada antrian
+    #             layout_list.add_widget(MDLabel(text="Tidak ada antrian untuk hari ini.", halign="center"))
+    #             return
+
+    #         for i in range(db_antrian[0,:].size):
+    #             # --- Proses pembuatan widget MDCard Anda (sama seperti sebelumnya) ---
+    #             card = MDCard(...) # Buat MDCard seperti kode Anda sebelumnya
+    #             layout_list.add_widget(card)
+
+    #     except Exception as e:
+    #         toast('Gagal memperbaharui tampilan tabel')
+    #         Logger.error(f"ScreenMain: Gagal update UI: {e}")
+
     def on_enter(self):
         global db_merk, db_bahan_bakar, db_warna
         global dt_no_antri, dt_no_pol, dt_no_uji
@@ -1385,15 +1467,15 @@ class ScreenMenu(MDScreen):
         global dt_temp_bhn_bkr, dt_temp_jbb, dt_temp_daya_motor, dt_temp_tgl_uji_terakhir, dt_temp_status_penerbitan, dt_temp_jenis_kendaraan, dt_temp_kode_jenis_kendaraan, dt_temp_kode_wilayah
 
         try:
-            if dt_verified_data == 0:
-                mycursor = mydb.cursor()
-                sql = f"INSERT INTO {TB_DAFTAR_BERKALA} (ID, NOANTRIAN, NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, SUBJENIS_ID, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, DAYAMOTOR, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah, TGL_LASTUJI) VALUES ('{dt_id_pendaftaran}', '{dt_no_antri}', '{dt_temp_no_uji}','{dt_temp_no_uji_new}','{dt_temp_no_wilayah}','{dt_temp_no_kendaraan}','{dt_temp_no_plat}','{dt_temp_no_pol}','{dt_temp_nama}','{dt_temp_no_hp}','{dt_temp_alamat}','{dt_temp_id_izin}','{dt_temp_wilayah}','{dt_temp_provinsi}','{dt_temp_kabupaten_kota}','{dt_temp_kecamatan}','{dt_temp_id_merk}','{dt_temp_id_subjenis}','{dt_temp_type}','{dt_temp_tahun_buat}','{dt_temp_silinder}','{dt_temp_warna}','{dt_temp_chasis}','{dt_temp_mesin}','{dt_temp_warna_plat}','{dt_temp_bhn_bkr}','{dt_temp_jbb}','{dt_temp_daya_motor}','{dt_temp_status_penerbitan}','{dt_temp_jenis_kendaraan}','{dt_temp_kode_jenis_kendaraan}','{dt_temp_kode_wilayah}','{dt_temp_tgl_uji_terakhir}')"
-                mycursor.execute(sql)
-                mydb.commit()
-                dt_verified_data = 1
-                toast_msg = f'Berhasil Membuat Data Pengujian di Tabel Daftar Berkala'
-                toast(toast_msg)
-                self.exec_verify_payment()
+            mycursor = mydb.cursor()
+            sql = f"INSERT INTO {TB_DAFTAR_BERKALA} (ID, NOANTRIAN, NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, SUBJENIS_ID, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, DAYAMOTOR, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah, TGL_LASTUJI) VALUES ('{dt_id_pendaftaran}', '{dt_no_antri}', '{dt_temp_no_uji}','{dt_temp_no_uji_new}','{dt_temp_no_wilayah}','{dt_temp_no_kendaraan}','{dt_temp_no_plat}','{dt_temp_no_pol}','{dt_temp_nama}','{dt_temp_no_hp}','{dt_temp_alamat}','{dt_temp_id_izin}','{dt_temp_wilayah}','{dt_temp_provinsi}','{dt_temp_kabupaten_kota}','{dt_temp_kecamatan}','{dt_temp_id_merk}','{dt_temp_id_subjenis}','{dt_temp_type}','{dt_temp_tahun_buat}','{dt_temp_silinder}','{dt_temp_warna}','{dt_temp_chasis}','{dt_temp_mesin}','{dt_temp_warna_plat}','{dt_temp_bhn_bkr}','{dt_temp_jbb}','{dt_temp_daya_motor}','{dt_temp_status_penerbitan}','{dt_temp_jenis_kendaraan}','{dt_temp_kode_jenis_kendaraan}','{dt_temp_kode_wilayah}','{dt_temp_tgl_uji_terakhir}')"
+            mycursor.execute(sql)
+            mydb.commit()
+            dt_verified_data = 1
+            dt_verified_payment = 0
+            toast_msg = f'Berhasil Membuat Data Pengujian di Tabel Daftar Berkala'
+            toast(toast_msg)
+            self.exec_verify_payment()
         except Exception as e:
             toast_msg = f'Gagal Membuat Tabel Daftar Berkala'
             toast(toast_msg)
@@ -1419,32 +1501,34 @@ class ScreenMenu(MDScreen):
             dt_verified_payment = 1
             toast_msg = f'Berhasil Memverifikasi Pembayaran'
             toast(toast_msg)
-
-            try:
-                today = str(time.strftime("%Y-%m-%d", time.localtime()))
-                make_dir_path = f'/var/www/system/storage/app/capture/{today}/{dt_sts_uji}-{dt_no_antri}'
-                self.sftp_make_dir(make_dir_path)
-
-            except Exception as e:
-                toast_msg = f'Gagal Menemukan Folder Remote'
-                toast(toast_msg)  
-                Logger.error(f"{self.name}: {toast_msg}, {e}") 
-
-            try:
-                mycursor = mydb.cursor()
-                sql = f"INSERT INTO {TB_DATA_IMAGE} (noantrian, nouji, NEW_NOUJI, nopol, idjeniskendaraan, kd_jeniskendaraan, kodewilayah, jbb, statusuji, statuspenerbitan, tgl_capture, trfstat) VALUES ('{dt_no_antri}','{dt_temp_no_uji}','{dt_temp_no_uji_new}','{dt_temp_no_pol}','{dt_temp_jenis_kendaraan}','{dt_temp_kode_jenis_kendaraan}','{dt_temp_kode_wilayah}','{dt_temp_jbb}','{dt_temp_status_uji}','{dt_temp_status_penerbitan}','{dt_tgl_baru_uji}','0')"
-                mycursor.execute(sql)
-                mydb.commit()
-
-            except Exception as e:
-                toast_msg = f'Gagal Menambahkan Data ke Tabel Image Kendaraan'
-                toast(toast_msg)
-                Logger.error(f"{self.name}: {toast_msg}, {e}") 
-
         except Exception as e:
             toast_msg = f'Gagal Memverifikasi Pembayaran'
             toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}")
+            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+
+        try:
+            today = str(time.strftime("%Y-%m-%d", time.localtime()))
+            make_dir_path = f'/var/www/system/storage/app/capture/{today}/{dt_sts_uji}-{dt_no_antri}'
+            self.sftp_make_dir(make_dir_path)
+        except Exception as e:
+            toast_msg = f'Gagal Menemukan Folder Remote'
+            toast(toast_msg)  
+            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+
+        try:
+            mycursor = mydb.cursor()
+            sql = f"INSERT INTO {TB_DATA_IMAGE} (noantrian, nouji, NEW_NOUJI, nopol, idjeniskendaraan, kd_jeniskendaraan, kodewilayah, jbb, statusuji, statuspenerbitan, tgl_capture, trfstat) VALUES ('{dt_no_antri}','{dt_temp_no_uji}','{dt_temp_no_uji_new}','{dt_temp_no_pol}','{dt_temp_jenis_kendaraan}','{dt_temp_kode_jenis_kendaraan}','{dt_temp_kode_wilayah}','{dt_temp_jbb}','{dt_temp_status_uji}','{dt_temp_status_penerbitan}','{dt_tgl_baru_uji}','0')"
+            mycursor.execute(sql)
+            mydb.commit()
+        except Exception as e:
+            toast_msg = f'Gagal Menambahkan Data ke Tabel Image Kendaraan'
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+
+        # except Exception as e:
+        #     toast_msg = f'Gagal Memverifikasi Pembayaran'
+        #     toast(toast_msg)
+        #     Logger.error(f"{self.name}: {toast_msg}, {e}")
 
         try:
             tb_image = mydb.cursor()
@@ -2303,7 +2387,7 @@ class ScreenInspectDimension(MDScreen):
                 comment_subkomponen_uji = self.ids[f'tx_comment{i}'].text
 
                 mycursor = mydb.cursor()
-                sql = f"INSERT INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES ('{id_uji}', '{flags_subkomponen_uji[i]}','{dt_selected_kode_komponen_uji}','{kode_subkomponen_uji}','{comment_subkomponen_uji}')"
+                sql = f"INSERT INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES ('{id_uji}', '{int(flags_subkomponen_uji[i])}','{dt_selected_kode_komponen_uji}','{kode_subkomponen_uji}','{comment_subkomponen_uji}')"
                 mycursor.execute(sql)
                 mydb.commit()
 
@@ -2617,7 +2701,7 @@ class ScreenInspectVisual(MDScreen):
                 comment_subkomponen_uji = self.ids[f'tx_comment{i}'].text
 
                 mycursor = mydb.cursor()
-                sql = f"INSERT INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES ('{id_uji}', '{flags_subkomponen_uji[i]}','{dt_selected_kode_komponen_uji}','{kode_subkomponen_uji}','{comment_subkomponen_uji}')"
+                sql = f"INSERT INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES ('{id_uji}', '{int(flags_subkomponen_uji[i])}','{dt_selected_kode_komponen_uji}','{kode_subkomponen_uji}','{comment_subkomponen_uji}')"
                 mycursor.execute(sql)
                 mydb.commit()
 
@@ -2932,7 +3016,7 @@ class ScreenInspectVisual2(MDScreen):
                 comment_subkomponen_uji = self.ids[f'tx_comment{i}'].text
 
                 mycursor = mydb.cursor()
-                sql = f"INSERT INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES ('{id_uji}', '{flags_subkomponen_uji[i]}','{dt_selected_kode_komponen_uji}','{kode_subkomponen_uji}','{comment_subkomponen_uji}')"
+                sql = f"INSERT INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES ('{id_uji}', '{int(flags_subkomponen_uji[i])}','{dt_selected_kode_komponen_uji}','{kode_subkomponen_uji}','{comment_subkomponen_uji}')"
                 mycursor.execute(sql)
                 mydb.commit()
 
@@ -3249,7 +3333,7 @@ class ScreenInspectPit(MDScreen):
                 comment_subkomponen_uji = self.ids[f'tx_comment{i}'].text
 
                 mycursor = mydb.cursor()
-                sql = f"INSERT INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES ('{id_uji}', '{flags_subkomponen_uji[i]}','{dt_selected_kode_komponen_uji}','{kode_subkomponen_uji}','{comment_subkomponen_uji}')"
+                sql = f"INSERT INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES ('{id_uji}', '{int(flags_subkomponen_uji[i])}','{dt_selected_kode_komponen_uji}','{kode_subkomponen_uji}','{comment_subkomponen_uji}')"
                 mycursor.execute(sql)
                 mydb.commit()
 
