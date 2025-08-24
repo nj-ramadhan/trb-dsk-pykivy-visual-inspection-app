@@ -1,4 +1,5 @@
 import datetime
+from re import L
 import os, sys, time
 import threading
 
@@ -372,7 +373,7 @@ class ScreenMain(MDScreen):
             self.ids.lb_dash_belum_uji.text = str(dt_dash_belum_uji)
             self.ids.lb_dash_sudah_uji.text = str(dt_dash_sudah_uji)
 
-            screen_menu.ids.bt_verify_data.disabled = True if dt_verified_data == 1 else False
+            screen_menu.ids.bt_verify_data.disabled = True if dt_verified_payment == 1 else False
             # if dt_verified_payment == 1 or dt_verified_data == 0:
             #     screen_menu.ids.bt_verify_payment.disabled = True
             # elif dt_verified_payment == 0 and dt_verified_data == 1:
@@ -1160,6 +1161,8 @@ class ScreenAddQueue(MDScreen):
     def exec_fetch_master_data(self, dt_find_no_pol, dt_find_no_uji):
         global mydb, db_users, db_merk, db_bahan_bakar, db_warna
         global dt_id_user, dt_user, dt_foto_user
+        global dt_no_antri, dt_no_pol, dt_no_uji, dt_sts_uji
+        global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_brt_ksg, dt_bhn_bkr, dt_warna, dt_visual_flag        
         global dt_temp_no_uji, dt_temp_no_uji_new, dt_temp_no_wilayah, dt_temp_no_kendaraan, dt_temp_no_plat, dt_temp_no_pol
         global dt_temp_nama, dt_temp_no_hp, dt_temp_alamat, dt_temp_id_izin, dt_temp_wilayah, dt_temp_provinsi, dt_temp_kabupaten_kota, dt_temp_kecamatan
         global dt_temp_id_merk, dt_temp_id_subjenis, dt_temp_type, dt_temp_tahun_buat, dt_temp_silinder, dt_temp_warna, dt_temp_chasis, dt_temp_mesin, dt_temp_warna_plat
@@ -1174,12 +1177,24 @@ class ScreenAddQueue(MDScreen):
             elif dt_find_no_uji == "" and dt_find_no_pol == "":
                 toast("Silahkan Isi Nomor Uji atau Nomor Polisi dengan Benar")
             myresult = mycursor.fetchone()
-            mydb.commit()
             db_master_data = np.array(myresult).T
 
             if myresult is None:
                 toast('Data Tidak Ditemukan di Database, Silahkan Ajukan Pengujian Baru')
+                dt_temp_no_uji = dt_no_uji
+                dt_temp_no_uji_new = dt_no_uji
+                dt_temp_no_pol = dt_no_pol
+                dt_temp_status_uji = dt_sts_uji
+                dt_temp_id_merk = dt_merk
+                dt_temp_type = dt_type
+                dt_temp_jenis_kendaraan = dt_jns_kend
+                dt_temp_jbb = dt_jbb
+                dt_temp_brt_ksg = dt_brt_ksg
+                dt_temp_bhn_bkr = dt_bhn_bkr
+                dt_temp_warna = dt_warna
+
                 self.exec_cancel()
+
             else:
                 dt_temp_no_uji = db_master_data[0]
                 dt_temp_no_uji_new = db_master_data[1]
@@ -1400,65 +1415,31 @@ class ScreenMenu(MDScreen):
     def on_enter(self):
         global db_merk, db_bahan_bakar, db_warna
         global dt_no_antri, dt_no_pol, dt_no_uji
+        global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_brt_ksg, dt_bhn_bkr, dt_warna, dt_visual_flag
         global dt_temp_nama, dt_temp_alamat, dt_temp_tgl_uji_terakhir, dt_temp_tgl_uji_habis, dt_temp_status_uji
         global dt_temp_id_merk, dt_temp_type, dt_temp_jenis_kendaraan, dt_temp_warna, dt_temp_chasis, dt_temp_mesin, dt_temp_bhn_bkr, dt_temp_jbb
 
-        merk_text = '-'
-        if dt_temp_id_merk is not None:
-            try:
-                indices = np.where(db_merk[:, 0].astype(str) == str(dt_temp_id_merk))[0]
-                if indices.size > 0:
-                    merk_text = db_merk[indices[0], 1]
-                else:
-                    merk_text = "ID Merk Tidak Valid"
-                    Logger.warning(f"Merk ID {dt_temp_id_merk} not found in db_merk.")
-            except Exception as e:
-                merk_text = "Error Merk"
-                Logger.error(f"Error processing merk: {e}")
+        try:                        
+            self.ids.lb_no_antrian.text = str(dt_no_antri)
+            self.ids.lb_no_pol.text = str(dt_no_pol)
+            self.ids.lb_no_uji.text = str(dt_no_uji)
+            self.ids.lb_temp_nama.text = str(dt_temp_nama)
+            self.ids.lb_temp_alamat.text = str(dt_temp_alamat)
+            self.ids.lb_temp_status_uji.text = 'Berkala' if dt_sts_uji == 'B' else 'Uji Ulang' if dt_sts_uji == 'U' else 'Baru' if dt_sts_uji == 'BR' else 'Numpang Uji' if dt_sts_uji == 'NB' else 'Mutasi'
+            self.ids.lb_temp_tgl_uji_terakhir.text = f'{dt_temp_tgl_uji_terakhir}'
+            self.ids.lb_temp_tgl_uji_habis.text = f'{dt_temp_tgl_uji_habis}'
+            self.ids.lb_temp_merk.text = '-' if dt_merk == None else f"{db_merk[np.where(db_merk == dt_merk)[0][0],1]}"
+            self.ids.lb_temp_type.text = str(dt_type)
+            self.ids.lb_temp_jenis_kendaraan.text = str(dt_jns_kend)
+            self.ids.lb_temp_warna.text = '-' if dt_warna == None else f"{db_warna[np.where(db_warna == dt_warna)[0][0],1]}"
+            self.ids.lb_temp_chasis.text = str(dt_temp_chasis)
+            self.ids.lb_temp_mesin.text = str(dt_temp_mesin)
+            self.ids.lb_temp_bahan_bakar.text = '-' if dt_bhn_bkr == None else f"{db_bahan_bakar[np.where(db_bahan_bakar == dt_bhn_bkr)[0][0],1]}"
+            self.ids.lb_temp_jbb.text = str(dt_jbb)
 
-        warna_text = '-'
-        if dt_temp_warna is not None:
-            try:
-                indices = np.where(db_warna[:, 0].astype(str) == str(dt_temp_warna))[0]
-                if indices.size > 0:
-                    warna_text = db_warna[indices[0], 1]
-                else:
-                    warna_text = "ID Warna Tidak Valid"
-                    Logger.warning(f"Warna ID {dt_temp_warna} not found in db_warna.")
-            except Exception as e:
-                warna_text = "Error Warna"
-                Logger.error(f"Error processing warna: {e}")
-                
-        bahan_bakar_text = '-'
-        if dt_temp_bhn_bkr is not None:
-            try:
-                indices = np.where(db_bahan_bakar[:, 0].astype(str) == str(dt_temp_bhn_bkr))[0]
-                if indices.size > 0:
-                    bahan_bakar_text = db_bahan_bakar[indices[0], 1]
-                else:
-                    bahan_bakar_text = "ID B.Bakar Tidak Valid"
-                    Logger.warning(f"Bahan Bakar ID {dt_temp_bhn_bkr} not found in db_bahan_bakar.")
-            except Exception as e:
-                bahan_bakar_text = "Error B.Bakar"
-                Logger.error(f"Error processing bahan bakar: {e}")
-
-        self.ids.lb_no_antrian.text = str(dt_no_antri)
-        self.ids.lb_no_pol.text = str(dt_no_pol)
-        self.ids.lb_no_uji.text = str(dt_no_uji)
-        self.ids.lb_temp_nama.text = str(dt_temp_nama) if dt_temp_nama else '-'
-        self.ids.lb_temp_alamat.text = str(dt_temp_alamat) if dt_temp_alamat else '-'
-        self.ids.lb_temp_status_uji.text = 'Berkala' if dt_temp_status_uji == 'B' else 'Uji Ulang' if dt_temp_status_uji == 'U' else 'Baru' if dt_temp_status_uji == 'BR' else 'Numpang Uji' if dt_temp_status_uji == 'NB' else 'Mutasi'
-        self.ids.lb_temp_tgl_uji_terakhir.text = f'{dt_temp_tgl_uji_terakhir}'
-        self.ids.lb_temp_tgl_uji_habis.text = f'{dt_temp_tgl_uji_habis}'
-        self.ids.lb_temp_merk.text = merk_text
-        self.ids.lb_temp_type.text = str(dt_temp_type) if dt_temp_type else '-'
-        self.ids.lb_temp_jenis_kendaraan.text = str(dt_temp_jenis_kendaraan) if dt_temp_jenis_kendaraan else '-'
-        self.ids.lb_temp_warna.text = warna_text
-        self.ids.lb_temp_chasis.text = str(dt_temp_chasis) if dt_temp_chasis else '-'
-        self.ids.lb_temp_mesin.text = str(dt_temp_mesin) if dt_temp_mesin else '-'
-        self.ids.lb_temp_bahan_bakar.text = bahan_bakar_text
-        self.ids.lb_temp_jbb.text = str(dt_temp_jbb) if dt_temp_jbb else '-'
-
+        except Exception as e:
+            Logger.error(f"{self.name}: Gagal memuat data kendaraan: {e}")
+        
     def exec_verify_data(self):
         global dt_id_pendaftaran, dt_no_antri, dt_verified_data, dt_verified_payment
         global dt_temp_no_uji, dt_temp_no_uji_new, dt_temp_no_wilayah, dt_temp_no_kendaraan, dt_temp_no_plat, dt_temp_no_pol
@@ -1467,15 +1448,23 @@ class ScreenMenu(MDScreen):
         global dt_temp_bhn_bkr, dt_temp_jbb, dt_temp_daya_motor, dt_temp_tgl_uji_terakhir, dt_temp_status_penerbitan, dt_temp_jenis_kendaraan, dt_temp_kode_jenis_kendaraan, dt_temp_kode_wilayah
 
         try:
-            mycursor = mydb.cursor()
-            sql = f"INSERT INTO {TB_DAFTAR_BERKALA} (ID, NOANTRIAN, NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, SUBJENIS_ID, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, DAYAMOTOR, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah, TGL_LASTUJI) VALUES ('{dt_id_pendaftaran}', '{dt_no_antri}', '{dt_temp_no_uji}','{dt_temp_no_uji_new}','{dt_temp_no_wilayah}','{dt_temp_no_kendaraan}','{dt_temp_no_plat}','{dt_temp_no_pol}','{dt_temp_nama}','{dt_temp_no_hp}','{dt_temp_alamat}','{dt_temp_id_izin}','{dt_temp_wilayah}','{dt_temp_provinsi}','{dt_temp_kabupaten_kota}','{dt_temp_kecamatan}','{dt_temp_id_merk}','{dt_temp_id_subjenis}','{dt_temp_type}','{dt_temp_tahun_buat}','{dt_temp_silinder}','{dt_temp_warna}','{dt_temp_chasis}','{dt_temp_mesin}','{dt_temp_warna_plat}','{dt_temp_bhn_bkr}','{dt_temp_jbb}','{dt_temp_daya_motor}','{dt_temp_status_penerbitan}','{dt_temp_jenis_kendaraan}','{dt_temp_kode_jenis_kendaraan}','{dt_temp_kode_wilayah}','{dt_temp_tgl_uji_terakhir}')"
-            mycursor.execute(sql)
-            mydb.commit()
-            dt_verified_data = 1
-            dt_verified_payment = 0
-            toast_msg = f'Berhasil Membuat Data Pengujian di Tabel Daftar Berkala'
-            toast(toast_msg)
+            if dt_verified_data == 0:
+                mycursor = mydb.cursor()
+                if dt_sts_uji == 'B':
+                    sql = f"INSERT INTO {TB_DAFTAR_BERKALA} (ID, NOANTRIAN, NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, SUBJENIS_ID, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, DAYAMOTOR, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah, TGL_LASTUJI) VALUES ('{dt_id_pendaftaran}', '{dt_no_antri}', '{dt_no_uji}','{dt_no_uji}','{dt_temp_no_wilayah}','{dt_temp_no_kendaraan}','{dt_temp_no_plat}','{dt_no_pol}','{dt_temp_nama}','{dt_temp_no_hp}','{dt_temp_alamat}','{dt_temp_id_izin}','{dt_temp_wilayah}','{dt_temp_provinsi}','{dt_temp_kabupaten_kota}','{dt_temp_kecamatan}','{dt_merk}','{dt_temp_id_subjenis}','{dt_type}','{dt_temp_tahun_buat}','{dt_temp_silinder}','{dt_warna}','{dt_temp_chasis}','{dt_temp_mesin}','{dt_temp_warna_plat}','{dt_bhn_bkr}','{dt_jbb}','{dt_temp_daya_motor}','{dt_temp_status_penerbitan}','{dt_jns_kend}','{dt_temp_kode_jenis_kendaraan}','{dt_temp_kode_wilayah}','{dt_temp_tgl_uji_terakhir}')"
+                else:
+                    sql = f"INSERT INTO {TB_DAFTAR_BARU} (ID, NOANTRIAN, NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, SUBJENIS_ID, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, DAYAMOTOR, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah, TGL_LASTUJI) VALUES ('{dt_id_pendaftaran}', '{dt_no_antri}', '{dt_no_uji}','{dt_no_uji}','{dt_temp_no_wilayah}','{dt_temp_no_kendaraan}','{dt_temp_no_plat}','{dt_no_pol}','{dt_temp_nama}','{dt_temp_no_hp}','{dt_temp_alamat}','{dt_temp_id_izin}','{dt_temp_wilayah}','{dt_temp_provinsi}','{dt_temp_kabupaten_kota}','{dt_temp_kecamatan}','{dt_merk}','{dt_temp_id_subjenis}','{dt_type}','{dt_temp_tahun_buat}','{dt_temp_silinder}','{dt_warna}','{dt_temp_chasis}','{dt_temp_mesin}','{dt_temp_warna_plat}','{dt_bhn_bkr}','{dt_jbb}','{dt_temp_daya_motor}','{dt_temp_status_penerbitan}','{dt_jns_kend}','{dt_temp_kode_jenis_kendaraan}','{dt_temp_kode_wilayah}','{dt_temp_tgl_uji_terakhir}')"
+                mycursor.execute(sql)
+                mydb.commit()                    
+                dt_verified_data = 1
+                dt_verified_payment = 0
+                toast_msg = f'Berhasil Membuat Data Pengujian di Tabel Daftar Berkala'
+                toast(toast_msg)
+            elif dt_verified_data == 1:
+                toast_msg = f'Data Pengujian Sudah Terdaftar'
+                toast(toast_msg)
             self.exec_verify_payment()
+
         except Exception as e:
             toast_msg = f'Gagal Membuat Tabel Daftar Berkala'
             toast(toast_msg)
@@ -1495,7 +1484,10 @@ class ScreenMenu(MDScreen):
 
         try:
             mycursor = mydb.cursor()
-            sql = f"UPDATE {TB_DAFTAR_BERKALA} SET STS_SPP = '1' WHERE NOANTRIAN = '{dt_no_antri}' "
+            if dt_sts_uji == 'B':
+                sql = f"UPDATE {TB_DAFTAR_BERKALA} SET STS_SPP = '1' WHERE NOANTRIAN = '{dt_no_antri}' "
+            else:
+                sql = f"UPDATE {TB_DAFTAR_BARU} SET STS_SPP = '1' WHERE NOANTRIAN = '{dt_no_antri}' "
             mycursor.execute(sql)
             mydb.commit()
             dt_verified_payment = 1
@@ -1517,18 +1509,13 @@ class ScreenMenu(MDScreen):
 
         try:
             mycursor = mydb.cursor()
-            sql = f"INSERT INTO {TB_DATA_IMAGE} (noantrian, nouji, NEW_NOUJI, nopol, idjeniskendaraan, kd_jeniskendaraan, kodewilayah, jbb, statusuji, statuspenerbitan, tgl_capture, trfstat) VALUES ('{dt_no_antri}','{dt_temp_no_uji}','{dt_temp_no_uji_new}','{dt_temp_no_pol}','{dt_temp_jenis_kendaraan}','{dt_temp_kode_jenis_kendaraan}','{dt_temp_kode_wilayah}','{dt_temp_jbb}','{dt_temp_status_uji}','{dt_temp_status_penerbitan}','{dt_tgl_baru_uji}','0')"
+            sql = f"INSERT INTO {TB_DATA_IMAGE} (noantrian, nouji, NEW_NOUJI, nopol, idjeniskendaraan, kd_jeniskendaraan, kodewilayah, jbb, statusuji, statuspenerbitan, tgl_capture, trfstat) VALUES ('{dt_no_antri}','{dt_no_uji}','{dt_no_uji}','{dt_no_pol}','{dt_jns_kend}','{dt_temp_kode_jenis_kendaraan}','{dt_temp_kode_wilayah}','{dt_jbb}','{dt_sts_uji}','{dt_temp_status_penerbitan}','{dt_tgl_baru_uji}','0')"
             mycursor.execute(sql)
             mydb.commit()
         except Exception as e:
             toast_msg = f'Gagal Menambahkan Data ke Tabel Image Kendaraan'
             toast(toast_msg)
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
-
-        # except Exception as e:
-        #     toast_msg = f'Gagal Memverifikasi Pembayaran'
-        #     toast(toast_msg)
-        #     Logger.error(f"{self.name}: {toast_msg}, {e}")
 
         try:
             tb_image = mydb.cursor()
@@ -1573,7 +1560,7 @@ class ScreenMenu(MDScreen):
                 else:
                     toast("Tidak Bisa Membuka Portal Karena PLC Tidak Terhubung") 
             else:
-                toast_msg = f'Silahkan Verifikasi Data dan Pembayaran Terlebih Dahulu'
+                toast_msg = f'Silahkan Verifikasi Data Terlebih Dahulu'
                 toast(toast_msg)       
 
             if flag_conn_stat:
@@ -1596,7 +1583,7 @@ class ScreenMenu(MDScreen):
                 else:
                     toast("Tidak Bisa Menutup Portal Karena PLC Tidak Terhubung") 
             else:
-                toast_msg = f'Silahkan Verifikasi Data dan Pembayaran Terlebih Dahulu'
+                toast_msg = f'Silahkan Verifikasi Data Terlebih Dahulu'
                 toast(toast_msg)      
 
             if flag_conn_stat:
@@ -1629,7 +1616,7 @@ class ScreenMenu(MDScreen):
             if dt_verified_data and dt_verified_payment:
                 self.screen_manager.current = 'screen_inspect_id'
             else:
-                toast_msg = f'Silahkan Verifikasi Data dan Pembayaran Terlebih Dahulu'
+                toast_msg = f'Silahkan Verifikasi Data Terlebih Dahulu'
                 toast(toast_msg)                 
 
         except Exception as e:
@@ -1644,7 +1631,7 @@ class ScreenMenu(MDScreen):
             if dt_verified_data and dt_verified_payment:
                 self.screen_manager.current = 'screen_inspect_dimension'
             else:
-                toast_msg = f'Silahkan Verifikasi Data dan Pembayaran Terlebih Dahulu'
+                toast_msg = f'Silahkan Verifikasi Data Terlebih Dahulu'
                 toast(toast_msg)                 
 
         except Exception as e:
@@ -1659,7 +1646,7 @@ class ScreenMenu(MDScreen):
             if dt_verified_data and dt_verified_payment:
                 self.screen_manager.current = 'screen_realtime_cctv'
             else:
-                toast_msg = f'Silahkan Verifikasi Data dan Pembayaran Terlebih Dahulu'
+                toast_msg = f'Silahkan Verifikasi Data Terlebih Dahulu'
                 toast(toast_msg)         
 
         except Exception as e:
@@ -1674,7 +1661,7 @@ class ScreenMenu(MDScreen):
             if dt_verified_data and dt_verified_payment:
                 self.screen_manager.current = 'screen_inspect_visual'
             else:
-                toast_msg = f'Silahkan Verifikasi Data dan Pembayaran Terlebih Dahulu'
+                toast_msg = f'Silahkan Verifikasi Data Terlebih Dahulu'
                 toast(toast_msg)           
 
         except Exception as e:
@@ -1689,7 +1676,7 @@ class ScreenMenu(MDScreen):
             if dt_verified_data and dt_verified_payment:
                 self.screen_manager.current = 'screen_inspect_visual2'
             else:
-                toast_msg = f'Silahkan Verifikasi Data dan Pembayaran Terlebih Dahulu'
+                toast_msg = f'Silahkan Verifikasi Data Terlebih Dahulu'
                 toast(toast_msg)  
 
         except Exception as e:
@@ -1704,7 +1691,7 @@ class ScreenMenu(MDScreen):
             if dt_verified_data and dt_verified_payment:
                 self.screen_manager.current = 'screen_inspect_pit'
             else:
-                toast_msg = f'Silahkan Verifikasi Data dan Pembayaran Terlebih Dahulu'
+                toast_msg = f'Silahkan Verifikasi Data Terlebih Dahulu'
                 toast(toast_msg)
 
         except Exception as e:
