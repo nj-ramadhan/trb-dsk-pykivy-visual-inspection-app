@@ -1496,23 +1496,6 @@ class ScreenMenu(MDScreen):
         global TB_DATA_IMAGE
 
         dt_tgl_baru_uji = str(time.strftime("%Y/%m/%d %H:%M:%S", time.localtime()))
-        
-        if(dt_tgl_baru_uji.month <= 6):
-            year_replaced = dt_tgl_baru_uji.year
-            month_replaced = dt_tgl_baru_uji.month + 6
-            day_replaced = dt_tgl_baru_uji.day
-        else:
-            year_replaced = dt_tgl_baru_uji.year + 1
-            month_replaced = dt_tgl_baru_uji.month - 6
-            day_replaced = dt_tgl_baru_uji.day
-        
-        if(dt_tgl_baru_uji.day > 29):
-            if month_replaced == 2:
-                day_replaced = 29
-            if month_replaced == 4 or month_replaced == 6 or month_replaced == 9 or month_replaced == 11:
-                day_replaced = 30
-
-        dt_tgl_uji_habis = str(dt_tgl_baru_uji.replace(month=month_replaced, year=year_replaced, day=day_replaced).strftime('%d-%m-%Y'))
 
         try:
             mycursor = mydb.cursor()
@@ -1589,9 +1572,15 @@ class ScreenMenu(MDScreen):
                 'idjeniskendaraan' : dt_temp_jenis_kendaraan,
                 'kd_jnskendaraan' : dt_temp_kode_jenis_kendaraan,
                 'dcreate': dt_tgl_baru_uji,
-                'tgl_habis_uji': dt_tgl_uji_habis,
+                'tgl_habis_uji': None,
                 'trfstat': None,
-                'hasil_uji': '0',
+                'hasil_uji': None,
+                'NIP_ID1': None,
+                'NIP_ID2': None,
+                'NIP_ID3': None,
+                'NIP_ID4': None,
+                'NIP_ID5': None,
+                'VERIFIKATOR': None,
             }
 
             result.update(updates)
@@ -2089,7 +2078,7 @@ class ScreenInspectId(MDScreen):
                 mydb.commit()
 
         except Exception as e:
-            toast_msg = f'Gagal Memperbaharui Data di Database Tabel Uji'
+            toast_msg = f'Gagal Memperbaharui Data di Database Tabel Uji, Pastikan Semua Komponen Uji Sudah Diperiksa'
             toast(toast_msg)
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
@@ -2115,7 +2104,7 @@ class ScreenInspectId(MDScreen):
 
             self.open_screen_menu()
         except Exception as e:
-            toast_msg = f'Gagal Menambahkan Data ke Database Tabel Uji Detail'
+            toast_msg = f'Gagal Menambahkan Data ke Database Tabel Uji Detail, Pastikan Semua Subkomponen Uji Sudah Diperiksa'
             toast(toast_msg)
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
@@ -2764,7 +2753,7 @@ class ScreenInspectVisual(MDScreen):
                 mydb.commit()
 
         except Exception as e:
-            toast_msg = f'Gagal Memperbaharui Data di Database Tabel Uji'
+            toast_msg = f'Gagal Memperbaharui Data di Database Tabel Uji, Pastikan Semua Komponen Uji Sudah Diperiksa'
             toast(toast_msg)
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
@@ -2790,7 +2779,7 @@ class ScreenInspectVisual(MDScreen):
 
             self.open_screen_menu()
         except Exception as e:
-            toast_msg = f'Gagal Menambahkan Data ke Database Tabel Uji Detail'
+            toast_msg = f'Gagal Menambahkan Data ke Database Tabel Uji Detail, Pastikan Semua Subkomponen Uji Sudah Diperiksa'
             toast(toast_msg)
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
@@ -3079,7 +3068,7 @@ class ScreenInspectVisual2(MDScreen):
                 mydb.commit()
 
         except Exception as e:
-            toast_msg = f'Gagal Memperbaharui Data di Database Tabel Uji'
+            toast_msg = f'Gagal Memperbaharui Data di Database Tabel Uji, Pastikan Semua Komponen Uji Sudah Diperiksa'
             toast(toast_msg)
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
@@ -3105,7 +3094,7 @@ class ScreenInspectVisual2(MDScreen):
 
             self.open_screen_menu()      
         except Exception as e:
-            toast_msg = f'Gagal Menambahkan Data ke Database Tabel Uji Detail'
+            toast_msg = f'Gagal Menambahkan Data ke Database Tabel Uji Detail, Pastikan Semua Subkomponen Uji Sudah Diperiksa'
             toast(toast_msg)
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
@@ -3396,7 +3385,7 @@ class ScreenInspectPit(MDScreen):
                 mydb.commit()
 
         except Exception as e:
-            toast_msg = f'Gagal Memperbaharui Data di Database Tabel Uji'
+            toast_msg = f'Gagal Memperbaharui Data di Database Tabel Uji, Pastikan Semua Komponen Uji Sudah Diperiksa'
             toast(toast_msg)
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
@@ -3422,7 +3411,7 @@ class ScreenInspectPit(MDScreen):
 
             self.open_screen_menu()
         except Exception as e:
-            toast_msg = f'Gagal Menambahkan Data ke Database Tabel Uji Detail'
+            toast_msg = f'Gagal Menambahkan Data ke Database Tabel Uji Detail, Pastikan Semua Subkomponen Uji Sudah Diperiksa'
             toast(toast_msg)
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
             
