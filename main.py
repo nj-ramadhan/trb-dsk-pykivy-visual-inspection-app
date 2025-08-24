@@ -273,8 +273,10 @@ class ScreenMain(MDScreen):
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna, dt_chasis, dt_no_mesin
         global dt_visual_flag, dt_id_user, dt_verified_data, dt_verified_payment
         global dt_dash_antri, dt_dash_belum_uji, dt_dash_sudah_uji
-        global dt_temp_nama, dt_temp_alamat, dt_temp_tgl_uji_terakhir, dt_temp_tgl_uji_habis, dt_temp_status_uji
-        global dt_temp_id_merk, dt_temp_type, dt_temp_jenis_kendaraan, dt_temp_warna, dt_temp_chasis, dt_temp_mesin, dt_temp_bhn_bkr, dt_temp_jbb
+        global dt_temp_no_uji, dt_temp_no_uji_new, dt_temp_no_wilayah, dt_temp_no_kendaraan, dt_temp_no_plat, dt_temp_no_pol
+        global dt_temp_nama, dt_temp_no_hp, dt_temp_alamat, dt_temp_id_izin, dt_temp_wilayah, dt_temp_provinsi, dt_temp_kabupaten_kota, dt_temp_kecamatan
+        global dt_temp_id_merk, dt_temp_id_subjenis, dt_temp_type, dt_temp_tahun_buat, dt_temp_silinder, dt_temp_warna, dt_temp_chasis, dt_temp_mesin, dt_temp_warna_plat
+        global dt_temp_bhn_bkr, dt_temp_jbb, dt_temp_daya_motor, dt_temp_tgl_uji_terakhir, dt_temp_tgl_uji_habis, dt_temp_status_uji, dt_temp_status_penerbitan, dt_temp_jenis_kendaraan, dt_temp_kode_jenis_kendaraan, dt_temp_kode_wilayah
         global rtsp_url_cam1, rtsp_url_cam2, rtsp_url_cam3, rtsp_url_cam4, rtsp_url_pit1, rtsp_url_pit2, rtsp_url_pit3, rtsp_url_pit4
 
         flag_conn_stat = flag_gate = False
@@ -285,6 +287,11 @@ class ScreenMain(MDScreen):
         dt_id_user = 1
         dt_dash_antri = dt_dash_belum_uji = dt_dash_sudah_uji = 0
         dt_selected_camera = 0
+
+        dt_temp_no_uji = dt_temp_no_uji_new = dt_temp_no_wilayah = dt_temp_no_kendaraan = dt_temp_no_plat = dt_temp_no_pol = ""
+        dt_temp_nama = dt_temp_no_hp = dt_temp_alamat = dt_temp_id_izin = dt_temp_wilayah = dt_temp_provinsi = dt_temp_kabupaten_kota = dt_temp_kecamatan = ""
+        dt_temp_id_merk = dt_temp_id_subjenis = dt_temp_type = dt_temp_tahun_buat = dt_temp_silinder = dt_temp_warna = dt_temp_chasis = dt_temp_mesin = dt_temp_warna_plat = ""
+        dt_temp_bhn_bkr = dt_temp_jbb = dt_temp_daya_motor = dt_temp_tgl_uji_terakhir = dt_temp_tgl_uji_habis = dt_temp_status_uji = dt_temp_status_penerbitan = dt_temp_jenis_kendaraan = dt_temp_kode_jenis_kendaraan = dt_temp_kode_wilayah = ""
 
         # rtsp_url_cam1 = 'rtsp://admin:TRBintegrated202@192.168.70.64:554/Streaming/Channels/101'
         rtsp_url_cam1 = f'rtsp://{RTSP_USER}:{RTSP_PASS}@{RTSP_IP_DISPLAY_CAM1}:554/Streaming/Channels/101'
@@ -1170,12 +1177,21 @@ class ScreenAddQueue(MDScreen):
 
         try:
             mycursor = mydb.cursor()
-            if dt_find_no_pol != "" and dt_find_no_uji == "":
-                mycursor.execute(f"SELECT NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, idjeniskendaraan, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, BERATKOSONG, DAYAMOTOR, TGL_UJI_TERAKHIR, STATUSUJI, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah FROM {TB_DATA_MASTER} WHERE NOPOL = '{dt_find_no_pol}' ")
-            elif dt_find_no_uji != "":
-                mycursor.execute(f"SELECT NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, idjeniskendaraan, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, BERATKOSONG, DAYAMOTOR, TGL_UJI_TERAKHIR, STATUSUJI, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah FROM {TB_DATA_MASTER} WHERE NOUJI = '{dt_find_no_uji}' ")
-            elif dt_find_no_uji == "" and dt_find_no_pol == "":
-                toast("Silahkan Isi Nomor Uji atau Nomor Polisi dengan Benar")
+            if dt_sts_uji == "B" or dt_sts_uji == "U":
+                if dt_find_no_pol != "" and dt_find_no_uji == "":
+                    mycursor.execute(f"SELECT NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, SUBJENIS_ID, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, BERATKOSONG, DAYAMOTOR, TGL_LASTUJI, STATUSUJI, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah FROM {TB_DAFTAR_BERKALA} WHERE NOPOL = '{dt_find_no_pol}' ")
+                elif dt_find_no_uji != "":
+                    mycursor.execute(f"SELECT NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, SUBJENIS_ID, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, BERATKOSONG, DAYAMOTOR, TGL_LASTUJI, STATUSUJI, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah FROM {TB_DAFTAR_BERKALA} WHERE NOUJI = '{dt_find_no_uji}' ")
+                elif dt_find_no_uji == "" and dt_find_no_pol == "":
+                    toast("Silahkan Isi Nomor Uji atau Nomor Polisi dengan Benar")
+            else:
+                if dt_find_no_pol != "" and dt_find_no_uji == "":
+                    mycursor.execute(f"SELECT NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, SUBJENIS_ID, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, BERATKOSONG, DAYAMOTOR, TGL_LASTUJI, STATUSUJI, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah FROM {TB_DAFTAR_BARU} WHERE NOPOL = '{dt_find_no_pol}' ")
+                elif dt_find_no_uji != "":
+                    mycursor.execute(f"SELECT NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, SUBJENIS_ID, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, BERATKOSONG, DAYAMOTOR, TGL_LASTUJI, STATUSUJI, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah FROM {TB_DAFTAR_BARU} WHERE NOUJI = '{dt_find_no_uji}' ")
+                elif dt_find_no_uji == "" and dt_find_no_pol == "":
+                    toast("Silahkan Isi Nomor Uji atau Nomor Polisi dengan Benar")
+            
             myresult = mycursor.fetchone()
             db_master_data = np.array(myresult).T
 
@@ -1192,9 +1208,7 @@ class ScreenAddQueue(MDScreen):
                 dt_temp_brt_ksg = dt_brt_ksg
                 dt_temp_bhn_bkr = dt_bhn_bkr
                 dt_temp_warna = dt_warna
-
                 self.exec_cancel()
-
             else:
                 dt_temp_no_uji = db_master_data[0]
                 dt_temp_no_uji_new = db_master_data[1]
@@ -1230,7 +1244,7 @@ class ScreenAddQueue(MDScreen):
                 dt_temp_kode_jenis_kendaraan = db_master_data[31]
                 dt_temp_kode_wilayah = db_master_data[32]
 
-                if(db_master_data[26] is not None):
+                if(db_master_data[27] is not None):
                     last_uji_date = db_master_data[27]
                 else:
                     last_uji_date = datetime.datetime(1900, 1, 1)
@@ -1479,8 +1493,26 @@ class ScreenMenu(MDScreen):
         global dt_temp_nama, dt_temp_no_hp, dt_temp_alamat, dt_temp_id_izin, dt_temp_wilayah, dt_temp_provinsi, dt_temp_kabupaten_kota, dt_temp_kecamatan
         global dt_temp_id_merk, dt_temp_id_subjenis, dt_temp_type, dt_temp_tahun_buat, dt_temp_silinder, dt_temp_warna, dt_temp_chasis, dt_temp_mesin, dt_temp_warna_plat
         global dt_temp_bhn_bkr, dt_temp_jbb, dt_temp_daya_motor, dt_temp_tgl_uji_terakhir, dt_temp_tgl_uji_habis, dt_temp_status_uji, dt_temp_status_penerbitan, dt_temp_jenis_kendaraan, dt_temp_kode_jenis_kendaraan, dt_temp_kode_wilayah
+        global TB_DATA_IMAGE
 
         dt_tgl_baru_uji = str(time.strftime("%Y/%m/%d %H:%M:%S", time.localtime()))
+        
+        if(dt_tgl_baru_uji.month <= 6):
+            year_replaced = dt_tgl_baru_uji.year
+            month_replaced = dt_tgl_baru_uji.month + 6
+            day_replaced = dt_tgl_baru_uji.day
+        else:
+            year_replaced = dt_tgl_baru_uji.year + 1
+            month_replaced = dt_tgl_baru_uji.month - 6
+            day_replaced = dt_tgl_baru_uji.day
+        
+        if(dt_tgl_baru_uji.day > 29):
+            if month_replaced == 2:
+                day_replaced = 29
+            if month_replaced == 4 or month_replaced == 6 or month_replaced == 9 or month_replaced == 11:
+                day_replaced = 30
+
+        dt_tgl_uji_habis = str(dt_tgl_baru_uji.replace(month=month_replaced, year=year_replaced, day=day_replaced).strftime('%d-%m-%Y'))
 
         try:
             mycursor = mydb.cursor()
@@ -1508,14 +1540,78 @@ class ScreenMenu(MDScreen):
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
         try:
-            mycursor = mydb.cursor()
-            sql = f"INSERT INTO {TB_DATA_IMAGE} (noantrian, nouji, NEW_NOUJI, nopol, idjeniskendaraan, kd_jeniskendaraan, kodewilayah, jbb, statusuji, statuspenerbitan, tgl_capture, trfstat) VALUES ('{dt_no_antri}','{dt_no_uji}','{dt_no_uji}','{dt_no_pol}','{dt_jns_kend}','{dt_temp_kode_jenis_kendaraan}','{dt_temp_kode_wilayah}','{dt_jbb}','{dt_sts_uji}','{dt_temp_status_penerbitan}','{dt_tgl_baru_uji}','0')"
-            mycursor.execute(sql)
+            TB_DATA_IMAGE = "image_kendaraan"
+            mycursor = mydb.cursor(dictionary=True)  # Use dictionary=True to get column names
+            # Step 1: Fetch the most recent record with matching NOPOL or NOUJI
+            query = f"""
+                SELECT * FROM {TB_DATA_IMAGE}
+                WHERE nopol = %s OR nouji = %s
+                ORDER BY id DESC
+                LIMIT 1
+            """
+            mycursor.execute(query, (dt_no_pol, dt_no_uji))
+            result = mycursor.fetchone()
+
+            if not result:
+                toast_msg = f"Tidak ada data sebelumnya ditemukan untuk No. Reg {dt_no_pol} atau No. Uji {dt_no_uji}. Membuat data baru di tabel {TB_DATA_IMAGE}."
+                toast(toast_msg)
+                Logger.warning(f"{self.name}: {toast_msg}")
+                try:
+                    TB_DATA_IMAGE = "temp_image_kendaraanbr"
+                    mycursor = mydb.cursor(dictionary=True)  # Use dictionary=True to get column names
+                    # Step 1: Fetch the most recent record with matching NOPOL or NOUJI
+                    query = f"""
+                        SELECT * FROM {TB_DATA_IMAGE}
+                        WHERE nopol = %s OR nouji = %s
+                        ORDER BY id DESC
+                        LIMIT 1
+                    """
+                    mycursor.execute(query, (dt_no_pol, dt_no_uji))
+                    result = mycursor.fetchone()
+
+                except Exception as e:
+                    toast_msg = f'Gagal Menambahkan Data baru ke Tabel Image Kendaraan'
+                    toast(toast_msg)
+                    Logger.error(f"{self.name}: {toast_msg}, {e}") 
+
+            # Step 2: Prepare cloned data
+            # Remove auto-incremented 'id' so it can be regenerated
+            result.pop('id', None)  # Remove ID to allow auto-increment
+
+            # Update fields that should be new
+            updates = {
+                'noantrian': dt_no_antri,
+                'nouji': dt_no_uji,
+                'NEW_NOUJI': dt_no_uji,
+                'nopol': dt_no_pol,
+                'statusuji': dt_sts_uji,
+                'SUBJENIS_ID' : dt_temp_id_subjenis,
+                'idjeniskendaraan' : dt_temp_jenis_kendaraan,
+                'kd_jnskendaraan' : dt_temp_kode_jenis_kendaraan,
+                'dcreate': dt_tgl_baru_uji,
+                'tgl_habis_uji': dt_tgl_uji_habis,
+                'trfstat': None,
+                'hasil_uji': '0',
+            }
+
+            result.update(updates)
+
+            # Step 3: Build INSERT dynamically from the dictionary
+            columns = ", ".join(result.keys())
+            placeholders = ", ".join(["%s"] * len(result))
+            sql = f"INSERT INTO {TB_DATA_IMAGE} ({columns}) VALUES ({placeholders})"
+
+            mycursor.execute(sql, tuple(result.values()))
             mydb.commit()
-        except Exception as e:
-            toast_msg = f'Gagal Menambahkan Data ke Tabel Image Kendaraan'
+
+            toast_msg = f"Berhasil menyalin data lama dan membuat entri baru di {TB_DATA_IMAGE}"
             toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+            Logger.info(f"{self.name}: {toast_msg}")
+
+        except Exception as e:
+            toast_msg = f'Gagal Menyalin dan Menyisipkan Data ke Tabel Image Kendaraan'
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, Error: {e}")
 
         try:
             tb_image = mydb.cursor()
@@ -1984,7 +2080,6 @@ class ScreenInspectId(MDScreen):
             tb_image_kendaraan = mydb.cursor()
             tb_image_kendaraan.execute(f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = '{dt_no_pol}' ORDER BY id DESC LIMIT 1")
             result_tb_image_kendaraan = tb_image_kendaraan.fetchone()
-            mydb.commit()
             id_image = result_tb_image_kendaraan[0]
 
             if self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon == "cancel":
@@ -2262,7 +2357,6 @@ class ScreenInspectDimension(MDScreen):
                 tb_image_kendaraan = mydb.cursor()
                 tb_image_kendaraan.execute(f"SELECT {column_name} FROM {TB_DATA_IMAGE} WHERE nopol = '{dt_no_pol}' ORDER BY id DESC LIMIT 1")
                 result_tb_image_kendaraan = tb_image_kendaraan.fetchone()
-                mydb.commit()
                 last_data = result_tb_image_kendaraan[0]
                 db_last_data = np.append(db_last_data, last_data)
 
@@ -2339,7 +2433,6 @@ class ScreenInspectDimension(MDScreen):
             tb_image_kendaraan = mydb.cursor()
             tb_image_kendaraan.execute(f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = '{dt_no_pol}' ORDER BY id DESC LIMIT 1")
             result_tb_image_kendaraan = tb_image_kendaraan.fetchone()
-            mydb.commit()
             id_image = result_tb_image_kendaraan[0]
 
             for i in range(db_subkomponen_uji[2,:].size):                
