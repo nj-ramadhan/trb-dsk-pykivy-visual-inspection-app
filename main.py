@@ -1581,6 +1581,7 @@ class ScreenMenu(MDScreen):
                 'NIP_ID4': None,
                 'NIP_ID5': None,
                 'VERIFIKATOR': None,
+                'tgl_capture': dt_tgl_baru_uji,
             }
 
             result.update(updates)
@@ -2062,51 +2063,72 @@ class ScreenInspectId(MDScreen):
         self.screen_manager.current = 'screen_menu'
 
     def exec_save(self):
-        global mydb, db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji, db_last_data
-        global dt_no_pol, selected_row_komponen_uji
+        global db_komponen_uji, db_subkomponen_uji
+        global mydb, dt_no_pol, selected_row_komponen_uji
+
+        if selected_row_komponen_uji is None or not hasattr(self, 'ids') or not self.ids.get(f'bt_komponen_uji{selected_row_komponen_uji}'):
+            toast("Silakan pilih salah satu komponen uji terlebih dahulu.")
+            return
 
         try:
-            tb_image_kendaraan = mydb.cursor()
-            tb_image_kendaraan.execute(f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = '{dt_no_pol}' ORDER BY id DESC LIMIT 1")
-            result_tb_image_kendaraan = tb_image_kendaraan.fetchone()
-            id_image = result_tb_image_kendaraan[0]
+            mycursor = mydb.cursor()
+            mycursor.execute(f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = %s ORDER BY id DESC LIMIT 1", (dt_no_pol,))
+            result_image = mycursor.fetchone()
+            if not result_image:
+                raise Exception("ID data gambar tidak ditemukan.")
+            id_image = result_image[0]
+
+            kode_kelompok_uji = db_komponen_uji[0, selected_row_komponen_uji]
 
             if self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon == "cancel":
-                mycursor = mydb.cursor()
-                sql = f"UPDATE {TB_UJI} SET lulus_uji = '0' WHERE nopol = '{dt_no_pol}' AND id_image = '{id_image}' "
-                mycursor.execute(sql)
-                mydb.commit()
+                sql_update_uji = f"UPDATE {TB_UJI} SET lulus_uji = '0' WHERE id_image = %s AND kode_kelompok_uji = %s"
+                mycursor.execute(sql_update_uji, (id_image, kode_kelompok_uji))
+            mydb.commit()
 
         except Exception as e:
-            toast_msg = f'Gagal Memperbaharui Data di Database Tabel Uji, Pastikan Semua Komponen Uji Sudah Diperiksa'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+            toast(f'Gagal memperbaharui data utama: {e}')
+            Logger.error(f"{self.name}: Gagal di BAGIAN 1 exec_save: {e}")
+            return
 
         try:
-            tb_uji = mydb.cursor()
-            tb_uji.execute(f"SELECT id_uji FROM {TB_UJI} WHERE nopol = '{dt_no_pol}' AND kode_kelompok_uji = 'V1' ORDER BY id_uji DESC LIMIT 1")
-            result_tb_uji = tb_uji.fetchone()
-            mydb.commit()
+            mycursor = mydb.cursor()
+            kode_kelompok_uji_from_db = db_komponen_uji[0, selected_row_komponen_uji]
+            mycursor.execute(f"SELECT id_uji FROM {TB_UJI} WHERE nopol = %s AND kode_kelompok_uji = %s ORDER BY id_uji DESC LIMIT 1", (dt_no_pol, kode_kelompok_uji_from_db))
+            result_tb_uji = mycursor.fetchone()
+            if not result_tb_uji:
+                raise Exception("id_uji tidak ditemukan.")
             id_uji = result_tb_uji[0]
+            
             dt_selected_kode_komponen_uji = db_komponen_uji[1, selected_row_komponen_uji]
 
-            for i in range(db_subkomponen_uji[0,:].size):                
+            for i in range(db_subkomponen_uji[0,:].size):
                 kode_subkomponen_uji = db_subkomponen_uji[0,i]
                 comment_subkomponen_uji = self.ids[f'tx_comment{i}'].text
+                
+                if self.ids[f'bt_subkomponen_uji{i}'].icon == "check-bold":
+                    hasil_inspeksi = '1' 
+                else:
+                    hasil_inspeksi = '0' 
 
-                mycursor = mydb.cursor()
-                sql = f"INSERT INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES ('{id_uji}', '{int(flags_subkomponen_uji[i])}','{dt_selected_kode_komponen_uji}','{kode_subkomponen_uji}','{comment_subkomponen_uji}')"
-                mycursor.execute(sql)
+                check_sql = f"SELECT id_uji_detail FROM {TB_UJI_DETAIL} WHERE id_uji = %s AND kode_subkomponen_uji = %s"
+                mycursor.execute(check_sql, (id_uji, kode_subkomponen_uji))
+                existing_record = mycursor.fetchone()
+
+                if existing_record:
+                    sql = f"UPDATE {TB_UJI_DETAIL} SET hasil = %s, keterangan = %s WHERE id_uji_detail = %s"
+                    values = (hasil_inspeksi, comment_subkomponen_uji, existing_record[0])
+                else:
+                    sql = f"INSERT INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES (%s, %s, %s, %s, %s)"
+                    values = (id_uji, hasil_inspeksi, dt_selected_kode_komponen_uji, kode_subkomponen_uji, comment_subkomponen_uji)
+                
+                mycursor.execute(sql, values)
                 mydb.commit()
 
-            toast_msg = f'Berhasil Menyimpan Data'
-            toast(toast_msg)            
-
-            self.open_screen_menu()
+            toast('Berhasil menyimpan data inspeksi')
+            self.open_screen_menu()       
         except Exception as e:
-            toast_msg = f'Gagal Menambahkan Data ke Database Tabel Uji Detail, Pastikan Semua Subkomponen Uji Sudah Diperiksa'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+            toast(f'Gagal menyimpan detail uji: {e}')
+            Logger.error(f"{self.name}: Gagal di BAGIAN 2 exec_save: {e}")
 
     def exec_cancel(self):
         self.open_screen_menu()
@@ -2415,59 +2437,81 @@ class ScreenInspectDimension(MDScreen):
         self.screen_manager.current = 'screen_menu'
 
     def exec_save(self):
-        global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji, db_last_data
+        global db_komponen_uji, db_subkomponen_uji
         global mydb, dt_no_pol, selected_row_komponen_uji
 
-        try:
-            tb_image_kendaraan = mydb.cursor()
-            tb_image_kendaraan.execute(f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = '{dt_no_pol}' ORDER BY id DESC LIMIT 1")
-            result_tb_image_kendaraan = tb_image_kendaraan.fetchone()
-            id_image = result_tb_image_kendaraan[0]
+        if selected_row_komponen_uji is None or not hasattr(self, 'ids') or not self.ids.get(f'bt_komponen_uji{selected_row_komponen_uji}'):
+            toast("Silakan pilih salah satu komponen uji terlebih dahulu.")
+            return
 
-            for i in range(db_subkomponen_uji[2,:].size):                
-                column_name = db_subkomponen_uji[2,i]
-                mycursor = mydb.cursor()
-                new_data = self.ids[f'tx_value{i}'].text
-                sql = f"UPDATE {TB_DATA_IMAGE} SET {column_name} = '{new_data}' WHERE nopol = '{dt_no_pol}' AND id = '{id_image}' "
-                mycursor.execute(sql)
-                mydb.commit()
+        try:
+            mycursor = mydb.cursor()
+            mycursor.execute(f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = %s ORDER BY id DESC LIMIT 1", (dt_no_pol,))
+            result_image = mycursor.fetchone()
+            if not result_image:
+                raise Exception("ID data gambar tidak ditemukan.")
+            id_image = result_image[0]
+
+            kode_kelompok_uji = db_komponen_uji[0, selected_row_komponen_uji]
 
             if self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon == "cancel":
-                mycursor = mydb.cursor()
-                sql = f"UPDATE {TB_UJI} SET lulus_uji = '0' WHERE nopol = '{dt_no_pol}' AND id_image = '{id_image}' "
-                mycursor.execute(sql)
-                mydb.commit()
+                sql_update_uji = f"UPDATE {TB_UJI} SET lulus_uji = '0' WHERE id_image = %s AND kode_kelompok_uji = %s"
+                mycursor.execute(sql_update_uji, (id_image, kode_kelompok_uji))
+            
+            if self.__class__.__name__ == 'ScreenInspectDimension':
+                for i in range(db_subkomponen_uji[0,:].size):
+                    column_name = db_subkomponen_uji[2, i]
+                    new_data = self.ids[f'tx_value{i}'].text
+                    sql_update_dimensi = f"UPDATE {TB_DATA_IMAGE} SET `{column_name}` = %s WHERE id = %s"
+                    mycursor.execute(sql_update_dimensi, (new_data, id_image))
+
+            mydb.commit()
 
         except Exception as e:
-            toast_msg = f'Gagal Update Data ke Tabel Image Kendaraan dan Tabel Uji'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+            toast(f'Gagal memperbaharui data utama: {e}')
+            Logger.error(f"{self.name}: Gagal di BAGIAN 1 exec_save: {e}")
+            return
 
         try:
-            tb_uji = mydb.cursor()
-            tb_uji.execute(f"SELECT id_uji FROM {TB_UJI} WHERE nopol = '{dt_no_pol}' AND kode_kelompok_uji = 'V1' ORDER BY id_uji DESC LIMIT 1")
-            result_tb_uji = tb_uji.fetchone()
-            mydb.commit()
+            mycursor = mydb.cursor()
+            kode_kelompok_uji_from_db = db_komponen_uji[0, selected_row_komponen_uji]
+            mycursor.execute(f"SELECT id_uji FROM {TB_UJI} WHERE nopol = %s AND kode_kelompok_uji = %s ORDER BY id_uji DESC LIMIT 1", (dt_no_pol, kode_kelompok_uji_from_db))
+            result_tb_uji = mycursor.fetchone()
+            if not result_tb_uji:
+                raise Exception("id_uji tidak ditemukan.")
             id_uji = result_tb_uji[0]
+            
             dt_selected_kode_komponen_uji = db_komponen_uji[1, selected_row_komponen_uji]
 
-            for i in range(db_subkomponen_uji[0,:].size):                
+            for i in range(db_subkomponen_uji[0,:].size):
                 kode_subkomponen_uji = db_subkomponen_uji[0,i]
                 comment_subkomponen_uji = self.ids[f'tx_comment{i}'].text
+                
+                if self.ids[f'bt_subkomponen_uji{i}'].icon == "check-bold":
+                    hasil_inspeksi = '1' 
+                else:
+                    hasil_inspeksi = '0' 
 
-                mycursor = mydb.cursor()
-                sql = f"INSERT INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES ('{id_uji}', '{int(flags_subkomponen_uji[i])}','{dt_selected_kode_komponen_uji}','{kode_subkomponen_uji}','{comment_subkomponen_uji}')"
-                mycursor.execute(sql)
+                check_sql = f"SELECT id_uji_detail FROM {TB_UJI_DETAIL} WHERE id_uji = %s AND kode_subkomponen_uji = %s"
+                mycursor.execute(check_sql, (id_uji, kode_subkomponen_uji))
+                existing_record = mycursor.fetchone()
+
+                if existing_record:
+                    sql = f"UPDATE {TB_UJI_DETAIL} SET hasil = %s, keterangan = %s WHERE id_uji_detail = %s"
+                    values = (hasil_inspeksi, comment_subkomponen_uji, existing_record[0])
+                else:
+                    sql = f"INSERT INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES (%s, %s, %s, %s, %s)"
+                    values = (id_uji, hasil_inspeksi, dt_selected_kode_komponen_uji, kode_subkomponen_uji, comment_subkomponen_uji)
+                
+                mycursor.execute(sql, values)
                 mydb.commit()
 
-            toast_msg = f'Berhasil menyimpan data'
-            toast(toast_msg)
-
+            toast('Berhasil menyimpan data inspeksi')
             self.open_screen_menu()
+            
         except Exception as e:
-            toast_msg = f'Gagal Menambahkan Data ke Tabel Uji Detail'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+            toast(f'Gagal menyimpan detail uji: {e}')
+            Logger.error(f"{self.name}: Gagal di BAGIAN 2 exec_save: {e}")
 
     def exec_cancel(self):
         self.open_screen_menu()
@@ -2736,52 +2780,72 @@ class ScreenInspectVisual(MDScreen):
         self.screen_manager.current = 'screen_menu'
 
     def exec_save(self):
-        global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji, db_last_data
+        global db_komponen_uji, db_subkomponen_uji
         global mydb, dt_no_pol, selected_row_komponen_uji
 
+        if selected_row_komponen_uji is None or not hasattr(self, 'ids') or not self.ids.get(f'bt_komponen_uji{selected_row_komponen_uji}'):
+            toast("Silakan pilih salah satu komponen uji terlebih dahulu.")
+            return
+
         try:
-            tb_image_kendaraan = mydb.cursor()
-            tb_image_kendaraan.execute(f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = '{dt_no_pol}' ORDER BY id DESC LIMIT 1")
-            result_tb_image_kendaraan = tb_image_kendaraan.fetchone()
-            mydb.commit()
-            id_image = result_tb_image_kendaraan[0]
+            mycursor = mydb.cursor()
+            mycursor.execute(f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = %s ORDER BY id DESC LIMIT 1", (dt_no_pol,))
+            result_image = mycursor.fetchone()
+            if not result_image:
+                raise Exception("ID data gambar tidak ditemukan.")
+            id_image = result_image[0]
+
+            kode_kelompok_uji = db_komponen_uji[0, selected_row_komponen_uji]
 
             if self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon == "cancel":
-                mycursor = mydb.cursor()
-                sql = f"UPDATE {TB_UJI} SET lulus_uji = '0' WHERE nopol = '{dt_no_pol}' AND id_image = '{id_image}' "
-                mycursor.execute(sql)
-                mydb.commit()
+                sql_update_uji = f"UPDATE {TB_UJI} SET lulus_uji = '0' WHERE id_image = %s AND kode_kelompok_uji = %s"
+                mycursor.execute(sql_update_uji, (id_image, kode_kelompok_uji))
+            mydb.commit()
 
         except Exception as e:
-            toast_msg = f'Gagal Memperbaharui Data di Database Tabel Uji, Pastikan Semua Komponen Uji Sudah Diperiksa'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+            toast(f'Gagal memperbaharui data utama: {e}')
+            Logger.error(f"{self.name}: Gagal di BAGIAN 1 exec_save: {e}")
+            return
 
         try:
-            tb_uji = mydb.cursor()
-            tb_uji.execute(f"SELECT id_uji FROM {TB_UJI} WHERE nopol = '{dt_no_pol}' AND kode_kelompok_uji = 'V1' ORDER BY id_uji DESC LIMIT 1")
-            result_tb_uji = tb_uji.fetchone()
-            mydb.commit()
+            mycursor = mydb.cursor()
+            kode_kelompok_uji_from_db = db_komponen_uji[0, selected_row_komponen_uji]
+            mycursor.execute(f"SELECT id_uji FROM {TB_UJI} WHERE nopol = %s AND kode_kelompok_uji = %s ORDER BY id_uji DESC LIMIT 1", (dt_no_pol, kode_kelompok_uji_from_db))
+            result_tb_uji = mycursor.fetchone()
+            if not result_tb_uji:
+                raise Exception("id_uji tidak ditemukan.")
             id_uji = result_tb_uji[0]
+            
             dt_selected_kode_komponen_uji = db_komponen_uji[1, selected_row_komponen_uji]
 
-            for i in range(db_subkomponen_uji[0,:].size):                
+            for i in range(db_subkomponen_uji[0,:].size):
                 kode_subkomponen_uji = db_subkomponen_uji[0,i]
                 comment_subkomponen_uji = self.ids[f'tx_comment{i}'].text
+                
+                if self.ids[f'bt_subkomponen_uji{i}'].icon == "check-bold":
+                    hasil_inspeksi = '1' 
+                else:
+                    hasil_inspeksi = '0' 
 
-                mycursor = mydb.cursor()
-                sql = f"INSERT INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES ('{id_uji}', '{int(flags_subkomponen_uji[i])}','{dt_selected_kode_komponen_uji}','{kode_subkomponen_uji}','{comment_subkomponen_uji}')"
-                mycursor.execute(sql)
+                check_sql = f"SELECT id_uji_detail FROM {TB_UJI_DETAIL} WHERE id_uji = %s AND kode_subkomponen_uji = %s"
+                mycursor.execute(check_sql, (id_uji, kode_subkomponen_uji))
+                existing_record = mycursor.fetchone()
+
+                if existing_record:
+                    sql = f"UPDATE {TB_UJI_DETAIL} SET hasil = %s, keterangan = %s WHERE id_uji_detail = %s"
+                    values = (hasil_inspeksi, comment_subkomponen_uji, existing_record[0])
+                else:
+                    sql = f"INSERT INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES (%s, %s, %s, %s, %s)"
+                    values = (id_uji, hasil_inspeksi, dt_selected_kode_komponen_uji, kode_subkomponen_uji, comment_subkomponen_uji)
+                
+                mycursor.execute(sql, values)
                 mydb.commit()
 
-            toast_msg = f'Berhasil menyimpan data'
-            toast(toast_msg)            
-
-            self.open_screen_menu()
+            toast('Berhasil menyimpan data inspeksi')
+            self.open_screen_menu()       
         except Exception as e:
-            toast_msg = f'Gagal Menambahkan Data ke Database Tabel Uji Detail, Pastikan Semua Subkomponen Uji Sudah Diperiksa'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+            toast(f'Gagal menyimpan detail uji: {e}')
+            Logger.error(f"{self.name}: Gagal di BAGIAN 2 exec_save: {e}")
 
     def exec_cancel(self):
         self.open_screen_menu()
@@ -3051,52 +3115,72 @@ class ScreenInspectVisual2(MDScreen):
         self.screen_manager.current = 'screen_menu'
 
     def exec_save(self):
-        global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji, db_last_data
+        global db_komponen_uji, db_subkomponen_uji
         global mydb, dt_no_pol, selected_row_komponen_uji
 
+        if selected_row_komponen_uji is None or not hasattr(self, 'ids') or not self.ids.get(f'bt_komponen_uji{selected_row_komponen_uji}'):
+            toast("Silakan pilih salah satu komponen uji terlebih dahulu.")
+            return
+
         try:
-            tb_image_kendaraan = mydb.cursor()
-            tb_image_kendaraan.execute(f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = '{dt_no_pol}' ORDER BY id DESC LIMIT 1")
-            result_tb_image_kendaraan = tb_image_kendaraan.fetchone()
-            mydb.commit()
-            id_image = result_tb_image_kendaraan[0]
+            mycursor = mydb.cursor()
+            mycursor.execute(f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = %s ORDER BY id DESC LIMIT 1", (dt_no_pol,))
+            result_image = mycursor.fetchone()
+            if not result_image:
+                raise Exception("ID data gambar tidak ditemukan.")
+            id_image = result_image[0]
+
+            kode_kelompok_uji = db_komponen_uji[0, selected_row_komponen_uji]
 
             if self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon == "cancel":
-                mycursor = mydb.cursor()
-                sql = f"UPDATE {TB_UJI} SET lulus_uji = '0' WHERE nopol = '{dt_no_pol}' AND id_image = '{id_image}' "
-                mycursor.execute(sql)
-                mydb.commit()
+                sql_update_uji = f"UPDATE {TB_UJI} SET lulus_uji = '0' WHERE id_image = %s AND kode_kelompok_uji = %s"
+                mycursor.execute(sql_update_uji, (id_image, kode_kelompok_uji))
+            mydb.commit()
 
         except Exception as e:
-            toast_msg = f'Gagal Memperbaharui Data di Database Tabel Uji, Pastikan Semua Komponen Uji Sudah Diperiksa'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+            toast(f'Gagal memperbaharui data utama: {e}')
+            Logger.error(f"{self.name}: Gagal di BAGIAN 1 exec_save: {e}")
+            return
 
         try:
-            tb_uji = mydb.cursor()
-            tb_uji.execute(f"SELECT id_uji FROM {TB_UJI} WHERE nopol = '{dt_no_pol}' AND kode_kelompok_uji = 'V1' ORDER BY id_uji DESC LIMIT 1")
-            result_tb_uji = tb_uji.fetchone()
-            mydb.commit()
+            mycursor = mydb.cursor()
+            kode_kelompok_uji_from_db = db_komponen_uji[0, selected_row_komponen_uji]
+            mycursor.execute(f"SELECT id_uji FROM {TB_UJI} WHERE nopol = %s AND kode_kelompok_uji = %s ORDER BY id_uji DESC LIMIT 1", (dt_no_pol, kode_kelompok_uji_from_db))
+            result_tb_uji = mycursor.fetchone()
+            if not result_tb_uji:
+                raise Exception("id_uji tidak ditemukan.")
             id_uji = result_tb_uji[0]
+            
             dt_selected_kode_komponen_uji = db_komponen_uji[1, selected_row_komponen_uji]
 
-            for i in range(db_subkomponen_uji[0,:].size):                
+            for i in range(db_subkomponen_uji[0,:].size):
                 kode_subkomponen_uji = db_subkomponen_uji[0,i]
                 comment_subkomponen_uji = self.ids[f'tx_comment{i}'].text
+                
+                if self.ids[f'bt_subkomponen_uji{i}'].icon == "check-bold":
+                    hasil_inspeksi = '1' 
+                else:
+                    hasil_inspeksi = '0' 
 
-                mycursor = mydb.cursor()
-                sql = f"INSERT INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES ('{id_uji}', '{int(flags_subkomponen_uji[i])}','{dt_selected_kode_komponen_uji}','{kode_subkomponen_uji}','{comment_subkomponen_uji}')"
-                mycursor.execute(sql)
+                check_sql = f"SELECT id_uji_detail FROM {TB_UJI_DETAIL} WHERE id_uji = %s AND kode_subkomponen_uji = %s"
+                mycursor.execute(check_sql, (id_uji, kode_subkomponen_uji))
+                existing_record = mycursor.fetchone()
+
+                if existing_record:
+                    sql = f"UPDATE {TB_UJI_DETAIL} SET hasil = %s, keterangan = %s WHERE id_uji_detail = %s"
+                    values = (hasil_inspeksi, comment_subkomponen_uji, existing_record[0])
+                else:
+                    sql = f"INSERT INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES (%s, %s, %s, %s, %s)"
+                    values = (id_uji, hasil_inspeksi, dt_selected_kode_komponen_uji, kode_subkomponen_uji, comment_subkomponen_uji)
+                
+                mycursor.execute(sql, values)
                 mydb.commit()
 
-            toast_msg = f'Berhasil menyimpan data'
-            toast(toast_msg)      
-
-            self.open_screen_menu()      
+            toast('Berhasil menyimpan data inspeksi')
+            self.open_screen_menu()       
         except Exception as e:
-            toast_msg = f'Gagal Menambahkan Data ke Database Tabel Uji Detail, Pastikan Semua Subkomponen Uji Sudah Diperiksa'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+            toast(f'Gagal menyimpan detail uji: {e}')
+            Logger.error(f"{self.name}: Gagal di BAGIAN 2 exec_save: {e}")
 
     def exec_cancel(self):
         self.open_screen_menu()
@@ -3368,52 +3452,72 @@ class ScreenInspectPit(MDScreen):
         self.screen_manager.current = 'screen_realtime_pit'
 
     def exec_save(self):
-        global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji, db_last_data
+        global db_komponen_uji, db_subkomponen_uji
         global mydb, dt_no_pol, selected_row_komponen_uji
 
+        if selected_row_komponen_uji is None or not hasattr(self, 'ids') or not self.ids.get(f'bt_komponen_uji{selected_row_komponen_uji}'):
+            toast("Silakan pilih salah satu komponen uji terlebih dahulu.")
+            return
+
         try:
-            tb_image_kendaraan = mydb.cursor()
-            tb_image_kendaraan.execute(f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = '{dt_no_pol}' ORDER BY id DESC LIMIT 1")
-            result_tb_image_kendaraan = tb_image_kendaraan.fetchone()
-            mydb.commit()
-            id_image = result_tb_image_kendaraan[0]
+            mycursor = mydb.cursor()
+            mycursor.execute(f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = %s ORDER BY id DESC LIMIT 1", (dt_no_pol,))
+            result_image = mycursor.fetchone()
+            if not result_image:
+                raise Exception("ID data gambar tidak ditemukan.")
+            id_image = result_image[0]
+
+            kode_kelompok_uji = db_komponen_uji[0, selected_row_komponen_uji]
 
             if self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon == "cancel":
-                mycursor = mydb.cursor()
-                sql = f"UPDATE {TB_UJI} SET lulus_uji = '0' WHERE nopol = '{dt_no_pol}' AND id_image = '{id_image}' "
-                mycursor.execute(sql)
-                mydb.commit()
+                sql_update_uji = f"UPDATE {TB_UJI} SET lulus_uji = '0' WHERE id_image = %s AND kode_kelompok_uji = %s"
+                mycursor.execute(sql_update_uji, (id_image, kode_kelompok_uji))
+            mydb.commit()
 
         except Exception as e:
-            toast_msg = f'Gagal Memperbaharui Data di Database Tabel Uji, Pastikan Semua Komponen Uji Sudah Diperiksa'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+            toast(f'Gagal memperbaharui data utama: {e}')
+            Logger.error(f"{self.name}: Gagal di BAGIAN 1 exec_save: {e}")
+            return
 
         try:
-            tb_uji = mydb.cursor()
-            tb_uji.execute(f"SELECT id_uji FROM {TB_UJI} WHERE nopol = '{dt_no_pol}' AND kode_kelompok_uji = 'V1' ORDER BY id_uji DESC LIMIT 1")
-            result_tb_uji = tb_uji.fetchone()
-            mydb.commit()
+            mycursor = mydb.cursor()
+            kode_kelompok_uji_from_db = db_komponen_uji[0, selected_row_komponen_uji]
+            mycursor.execute(f"SELECT id_uji FROM {TB_UJI} WHERE nopol = %s AND kode_kelompok_uji = %s ORDER BY id_uji DESC LIMIT 1", (dt_no_pol, kode_kelompok_uji_from_db))
+            result_tb_uji = mycursor.fetchone()
+            if not result_tb_uji:
+                raise Exception("id_uji tidak ditemukan.")
             id_uji = result_tb_uji[0]
+            
             dt_selected_kode_komponen_uji = db_komponen_uji[1, selected_row_komponen_uji]
 
-            for i in range(db_subkomponen_uji[0,:].size):                
+            for i in range(db_subkomponen_uji[0,:].size):
                 kode_subkomponen_uji = db_subkomponen_uji[0,i]
                 comment_subkomponen_uji = self.ids[f'tx_comment{i}'].text
+                
+                if self.ids[f'bt_subkomponen_uji{i}'].icon == "check-bold":
+                    hasil_inspeksi = '1' 
+                else:
+                    hasil_inspeksi = '0' 
 
-                mycursor = mydb.cursor()
-                sql = f"INSERT INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES ('{id_uji}', '{int(flags_subkomponen_uji[i])}','{dt_selected_kode_komponen_uji}','{kode_subkomponen_uji}','{comment_subkomponen_uji}')"
-                mycursor.execute(sql)
+                check_sql = f"SELECT id_uji_detail FROM {TB_UJI_DETAIL} WHERE id_uji = %s AND kode_subkomponen_uji = %s"
+                mycursor.execute(check_sql, (id_uji, kode_subkomponen_uji))
+                existing_record = mycursor.fetchone()
+
+                if existing_record:
+                    sql = f"UPDATE {TB_UJI_DETAIL} SET hasil = %s, keterangan = %s WHERE id_uji_detail = %s"
+                    values = (hasil_inspeksi, comment_subkomponen_uji, existing_record[0])
+                else:
+                    sql = f"INSERT INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES (%s, %s, %s, %s, %s)"
+                    values = (id_uji, hasil_inspeksi, dt_selected_kode_komponen_uji, kode_subkomponen_uji, comment_subkomponen_uji)
+                
+                mycursor.execute(sql, values)
                 mydb.commit()
 
-            toast_msg = f'Berhasil menyimpan data'
-            toast(toast_msg)            
-
-            self.open_screen_menu()
+            toast('Berhasil menyimpan data inspeksi')
+            self.open_screen_menu()       
         except Exception as e:
-            toast_msg = f'Gagal Menambahkan Data ke Database Tabel Uji Detail, Pastikan Semua Subkomponen Uji Sudah Diperiksa'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+            toast(f'Gagal menyimpan detail uji: {e}')
+            Logger.error(f"{self.name}: Gagal di BAGIAN 2 exec_save: {e}")
             
     def exec_cancel(self):
         self.open_screen_menu()
