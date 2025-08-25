@@ -1570,7 +1570,7 @@ class ScreenMenu(MDScreen):
                 'statusuji': dt_sts_uji,
                 'SUBJENIS_ID' : dt_temp_id_subjenis,
                 'idjeniskendaraan' : dt_temp_jenis_kendaraan,
-                'kd_jnskendaraan' : dt_temp_kode_jenis_kendaraan,
+                'kd_jeniskendaraan' : dt_temp_kode_jenis_kendaraan,
                 'dcreate': dt_tgl_baru_uji,
                 'tgl_habis_uji': None,
                 'trfstat': None,
