@@ -1178,14 +1178,14 @@ class ScreenAddQueue(MDScreen):
         try:
             mycursor = mydb.cursor()
             if dt_sts_uji == "B" or dt_sts_uji == "U":
-                if dt_find_no_pol != "" and dt_find_no_uji == "":
+                if dt_find_no_pol != "":
                     mycursor.execute(f"SELECT NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, SUBJENIS_ID, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, BERATKOSONG, DAYAMOTOR, TGL_LASTUJI, STATUSUJI, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah FROM {TB_DAFTAR_BERKALA} WHERE NOPOL = '{dt_find_no_pol}' ")
                 elif dt_find_no_uji != "":
                     mycursor.execute(f"SELECT NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, SUBJENIS_ID, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, BERATKOSONG, DAYAMOTOR, TGL_LASTUJI, STATUSUJI, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah FROM {TB_DAFTAR_BERKALA} WHERE NOUJI = '{dt_find_no_uji}' ")
                 elif dt_find_no_uji == "" and dt_find_no_pol == "":
                     toast("Silahkan Isi Nomor Uji atau Nomor Polisi dengan Benar")
             else:
-                if dt_find_no_pol != "" and dt_find_no_uji == "":
+                if dt_find_no_pol != "":
                     mycursor.execute(f"SELECT NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, SUBJENIS_ID, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, BERATKOSONG, DAYAMOTOR, TGL_LASTUJI, STATUSUJI, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah FROM {TB_DAFTAR_BARU} WHERE NOPOL = '{dt_find_no_pol}' ")
                 elif dt_find_no_uji != "":
                     mycursor.execute(f"SELECT NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, SUBJENIS_ID, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, BERATKOSONG, DAYAMOTOR, TGL_LASTUJI, STATUSUJI, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah FROM {TB_DAFTAR_BARU} WHERE NOUJI = '{dt_find_no_uji}' ")
@@ -1464,7 +1464,7 @@ class ScreenMenu(MDScreen):
         try:
             if dt_verified_data == 0:
                 mycursor = mydb.cursor()
-                if dt_sts_uji == 'B':
+                if dt_sts_uji == "B" or dt_sts_uji == "U":
                     sql = f"INSERT INTO {TB_DAFTAR_BERKALA} (ID, NOANTRIAN, NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, SUBJENIS_ID, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, DAYAMOTOR, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah, TGL_LASTUJI) VALUES ('{dt_id_pendaftaran}', '{dt_no_antri}', '{dt_no_uji}','{dt_no_uji}','{dt_temp_no_wilayah}','{dt_temp_no_kendaraan}','{dt_temp_no_plat}','{dt_no_pol}','{dt_temp_nama}','{dt_temp_no_hp}','{dt_temp_alamat}','{dt_temp_id_izin}','{dt_temp_wilayah}','{dt_temp_provinsi}','{dt_temp_kabupaten_kota}','{dt_temp_kecamatan}','{dt_merk}','{dt_temp_id_subjenis}','{dt_type}','{dt_temp_tahun_buat}','{dt_temp_silinder}','{dt_warna}','{dt_temp_chasis}','{dt_temp_mesin}','{dt_temp_warna_plat}','{dt_bhn_bkr}','{dt_jbb}','{dt_temp_daya_motor}','{dt_temp_status_penerbitan}','{dt_jns_kend}','{dt_temp_kode_jenis_kendaraan}','{dt_temp_kode_wilayah}','{dt_temp_tgl_uji_terakhir}')"
                 else:
                     sql = f"INSERT INTO {TB_DAFTAR_BARU} (ID, NOANTRIAN, NOUJI, NEW_NOUJI, NOWIL, NOKDR, PLAT, NOPOL, NAMA, NOHP, ALAMAT, ID_IZIN, WLY, PROP, KABKOT, KEC, MERK_ID, SUBJENIS_ID, TYPE, TH_BUAT, SILINDER, WARNA_KEND, CHASIS, MESIN, WARNA_PLAT, BHN_BAKAR, JBB, DAYAMOTOR, statuspenerbitan, idjeniskendaraan, kd_jnskendaraan, kodewilayah, TGL_LASTUJI) VALUES ('{dt_id_pendaftaran}', '{dt_no_antri}', '{dt_no_uji}','{dt_no_uji}','{dt_temp_no_wilayah}','{dt_temp_no_kendaraan}','{dt_temp_no_plat}','{dt_no_pol}','{dt_temp_nama}','{dt_temp_no_hp}','{dt_temp_alamat}','{dt_temp_id_izin}','{dt_temp_wilayah}','{dt_temp_provinsi}','{dt_temp_kabupaten_kota}','{dt_temp_kecamatan}','{dt_merk}','{dt_temp_id_subjenis}','{dt_type}','{dt_temp_tahun_buat}','{dt_temp_silinder}','{dt_warna}','{dt_temp_chasis}','{dt_temp_mesin}','{dt_temp_warna_plat}','{dt_bhn_bkr}','{dt_jbb}','{dt_temp_daya_motor}','{dt_temp_status_penerbitan}','{dt_jns_kend}','{dt_temp_kode_jenis_kendaraan}','{dt_temp_kode_wilayah}','{dt_temp_tgl_uji_terakhir}')"
@@ -1493,13 +1493,12 @@ class ScreenMenu(MDScreen):
         global dt_temp_nama, dt_temp_no_hp, dt_temp_alamat, dt_temp_id_izin, dt_temp_wilayah, dt_temp_provinsi, dt_temp_kabupaten_kota, dt_temp_kecamatan
         global dt_temp_id_merk, dt_temp_id_subjenis, dt_temp_type, dt_temp_tahun_buat, dt_temp_silinder, dt_temp_warna, dt_temp_chasis, dt_temp_mesin, dt_temp_warna_plat
         global dt_temp_bhn_bkr, dt_temp_jbb, dt_temp_daya_motor, dt_temp_tgl_uji_terakhir, dt_temp_tgl_uji_habis, dt_temp_status_uji, dt_temp_status_penerbitan, dt_temp_jenis_kendaraan, dt_temp_kode_jenis_kendaraan, dt_temp_kode_wilayah
-        global TB_DATA_IMAGE
 
         dt_tgl_baru_uji = str(time.strftime("%Y/%m/%d %H:%M:%S", time.localtime()))
 
         try:
             mycursor = mydb.cursor()
-            if dt_sts_uji == 'B':
+            if dt_sts_uji == "B" or dt_sts_uji == "U":
                 sql = f"UPDATE {TB_DAFTAR_BERKALA} SET STS_SPP = '1' WHERE NOANTRIAN = '{dt_no_antri}' "
             else:
                 sql = f"UPDATE {TB_DAFTAR_BARU} SET STS_SPP = '1' WHERE NOANTRIAN = '{dt_no_antri}' "
@@ -1523,7 +1522,6 @@ class ScreenMenu(MDScreen):
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
         try:
-            TB_DATA_IMAGE = "image_kendaraan"
             mycursor = mydb.cursor(dictionary=True)  # Use dictionary=True to get column names
             # Step 1: Fetch the most recent record with matching NOPOL or NOUJI
             query = f"""
@@ -1540,16 +1538,15 @@ class ScreenMenu(MDScreen):
                 toast(toast_msg)
                 Logger.warning(f"{self.name}: {toast_msg}")
                 try:
-                    TB_DATA_IMAGE = "temp_image_kendaraanbr"
                     mycursor = mydb.cursor(dictionary=True)  # Use dictionary=True to get column names
                     # Step 1: Fetch the most recent record with matching NOPOL or NOUJI
                     query = f"""
-                        SELECT * FROM {TB_DATA_IMAGE}
-                        WHERE nopol = %s OR nouji = %s
+                        SELECT * FROM temp_image_kendaraanbr
+                        WHERE nopol = %s
                         ORDER BY id DESC
                         LIMIT 1
                     """
-                    mycursor.execute(query, (dt_no_pol, dt_no_uji))
+                    mycursor.execute(query, (dt_no_pol,))
                     result = mycursor.fetchone()
 
                 except Exception as e:
