@@ -156,21 +156,37 @@
 						font_style: 'H6'
 						size_hint_x: 0.2
 					MDLabel:
-						text: "Tanggal Terakhir Uji"
+						text: " "
 						font_style: 'Subtitle1'	
 						size_hint_x: 0.1
 					MDLabel:
-						id: lb_temp_tgl_uji_terakhir
+						id: lb_temp_tgl_uji_habis
 						font_style: 'H6'
 						size_hint_x: 0.2
 					MDLabel:
-						text: "Tanggal Habis Uji"
+						text: " "
 						font_style: 'Subtitle1'	
 						size_hint_x: 0.1
 					MDLabel:
 						id: lb_temp_tgl_uji_habis
 						font_style: 'H6'
 						size_hint_x: 0.1
+					#MDLabel:
+					#	text: "Tanggal Terakhir Uji"
+					#	font_style: 'Subtitle1'	
+					#	size_hint_x: 0.1
+					#MDLabel:
+					#	id: lb_temp_tgl_uji_terakhir
+					#	font_style: 'H6'
+					#	size_hint_x: 0.2
+					#MDLabel:
+					#	text: "Tanggal Habis Uji"
+					#	font_style: 'Subtitle1'	
+					#	size_hint_x: 0.1
+					#MDLabel:
+					#	id: lb_temp_tgl_uji_habis
+					#	font_style: 'H6'
+					#	size_hint_x: 0.1
 
 				MDGridLayout:
 					cols: 8
@@ -414,6 +430,7 @@
 				id: bt_save
 				icon: "floppy"
 				text: "SELESAI INSPEKSI"
+				disabled: True
 				md_bg_color: "#2CA02C"
 				theme_text_color: "Custom"
 				text_color: "#EEEEEE"
