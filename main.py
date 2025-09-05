@@ -556,7 +556,7 @@ class ScreenMain(MDScreen):
                         MDLabel(text=f"{db_antrian[0, i]}", size_hint_x= 0.05),
                         MDLabel(text=f"{db_antrian[1, i]}", size_hint_x= 0.07),
                         MDLabel(text=f"{db_antrian[2, i]}", size_hint_x= 0.08),
-                        MDLabel(text='Berkala' if db_antrian[3, i] == 'B' else 'Uji Ulang' if (db_antrian[3, i]) == 'U' else 'Baru' if (db_antrian[3, i]) == 'BR' else 'Numpang Uji' if (db_antrian[3, i]) == 'ND' else 'Mutasi', size_hint_x= 0.07),
+                        MDLabel(text='Berkala' if db_antrian[3, i] == 'B' else 'Uji Ulang' if (db_antrian[3, i]) == 'U' else 'Baru' if (db_antrian[3, i]) == 'BR' else 'Numpang Uji' if (db_antrian[3, i]) == 'NB' else 'Mutasi', size_hint_x= 0.07),
                         MDLabel(text='-' if db_antrian[4, i] == None else f"{db_merk[np.where(db_merk == db_antrian[4, i])[0][0],1]}" , size_hint_x= 0.08),
                         MDLabel(text=f"{db_antrian[5, i]}", size_hint_x= 0.07),
                         MDLabel(text=f"{db_antrian[6, i]}", size_hint_x= 0.15),
@@ -579,66 +579,38 @@ class ScreenMain(MDScreen):
             toast(toast_msg)
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
-    # def on_antrian_row_press(self, instance):
-    #     global mydb, db_antrian, db_merk, db_bahan_bakar, db_warna
-    #     global dt_no_antri, dt_no_pol, dt_no_uji, dt_sts_uji
-    #     global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_brt_ksg, dt_bhn_bkr, dt_warna, dt_visual_flag
-    #     global dt_id_user, dt_foto_user
-
-    #     try:
-    #         row = int(str(instance.id).replace("card_antrian",""))
-    #         dt_no_antri             = db_antrian[0, row]
-    #         dt_no_pol               = db_antrian[1, row]
-    #         dt_no_uji               = db_antrian[2, row]
-    #         dt_sts_uji              = db_antrian[3, row]
-    #         dt_merk                 = db_antrian[4, row]
-    #         dt_type                 = db_antrian[5, row]
-    #         dt_jns_kend             = db_antrian[6, row]
-    #         dt_jbb                  = db_antrian[7, row]
-    #         dt_brt_ksg              = db_antrian[8, row]
-    #         dt_bhn_bkr              = db_antrian[9, row]
-    #         dt_warna                = db_antrian[10, row]
-    #         dt_visual_flag          = db_antrian[11, row]
-
-    #         screen_add_queue = self.screen_manager.get_screen('screen_add_queue')
-    #         screen_add_queue.exec_fetch_master_data(dt_no_pol, dt_no_uji)
-
-    #         self.exec_navigate_menu()
-
-    #     except Exception as e:
-    #         toast_msg = f'Gagal mengeksekusi perintah dari baris tabel'
-    #         toast(toast_msg)
-    #         Logger.error(f"{self.name}: {toast_msg}, {e}")
-
     def on_antrian_row_press(self, instance):
-            global db_antrian, dt_no_antri, dt_no_pol, dt_no_uji, dt_sts_uji, dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_brt_ksg, dt_bhn_bkr, dt_warna, dt_visual_flag
+        global mydb, db_antrian, db_merk, db_bahan_bakar, db_warna
+        global dt_no_antri, dt_no_pol, dt_no_uji, dt_sts_uji
+        global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_brt_ksg, dt_bhn_bkr, dt_warna, dt_visual_flag
+        global dt_id_user, dt_foto_user
 
-            try:
-                row = int(str(instance.id).replace("card_antrian",""))
-                dt_no_antri      = db_antrian[0, row]
-                dt_no_pol        = db_antrian[1, row]
-                dt_no_uji        = db_antrian[2, row]
-                dt_sts_uji       = db_antrian[3, row]
-                dt_merk          = db_antrian[4, row]
-                dt_type          = db_antrian[5, row]
-                dt_jns_kend      = db_antrian[6, row]
-                dt_jbb           = db_antrian[7, row]
-                dt_brt_ksg       = db_antrian[8, row]
-                dt_bhn_bkr       = db_antrian[9, row]
-                dt_warna         = db_antrian[10, row]
-                dt_visual_flag   = db_antrian[11, row]
+        try:
+            row = int(str(instance.id).replace("card_antrian",""))
+            dt_no_antri             = db_antrian[0, row]
+            dt_no_pol               = db_antrian[1, row]
+            dt_no_uji               = db_antrian[2, row]
+            dt_sts_uji              = db_antrian[3, row]
+            dt_merk                 = db_antrian[4, row]
+            dt_type                 = db_antrian[5, row]
+            dt_jns_kend             = db_antrian[6, row]
+            dt_jbb                  = db_antrian[7, row]
+            dt_brt_ksg              = db_antrian[8, row]
+            dt_bhn_bkr              = db_antrian[9, row]
+            dt_warna                = db_antrian[10, row]
+            dt_visual_flag          = db_antrian[11, row]
 
-                screen_add_queue = self.screen_manager.get_screen('screen_add_queue')
-                
-                is_fetch_successful = screen_add_queue.exec_fetch_master_data(dt_no_pol, dt_no_uji)
-                
-                if is_fetch_successful:
-                    self.exec_navigate_menu()
+            screen_add_queue = self.screen_manager.get_screen('screen_add_queue')
+            berhasil_fetch = screen_add_queue.exec_fetch_master_data(dt_no_pol, dt_no_uji)
 
-            except Exception as e:
-                toast_msg = 'Gagal memproses baris tabel yang dipilih'
-                toast(toast_msg)
-                Logger.error(f"{self.name}: {toast_msg}, {e}")
+            if berhasil_fetch and dt_temp_no_uji_new:
+                dt_no_uji = dt_temp_no_uji_new
+            self.exec_navigate_menu()
+
+        except Exception as e:
+            toast_msg = f'Gagal mengeksekusi perintah dari baris tabel'
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
 
     def check_temp_data(self):
         global mydb, db_antrian, db_merk, db_bahan_bakar, db_warna
@@ -646,49 +618,19 @@ class ScreenMain(MDScreen):
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
         global dt_visual_flag, dt_id_user, dt_foto_user, dt_verified_data, dt_verified_payment
 
-        mycursor = None
-        try:
-            # Tentukan tabel target berdasarkan status uji
-            if dt_sts_uji in ("B", "U"):  # Hanya Uji Berkala dan Uji Ulang
-                target_table = TB_DAFTAR_BERKALA
-            elif dt_sts_uji in ("BR", "ND", "MD"): # Dianggap "Baru": Baru, Numpang Uji, dan Mutasi Datang
-                target_table = TB_DAFTAR_BARU
-            else:
-                # Penanganan jika status tidak dikenal (praktik yang baik untuk mencegah error)
-                toast(f"Status Uji '{dt_sts_uji}' tidak dikenal.")
-                return # Menghentikan fungsi            
-            mycursor = mydb.cursor(buffered=True)
-
-            # Query sekarang HANYA mencari berdasarkan NOANTRIAN
-            query = f"SELECT STS_SPP FROM {target_table} WHERE NOANTRIAN = %s"
-            mycursor.execute(query, (dt_no_antri,))
-            
-            myresult = mycursor.fetchone()
-
-            if myresult is None:
-                # Jika tidak ada data sama sekali untuk antrean ini
-                toast_msg = f'Belum ada data verifikasi untuk No. Antrian {dt_no_antri}.'
-                toast(toast_msg)
-                dt_verified_data = 0
-                dt_verified_payment = 0
-            else:
-                # Jika data ditemukan
-                toast_msg = f'Data untuk No. Antrian {dt_no_antri} sudah diverifikasi.'
-                toast(toast_msg)
-                dt_verified_data = 1
-                # Cek status pembayaran dari hasil query
-                sts_spp = myresult[0]
-                dt_verified_payment = int(sts_spp) if sts_spp is not None else 0
-
-        except Exception as e:
-            toast("Gagal memeriksa status data sementara.")
-            Logger.error(f"{self.name}: Gagal di check_temp_data: {e}")
-            # Reset ke default jika terjadi error
+        mycursor = mydb.cursor()
+        mycursor.execute(f"SELECT NOANTRIAN, NOUJI, NOPOL, STS_SPP FROM {TB_DAFTAR_BERKALA} WHERE NOANTRIAN = '{dt_no_antri}' ")
+        myresult = mycursor.fetchone()
+        if myresult is None:
+            toast_msg = f'Belum ada data untuk No. Antrian {dt_no_antri}, No. Uji {dt_no_uji}, Silahkan Verifikasi terlebih dahulu'
+            toast(toast_msg)
             dt_verified_data = 0
             dt_verified_payment = 0
-        finally:
-            if mycursor:
-                mycursor.close()
+        else:
+            toast_msg = f'Sudah ada data untuk No. Antrian {dt_no_antri}, No. Uji {dt_no_uji}, Silahkan lanjutkan pengujian'
+            toast(toast_msg)
+            dt_verified_data = 1
+            dt_verified_payment = int(myresult[3]) if myresult[3] is not None else 0
 
     def exec_add_queue(self):
         try:
@@ -1075,6 +1017,25 @@ class ScreenAddData(MDScreen):
             dt_temp_brt_ksg = self.ids.tx_beratkosong.text.strip()
             dt_temp_tgl_uji_terakhir = str(time.strftime("%Y/%m/%d %H:%M:%S", time.localtime()))
 
+            # self.ids.lb_temp_nama.text = f'{dt_temp_nama}'
+            # self.ids.lb_temp_alamat.text = f'{dt_temp_alamat}'
+            # self.ids.lb_temp_no_uji.text = f'{dt_temp_no_uji}'
+            # self.ids.lb_temp_no_pol.text = f'{dt_temp_no_pol}'
+            # self.ids.lb_temp_status_uji.text = 'Berkala' if dt_temp_status_uji == 'B' else 'Uji Ulang' if dt_temp_status_uji == 'U' else 'Baru' if dt_temp_status_uji == 'BR' else 'Numpang Uji' if dt_temp_status_uji == 'NB' else 'Mutasi'
+            # self.ids.lb_temp_tgl_uji_terakhir.text = f'{dt_temp_tgl_uji_terakhir}'
+            # self.ids.lb_temp_tgl_uji_habis.text = f'{dt_temp_tgl_uji_habis}'
+            # self.ids.lb_temp_merk.text = '-' if dt_temp_id_merk == None else f"{db_merk[np.where(db_merk == dt_temp_id_merk)[0][0],1]}"
+            # self.ids.lb_temp_type.text = f'{dt_temp_type}'
+            # self.ids.lb_temp_jenis_kendaraan.text = f'{dt_temp_jenis_kendaraan}'
+            # self.ids.lb_temp_warna.text = '-' if dt_temp_warna == None else f"{db_warna[np.where(db_warna == dt_temp_warna)[0][0],1]}"
+            # self.ids.lb_temp_chasis.text = f'{dt_temp_chasis}'
+            # self.ids.lb_temp_mesin.text = f'{dt_temp_mesin}'
+            # self.ids.lb_temp_bahan_bakar.text = '-' if dt_temp_bhn_bkr == None else f"{db_bahan_bakar[np.where(db_bahan_bakar == dt_temp_bhn_bkr)[0][0],1]}"
+            # self.ids.lb_temp_jbb.text = f'{dt_temp_jbb}'
+            # self.ids.lb_temp_berat_kosong.text = f'{dt_temp_brt_ksg}'
+
+            # Validate dropdowns have values selected
+            
             if not hasattr(self.ids.drop_merk, 'merk_id'):
                 toast("Pilih Merk!")
                 return
@@ -1089,7 +1050,7 @@ class ScreenAddData(MDScreen):
             dt_temp_bhn_bkr = self.ids.drop_bahan_bakar.bahan_bakar_id
             dt_temp_warna = self.ids.drop_warna.warna_id
 
-            
+            # Insert into database
             mycursor = mydb.cursor()
             sql = f"""
                 INSERT INTO {TB_DATA_MASTER} 
@@ -1113,19 +1074,6 @@ class ScreenAddData(MDScreen):
                 dt_temp_tgl_uji_terakhir
             )
             mycursor.execute(sql, values)
-            Logger.info(f"Membuat data template awal di temp_image_kendaraanbr untuk NOPOL: {dt_temp_no_pol}")
-            sql_temp_image = f"""
-                INSERT INTO temp_image_kendaraanbr
-                (NOUJI, NEW_NOUJI, NOPOL, NAMA, ALAMAT, MERK_ID, TYPE, idjeniskendaraan, BHN_BAKAR, JBB, BERATKOSONG, WARNA_KEND, TGL_UJI_TERAKHIR)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """
-            # Kita bisa gunakan lagi sebagian besar data dari atas
-            values_temp_image = (
-                dt_temp_no_uji, dt_temp_no_uji_new, dt_temp_no_pol, dt_temp_nama, dt_temp_alamat,
-                dt_temp_id_merk, dt_temp_type, dt_temp_jenis_kendaraan, dt_temp_bhn_bkr,
-                dt_temp_jbb, dt_temp_brt_ksg, dt_temp_warna, dt_temp_tgl_uji_terakhir
-            )
-            mycursor.execute(sql_temp_image, values_temp_image)
             mydb.commit()
 
             toast("Data berhasil didaftarkan")
@@ -1201,7 +1149,7 @@ class ScreenAddQueue(MDScreen):
             self.ids.lb_temp_alamat.text = f'{dt_temp_alamat}'
             self.ids.lb_temp_no_uji.text = f'{dt_temp_no_uji}'
             self.ids.lb_temp_no_pol.text = f'{dt_temp_no_pol}'
-            self.ids.lb_temp_status_uji.text = 'Berkala' if dt_temp_status_uji == 'B' else 'Uji Ulang' if dt_temp_status_uji == 'U' else 'Baru' if dt_temp_status_uji == 'BR' else 'Numpang Uji' if dt_temp_status_uji == 'ND' else 'Mutasi'
+            self.ids.lb_temp_status_uji.text = 'Berkala' if dt_temp_status_uji == 'B' else 'Uji Ulang' if dt_temp_status_uji == 'U' else 'Baru' if dt_temp_status_uji == 'BR' else 'Numpang Uji' if dt_temp_status_uji == 'NB' else 'Mutasi'
             self.ids.lb_temp_tgl_uji_terakhir.text = f'{dt_temp_tgl_uji_terakhir}'
             self.ids.lb_temp_tgl_uji_habis.text = f'{dt_temp_tgl_uji_habis}'
             self.ids.lb_temp_merk.text = '-' if dt_temp_id_merk == None else f"{db_merk[np.where(db_merk == dt_temp_id_merk)[0][0],1]}"
@@ -1325,10 +1273,9 @@ class ScreenAddQueue(MDScreen):
     #     except Exception as e:
     #         toast_msg = f'Gagal Menemukan Data dari Database Master'
     #         toast(toast_msg)
-    #         Logger.error(f"{self.name}: {toast_msg}, {e}") 
+    #         Logger.error(f"{self.name}: {toast_msg}, {e}")
 
     def exec_fetch_master_data(self, dt_find_no_pol, dt_find_no_uji):
-            # (Semua deklarasi global Anda tetap di sini)
             global mydb, db_users, db_merk, db_bahan_bakar, db_warna, dt_id_user, dt_user, dt_foto_user, dt_no_antri, dt_no_pol, dt_no_uji, dt_sts_uji, dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_brt_ksg, dt_bhn_bkr, dt_warna, dt_visual_flag, dt_temp_no_uji, dt_temp_no_uji_new, dt_temp_no_wilayah, dt_temp_no_kendaraan, dt_temp_no_plat, dt_temp_no_pol, dt_temp_nama, dt_temp_no_hp, dt_temp_alamat, dt_temp_id_izin, dt_temp_wilayah, dt_temp_provinsi, dt_temp_kabupaten_kota, dt_temp_kecamatan, dt_temp_id_merk, dt_temp_id_subjenis, dt_temp_type, dt_temp_tahun_buat, dt_temp_silinder, dt_temp_warna, dt_temp_chasis, dt_temp_mesin, dt_temp_warna_plat, dt_temp_bhn_bkr, dt_temp_jbb, dt_temp_brt_ksg, dt_temp_daya_motor, dt_temp_tgl_uji_terakhir, dt_temp_tgl_uji_habis, dt_temp_status_uji, dt_temp_status_penerbitan, dt_temp_jenis_kendaraan, dt_temp_kode_jenis_kendaraan, dt_temp_kode_wilayah
             
             mycursor = None
@@ -1352,20 +1299,17 @@ class ScreenAddQueue(MDScreen):
                     params = (dt_find_no_uji,)
                 else:
                     toast("Silakan isi Nomor Uji atau Nomor Polisi dengan benar")
-                    return False  # Memberi sinyal gagal
+                    return False  
 
                 mycursor.execute(query, params)
                 myresult = mycursor.fetchone()
 
-                # PERBAIKAN UTAMA: Cek `myresult` SEGERA setelah fetch
                 if not myresult:
                     toast('Data tidak ditemukan di database. Silakan ajukan pengujian baru.')
-                    return False # Memberi sinyal gagal
+                    return False 
 
-                # Jika data ditemukan, baru proses
                 db_master_data = np.array(myresult)
                 
-                # Pengisian variabel dt_temp_*
                 (dt_temp_no_uji, dt_temp_no_uji_new, dt_temp_no_wilayah, dt_temp_no_kendaraan, 
                 dt_temp_no_plat, dt_temp_no_pol, dt_temp_nama, dt_temp_no_hp, dt_temp_alamat, 
                 dt_temp_id_izin, dt_temp_wilayah, dt_temp_provinsi, dt_temp_kabupaten_kota, 
@@ -1375,7 +1319,6 @@ class ScreenAddQueue(MDScreen):
                 dt_temp_daya_motor, last_uji_date, dt_temp_status_uji, dt_temp_status_penerbitan, 
                 dt_temp_jenis_kendaraan, dt_temp_kode_jenis_kendaraan, dt_temp_kode_wilayah) = db_master_data
 
-                # Kalkulasi tanggal habis uji...
                 if not last_uji_date:
                     last_uji_date = datetime.datetime(1900, 1, 1)
 
@@ -1398,19 +1341,19 @@ class ScreenAddQueue(MDScreen):
                         habis_uji_date = last_uji_date.replace(year=last_uji_date.year + 1, month=last_uji_date.month - 6)
                     dt_temp_tgl_uji_habis = habis_uji_date.strftime('%d-%m-%Y')
                     
-                return True # Memberi sinyal sukses
+                return True 
 
             except mysql.connector.Error as err:
                 toast(f'Error Database: {err}')
                 Logger.error(f"{self.name}: Error Database: {err}")
-                return False # Memberi sinyal gagal
+                return False 
             except Exception as e:
                 toast('Gagal menemukan data dari Database Master')
                 Logger.error(f"{self.name}: Gagal fetch data master, {e}")
-                return False # Memberi sinyal gagal
+                return False 
             finally:
                 if mycursor:
-                    mycursor.close()
+                    mycursor.close() 
 
     def exec_register(self):
         global mydb, db_users, db_merk, db_bahan_bakar, db_warna
@@ -1499,9 +1442,9 @@ class ScreenMenu(MDScreen):
             self.ids.lb_no_uji.text = str(dt_no_uji)
             self.ids.lb_temp_nama.text = str(dt_temp_nama)
             self.ids.lb_temp_alamat.text = str(dt_temp_alamat)
-            self.ids.lb_temp_status_uji.text = 'Berkala' if dt_sts_uji == 'B' else 'Uji Ulang' if dt_sts_uji == 'U' else 'Baru' if dt_sts_uji == 'BR' else 'Numpang Uji' if dt_sts_uji == 'ND' else 'Mutasi'
-            # self.ids.lb_temp_tgl_uji_terakhir.text = f'{dt_temp_tgl_uji_terakhir}'
-            # self.ids.lb_temp_tgl_uji_habis.text = f'{dt_temp_tgl_uji_habis}'
+            self.ids.lb_temp_status_uji.text = 'Berkala' if dt_sts_uji == 'B' else 'Uji Ulang' if dt_sts_uji == 'U' else 'Baru' if dt_sts_uji == 'BR' else 'Numpang Uji' if dt_sts_uji == 'NB' else 'Mutasi'
+            self.ids.lb_temp_tgl_uji_terakhir.text = f'{dt_temp_tgl_uji_terakhir}'
+            self.ids.lb_temp_tgl_uji_habis.text = f'{dt_temp_tgl_uji_habis}'
             self.ids.lb_temp_merk.text = '-' if dt_merk == None else f"{db_merk[np.where(db_merk == dt_merk)[0][0],1]}"
             self.ids.lb_temp_type.text = str(dt_type)
             self.ids.lb_temp_jenis_kendaraan.text = str(dt_jns_kend)
@@ -1513,74 +1456,166 @@ class ScreenMenu(MDScreen):
 
         except Exception as e:
             Logger.error(f"{self.name}: Gagal memuat data kendaraan: {e}")
-        Clock.schedule_interval(self.update_save_button_status, 2)
-        
-    def exec_verify_data(self):
-        global dt_id_pendaftaran, dt_no_antri, dt_verified_data, dt_verified_payment
-        global dt_temp_no_uji, dt_temp_no_uji_new, dt_temp_no_wilayah, dt_temp_no_kendaraan, dt_temp_no_plat, dt_temp_no_pol
-        global dt_temp_nama, dt_temp_no_hp, dt_temp_alamat, dt_temp_id_izin, dt_temp_wilayah, dt_temp_provinsi, dt_temp_kabupaten_kota, dt_temp_kecamatan
-        global dt_temp_id_merk, dt_temp_id_subjenis, dt_temp_type, dt_temp_tahun_buat, dt_temp_silinder, dt_temp_warna, dt_temp_chasis, dt_temp_mesin, dt_temp_warna_plat
-        global dt_temp_bhn_bkr, dt_temp_jbb, dt_temp_daya_motor, dt_temp_tgl_uji_terakhir, dt_temp_status_penerbitan, dt_temp_jenis_kendaraan, dt_temp_kode_jenis_kendaraan, dt_temp_kode_wilayah
+
+    def exec_initialize_inspection_status(self):
+        global mydb, dt_no_pol, dt_id_user, dt_no_uji, dt_sts_uji, dt_no_antri
 
         mycursor = None
         try:
+            mycursor = mydb.cursor()
+
+            # 1. Dapatkan id_image sebagai kunci utama sesi inspeksi
+            mycursor.execute(f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = %s ORDER BY id DESC LIMIT 1", (dt_no_pol,))
+            result_image = mycursor.fetchone()
+            if not result_image:
+                toast("Gagal menemukan data gambar kendaraan. Verifikasi data terlebih dahulu.")
+                Logger.error(f"{self.name}: Tidak ditemukan id_image untuk nopol {dt_no_pol} saat inisialisasi.")
+                return
+            id_image = result_image[0]
+
+            # 2. Hapus data uji LAMA yang mungkin terkait dengan sesi ini untuk memulai dari awal
+            mycursor.execute(f"SELECT id_uji FROM {TB_UJI} WHERE id_image = %s", (id_image,))
+            uji_ids_to_delete = [item[0] for item in mycursor.fetchall()]
+            if uji_ids_to_delete:
+                id_placeholders = ', '.join(['%s'] * len(uji_ids_to_delete))
+                mycursor.execute(f"DELETE FROM {TB_UJI_DETAIL} WHERE id_uji IN ({id_placeholders})", uji_ids_to_delete)
+                mycursor.execute(f"DELETE FROM {TB_UJI} WHERE id_image = %s", (id_image,))
+
+            # 3. Definisikan semua KELOMPOK UJI yang harus dibuat
+            # Anda bisa menyesuaikan daftar ini sesuai kebutuhan
+            relevant_groups = ('V1', 'V2', 'P2P3', 'P4', 'ID1') # V1=Visual1, V2=Visual2, ID1=Identitas, dll.
+
+            now = datetime.datetime.now()
+
+            # 4. Loop untuk membuat semua record induk di tabel 'uji'
+            for group in relevant_groups:
+                sql_insert_uji = f"""
+                    INSERT INTO {TB_UJI} (id_image, nouji, newnouji, nopol, tanggal, kode_kelompok_uji, lulus_uji, noantrian)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """
+                # Menambahkan dt_no_uji untuk newnouji dan dt_no_antri untuk noantrian
+                params_uji = (id_image, dt_no_uji, dt_no_uji, dt_no_pol, now, group, '1', dt_no_antri)
+                mycursor.execute(sql_insert_uji, params_uji)
+
+            # 5. Ambil semua subkomponen yang relevan untuk diisi ke uji_detail
+            mycursor.execute(f"SELECT id_uji, kode_kelompok_uji FROM {TB_UJI} WHERE id_image = %s", (id_image,))
+            id_uji_map = {kode_kelompok: id_uji for id_uji, kode_kelompok in mycursor.fetchall()}
+
+            mycursor.execute(f"""
+                SELECT ku.kode_kelompok_uji, ku.kode_komponen_uji, sku.kode_subkomponen_uji
+                FROM komponen_uji ku
+                JOIN subkomponen_uji sku ON ku.kode_komponen_uji = sku.kode_komponen_uji
+                WHERE ku.kode_kelompok_uji IN ({', '.join(['%s'] * len(relevant_groups))})
+            """, relevant_groups)
+            all_subcomponents = mycursor.fetchall()
+
+            # 6. Loop untuk mengisi tabel 'uji_detail'
+            for kelompok_uji, komponen_uji, subkomponen_uji in all_subcomponents:
+                id_uji = id_uji_map.get(kelompok_uji)
+                if id_uji:
+                    sql_insert_detail = f"""
+                        INSERT INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan)
+                        VALUES (%s, %s, %s, %s, %s)
+                    """
+                    params_detail = (id_uji, '1', komponen_uji, subkomponen_uji, '')
+                    mycursor.execute(sql_insert_detail, params_detail)
+
+            mydb.commit()
+            toast("Status inspeksi berhasil diinisialisasi untuk semua komponen.")
+            Logger.info(f"{self.name}: Inisialisasi status inspeksi untuk nopol {dt_no_pol} berhasil.")
+
+        except Exception as e:
+            if mydb:
+                mydb.rollback()
+            toast(f'Gagal inisialisasi status inspeksi: {e}')
+            Logger.error(f"{self.name}: Error saat exec_initialize_inspection_status: {e}", exc_info=True)
+        finally:
+            if mycursor:
+                mycursor.close()
+                
+    def exec_verify_data(self):
+        global dt_id_pendaftaran, dt_no_antri, dt_verified_data, dt_sts_uji, dt_no_uji, dt_no_pol
+        global dt_temp_nama, dt_temp_alamat, dt_merk, dt_type, dt_jbb, dt_jns_kend, dt_warna
+        global dt_temp_no_wilayah, dt_temp_no_kendaraan, dt_temp_no_plat, dt_temp_no_hp
+        global dt_temp_id_izin, dt_temp_wilayah, dt_temp_provinsi, dt_temp_kabupaten_kota, dt_temp_kecamatan
+        global dt_temp_id_subjenis, dt_temp_tahun_buat, dt_temp_silinder, dt_temp_chasis, dt_temp_mesin
+        global dt_temp_warna_plat, dt_temp_bhn_bkr, dt_temp_daya_motor, dt_temp_status_penerbitan
+        global dt_temp_kode_jenis_kendaraan, dt_temp_kode_wilayah, dt_temp_tgl_uji_terakhir
+
+        try:
+            if dt_verified_data == 1:
+                toast('Data sudah diverifikasi, lanjut ke pembayaran.')
+                self.exec_verify_payment()
+                return
+
             if dt_sts_uji in ("B", "U"):
                 target_table = TB_DAFTAR_BERKALA
             elif dt_sts_uji in ("BR", "ND", "MD"):
                 target_table = TB_DAFTAR_BARU
             else:
-                toast(f"Status Uji '{dt_sts_uji}' tidak dikenal.")
+                toast(f"Status Uji '{dt_sts_uji}' tidak valid.")
                 return
-            mycursor = mydb.cursor()
-            today_date = datetime.date.today()
 
-            # Cek apakah data untuk no. antrean ini sudah ada HARI INI berdasarkan TGL_SPP.
-            # PASTIKAN tabel Anda punya kolom `TGL_SPP` bertipe DATETIME.
-            query_check = f"SELECT ID FROM {target_table} WHERE NOANTRIAN = %s AND DATE(TGL_SPP) = %s"
-            mycursor.execute(query_check, (dt_no_antri, today_date))
-            existing_record_today = mycursor.fetchone()
+            mycursor = mydb.cursor(dictionary=True) 
 
-            if existing_record_today:
-                toast("Data hari ini sudah ada, memperbarui...")
-                sql = f"""UPDATE {target_table} SET 
-                            NOUJI=%s, NOPOL=%s, NAMA=%s, ALAMAT=%s, MERK_ID=%s, TYPE=%s, 
-                            idjeniskendaraan=%s, BHN_BAKAR=%s, JBB=%s, WARNA_KEND=%s,
-                            TGL_SPP=NOW() 
-                        WHERE NOANTRIAN = %s AND DATE(TGL_SPP) = %s"""
-                values = (
-                    dt_no_uji, dt_no_pol, dt_temp_nama, dt_temp_alamat, dt_merk, dt_type, 
-                    dt_jns_kend, dt_bhn_bkr, dt_jbb, dt_warna,
-                    dt_no_antri, today_date
-                )
+            mycursor.execute(f"SELECT * FROM {target_table} WHERE NOANTRIAN = %s", (dt_no_antri,))
+            existing_record = mycursor.fetchone()
+
+            if existing_record:
+                toast("Data aaksintrian sudah ada, melakukan update...")
+                
+                update_fields = {}
+                if dt_no_pol: update_fields['NOPOL'] = dt_no_pol
+                if dt_no_uji: update_fields['NOUJI'] = dt_no_uji
+                if dt_temp_nama: update_fields['NAMA'] = dt_temp_nama
+                if dt_temp_alamat: update_fields['ALAMAT'] = dt_temp_alamat
+                if dt_merk: update_fields['MERK_ID'] = dt_merk
+                if dt_type: update_fields['TYPE'] = dt_type
+
+                if update_fields:
+                    set_clause = ", ".join([f"`{key}` = %s" for key in update_fields.keys()])
+                    sql_update = f"UPDATE {target_table} SET {set_clause} WHERE NOANTRIAN = %s"
+                    
+                    values_tuple = list(update_fields.values()) + [dt_no_antri]
+                    
+                    mycursor.execute(sql_update, tuple(values_tuple))
+                    mydb.commit()
+                else:
+                    toast("Tidak ada data baru untuk diupdate.")
+
             else:
-                toast("Membuat data pendaftaran baru untuk hari ini...")
-                sql = f"""INSERT INTO {target_table} 
-                            (ID, NOANTRIAN, NOUJI, NOPOL, NAMA, ALAMAT, MERK_ID, TYPE, 
-                            idjeniskendaraan, BHN_BAKAR, JBB, WARNA_KEND, TGL_SPP) 
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())"""
-                values = (
-                    dt_id_pendaftaran, dt_no_antri, dt_no_uji, dt_no_pol, dt_temp_nama, 
-                    dt_temp_alamat, dt_merk, dt_type, dt_jns_kend, dt_bhn_bkr, 
-                    dt_jbb, dt_warna
-                )
+                toast("Data antrian baru, melakukan insert...")
 
-            mycursor.execute(sql, values)
-            mydb.commit()
+                sql_insert = f"""
+                    INSERT INTO {target_table} (
+                        ID, NOANTRIAN, NOUJI, NOPOL, NAMA, ALAMAT, MERK_ID, TYPE, JBB, WARNA_KEND, idjeniskendaraan, TGL_LASTUJI
+                        # Tambahkan semua kolom lain di sini
+                    ) VALUES (
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                        # Tambahkan %s sesuai jumlah kolom
+                    )
+                """
+                values_tuple = (
+                    dt_id_pendaftaran, dt_no_antri, dt_no_uji, dt_no_pol, dt_temp_nama, 
+                    dt_temp_alamat, dt_merk, dt_type, dt_jbb, dt_warna, dt_jns_kend,
+                    dt_temp_tgl_uji_terakhir
+                )
+                
+                mycursor.execute(sql_insert, values_tuple)
+                mydb.commit()
+
             dt_verified_data = 1
-            toast('Data pendaftaran berhasil diproses.')
+            dt_verified_payment = 0
+            toast(f'Berhasil memverifikasi data untuk antrian {dt_no_antri}')
             self.exec_verify_payment()
 
         except mysql.connector.Error as err:
-            toast_msg = f'Error Database: {err}'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}")
+            toast(f'Error Database: {err}')
+            Logger.error(f"{self.name}: DB Error in exec_verify_data: {err}")
         except Exception as e:
-            toast_msg = f'Gagal memproses verifikasi data'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}")
-        finally:
-            if mycursor:
-                mycursor.close()
+            toast('Gagal memverifikasi data')
+            Logger.error(f"{self.name}: General Error in exec_verify_data: {e}")
+
 
     def exec_verify_payment(self):
         global dt_no_antri, dt_sts_uji, dt_verified_payment
@@ -1591,219 +1626,119 @@ class ScreenMenu(MDScreen):
         global dt_temp_nama, dt_temp_no_hp, dt_temp_alamat, dt_temp_id_izin, dt_temp_wilayah, dt_temp_provinsi, dt_temp_kabupaten_kota, dt_temp_kecamatan
         global dt_temp_id_merk, dt_temp_id_subjenis, dt_temp_type, dt_temp_tahun_buat, dt_temp_silinder, dt_temp_warna, dt_temp_chasis, dt_temp_mesin, dt_temp_warna_plat
         global dt_temp_bhn_bkr, dt_temp_jbb, dt_temp_daya_motor, dt_temp_tgl_uji_terakhir, dt_temp_tgl_uji_habis, dt_temp_status_uji, dt_temp_status_penerbitan, dt_temp_jenis_kendaraan, dt_temp_kode_jenis_kendaraan, dt_temp_kode_wilayah
-        
-        dt_tgl_baru_uji = datetime.datetime.now()
-        mycursor = None
-        id_image = None
+
+        dt_tgl_baru_uji = str(time.strftime("%Y/%m/%d %H:%M:%S", time.localtime()))
 
         try:
-            # 1. Update status SPP dan buat folder (Tidak berubah)
+            dt_tgl_baru_uji = datetime.datetime.now() 
+
             mycursor = mydb.cursor()
             if dt_sts_uji in ("B", "U"):
                 target_table = TB_DAFTAR_BERKALA
-            elif dt_sts_uji in ("BR", "ND", "MD"):
-                target_table = TB_DAFTAR_BARU
             else:
-                toast(f"Status Uji '{dt_sts_uji}' tidak valid.")
-                return
+                target_table = TB_DAFTAR_BARU
 
-            sql_update_spp = f"UPDATE {target_table} SET STS_SPP = '1' WHERE NOANTRIAN = %s"
-            mycursor.execute(sql_update_spp, (dt_no_antri,))
+            sql = f"UPDATE {target_table} SET STS_SPP = '1', TGL_SPP = %s WHERE NOANTRIAN = %s "
+            values = (dt_tgl_baru_uji, dt_no_antri)
+            mycursor.execute(sql, values)
             mydb.commit()
             dt_verified_payment = 1
-            toast('Pembayaran terverifikasi.')
-
-            today_str = dt_tgl_baru_uji.strftime("%Y-%m-%d")
-            make_dir_path = f'/var/www/system/storage/app/capture/{today_str}/{dt_sts_uji}-{dt_no_antri}'
-            self.sftp_make_dir(make_dir_path)
-
+            toast_msg = f'Berhasil Memverifikasi Pembayaran'
+            toast(toast_msg)
         except Exception as e:
-            toast(f'Gagal pada tahap awal verifikasi: {e}')
-            Logger.error(f"{self.name}: Gagal di tahap verifikasi SPP/Folder: {e}")
-            if mycursor: mycursor.close()
-            return
-        finally:
-            if mycursor: mycursor.close()
-    #/////////////////////////////////////
-        if dt_sts_uji in ("BR", "ND", "MD"):
-            sync_cursor = None
-            try:
-                sync_cursor = mydb.cursor(dictionary=True, buffered=True)
-                
-                # Cek apakah data sudah ada di temp_image_kendaraanbr
-                sync_cursor.execute("SELECT id FROM temp_image_kendaraanbr WHERE nopol = %s", (dt_no_pol,))
-                existing_template = sync_cursor.fetchone()
+            toast_msg = f'Gagal Memverifikasi Pembayaran'
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
-                # Siapkan data HANYA untuk kolom yang ADA di temp_image_kendaraanbr
-                template_data = {
-                    'nopol': dt_no_pol,
-                    'nouji': dt_temp_no_uji,
-                    'NEW_NOUJI': dt_temp_no_uji_new,
-                    'noantrian': dt_no_antri,
-                    'SUBJENIS_ID': dt_temp_id_subjenis,
-                    'jbb': dt_temp_jbb,
-                    'bk': dt_temp_brt_ksg,  # BERATKOSONG menjadi bk
-                    'tgl_daftar': dt_tgl_baru_uji # Mengisi tanggal daftar saat ini
-                }
-                
-                # Filter hanya kolom yang nilainya tidak kosong
-                template_data_clean = {k: v for k, v in template_data.items() if v is not None and str(v).strip()}
-
-                if existing_template:
-                    # Jika sudah ada, UPDATE
-                    Logger.info(f"Memperbarui template di temp_image_kendaraanbr untuk NOPOL: {dt_no_pol}")
-                    update_cols = ", ".join([f"`{k}` = %s" for k in template_data_clean.keys()])
-                    update_vals = list(template_data_clean.values())
-                    update_vals.append(dt_no_pol)
-                    
-                    sql_update_template = f"UPDATE temp_image_kendaraanbr SET {update_cols} WHERE nopol = %s"
-                    sync_cursor.execute(sql_update_template, tuple(update_vals))
-                else:
-                    # Jika belum ada, INSERT
-                    Logger.info(f"Membuat template baru di temp_image_kendaraanbr untuk NOPOL: {dt_no_pol}")
-                    cols = ", ".join([f"`{k}`" for k in template_data_clean.keys()])
-                    placeholders = ", ".join(["%s"] * len(template_data_clean))
-                    
-                    sql_insert_template = f"INSERT INTO temp_image_kendaraanbr ({cols}) VALUES ({placeholders})"
-                    sync_cursor.execute(sql_insert_template, tuple(template_data_clean.values()))
-                
-                mydb.commit()
-                toast("Sinkronisasi ke template BR berhasil.")
-
-            except mysql.connector.Error as err:
-                toast(f"Gagal sinkronisasi DB: {err}")
-                Logger.error(f"{self.name}: Gagal sinkronisasi ke temp_image_kendaraanbr: {err}")
-                mydb.rollback()
-            finally:
-                if sync_cursor:
-                    sync_cursor.close()
-        # --- Bagian Utama: Kelola image_kendaraan ---
-        mycursor = None
         try:
-            mycursor = mydb.cursor(dictionary=True, buffered=True)
-            
-            # Cek apakah ada sesi image_kendaraan untuk NOPOL ini di HARI YANG SAMA
-            query_check_today_session = f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = %s AND DATE(dcreate) = %s LIMIT 1"
-            mycursor.execute(query_check_today_session, (dt_no_pol, today_str))
-            existing_today_session = mycursor.fetchone()
+            today = str(time.strftime("%Y-%m-%d", time.localtime()))
+            make_dir_path = f'/var/www/system/storage/app/capture/{today}/{dt_sts_uji}-{dt_no_antri}'
+            self.sftp_make_dir(make_dir_path)
+        except Exception as e:
+            toast_msg = f'Gagal Menemukan Folder Remote'
+            toast(toast_msg)  
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
+         
 
-            if existing_today_session:
-                # JIKA ADA SESI HARI INI, UPDATE DATA INTI YANG ADA DI TABEL
-                id_image = existing_today_session['id']
-                Logger.info(f"Sesi hari ini ditemukan (id: {id_image}). Melakukan UPDATE...")
-                
-                sql_update = f"""
-                    UPDATE {TB_DATA_IMAGE} 
-                    SET noantrian = %s, statusuji = %s, tgl_capture = %s, dcreate = %s, nouji = %s, NEW_NOUJI = %s
+        try:
+            mycursor = mydb.cursor(dictionary=True)
+            last_record = None
+
+            query_main = f"SELECT * FROM {TB_DATA_IMAGE} WHERE nopol = %s ORDER BY id DESC LIMIT 1"
+            mycursor.execute(query_main, (dt_no_pol,))
+            last_record = mycursor.fetchone()
+
+            if not last_record:
+                toast("Mencari di data sementara...")
+                query_temp = f"SELECT * FROM temp_image_kendaraanbr WHERE nopol = %s ORDER BY id DESC LIMIT 1"
+                mycursor.execute(query_temp, (dt_no_pol,))
+                last_record = mycursor.fetchone()
+
+            today = datetime.date.today()
+            record_date = None
+            if last_record and last_record.get('dcreate'):
+                if isinstance(last_record['dcreate'], datetime.datetime):
+                    record_date = last_record['dcreate'].date()
+            
+            if last_record and record_date == today:
+                toast("Data hari ini sudah ada. Mengupdate sesi...")
+                record_id = last_record['id']
+
+                sql_update_today = f"""
+                    UPDATE {TB_DATA_IMAGE}
+                    SET
+                        noantrian = %s,
+                        statusuji = %s,
+                        nouji = %s,
+                        NEW_NOUJI = %s,
+                        tgl_capture = %s
                     WHERE id = %s
                 """
-                mycursor.execute(sql_update, (
-                    dt_no_antri, dt_sts_uji, dt_tgl_baru_uji.strftime('%Y-%m-%d %H:%M:%S'), 
-                    dt_tgl_baru_uji, dt_no_uji, dt_no_uji, id_image
-                ))
-                
+                update_values = (
+                    dt_no_antri, dt_sts_uji, dt_no_uji, dt_no_uji, dt_tgl_baru_uji, record_id
+                )
+                mycursor.execute(sql_update_today, update_values)
+                mydb.commit()
+                self.exec_initialize_inspection_status() 
+                toast(f"Berhasil update sesi untuk antrian {dt_no_antri}")
+
             else:
-                # JIKA TIDAK ADA SESI HARI INI, BUAT BARIS BARU (INSERT)
-                Logger.info(f"Tidak ada sesi hari ini. Membuat data baru di image_kendaraan...")
-                
-                # Siapkan data HANYA untuk kolom yang ada
-                insert_data = {
-                    'nopol': dt_no_pol,
-                    'nouji': dt_temp_no_uji if dt_temp_no_uji else dt_no_uji,
-                    'NEW_NOUJI': dt_temp_no_uji_new if dt_temp_no_uji_new else dt_no_uji,
+                if last_record:
+                    toast("Data lama ditemukan. Melakukan kloning...")
+                    new_data = last_record.copy() # Kloning semua data persis
+                    new_data.pop('id', None) # Hapus ID lama
+                else:
+                    toast("Tidak ada data lama. Membuat record baru...")
+                    new_data = {} 
+
+                updates = {
                     'noantrian': dt_no_antri,
+                    'nouji': dt_no_uji,
+                    'NEW_NOUJI': dt_no_uji,
+                    'nopol': dt_no_pol,
                     'statusuji': dt_sts_uji,
-                    'SUBJENIS_ID': dt_temp_id_subjenis,
                     'dcreate': dt_tgl_baru_uji,
-                    'tgl_capture': dt_tgl_baru_uji.strftime('%Y-%m-%d %H:%M:%S'),
+                    'tgl_capture': dt_tgl_baru_uji,
                 }
+                new_data.update(updates)
 
-                # Filter hanya kolom yang tidak kosong untuk dimasukkan
-                columns_to_insert = {k: v for k, v in insert_data.items() if v is not None}
+                columns = ", ".join([f"`{k}`" for k in new_data.keys()])
+                placeholders = ", ".join(["%s"] * len(new_data))
+                sql_insert_clone = f"INSERT INTO {TB_DATA_IMAGE} ({columns}) VALUES ({placeholders})"
                 
-                columns = ", ".join([f"`{k}`" for k in columns_to_insert.keys()])
-                placeholders = ", ".join(["%s"] * len(columns_to_insert))
-                sql_insert_new = f"INSERT INTO {TB_DATA_IMAGE} ({columns}) VALUES ({placeholders})"
-                mycursor.execute(sql_insert_new, tuple(columns_to_insert.values()))
-                id_image = mycursor.lastrowid
+                mycursor.execute(sql_insert_clone, tuple(new_data.values()))
+                mydb.commit()
+                self.exec_initialize_inspection_status()
+                toast("Berhasil membuat data inspeksi baru.")
 
-            # Buat record uji kosong untuk sesi ini
-            if id_image:
-                array_kode_kelompok = ['V1', 'V2', 'P2P3', 'P4']
-                for kode in array_kode_kelompok:
-                    # Cek dulu apakah record uji sudah ada untuk id_image ini
-                    mycursor.execute("SELECT id_uji FROM uji WHERE id_image = %s AND kode_kelompok_uji = %s", (id_image, kode))
-                    if not mycursor.fetchone():
-                        sql_uji = "INSERT INTO uji (tanggal, nopol, nouji, newnouji, kode_kelompok_uji, lulus_uji, id_image) VALUES (%s, %s, %s, %s, %s, '1', %s)"
-                        mycursor.execute(sql_uji, (dt_tgl_baru_uji.strftime('%Y-%m-%d %H:%M:%S'), dt_no_pol, dt_no_uji, dt_no_uji, kode, id_image))
-
-            mydb.commit()
-            toast(f"Sesi uji untuk antrean {dt_no_antri} berhasil diproses.")
-
+        except mysql.connector.Error as err:
+            toast_msg = f'Error Database saat kloning: {err}'
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}")
         except Exception as e:
-            mydb.rollback()
-            toast('Gagal memproses data sesi uji.')
-            Logger.error(f"{self.name}: Gagal di exec_verify_payment (image_kendaraan), {e}")
-        finally:
-            if mycursor:
-                mycursor.close()
-
-    def check_all_inspections_complete(self):
-        """
-        Memeriksa apakah SEMUA kelompok uji (V1, V2, P2P3, P4) sudah selesai.
-        Mengembalikan True jika semua lengkap, False jika ada yang kurang.
-        """
-        global mydb, dt_no_antri
-        
-        mycursor = None
-        try:
-            mycursor = mydb.cursor(buffered=True)
-            
-            query_get_id = "SELECT id FROM {} WHERE noantrian = %s AND DATE(dcreate) = CURDATE()".format(TB_DATA_IMAGE)
-            mycursor.execute(query_get_id, (dt_no_antri,))
-            result_image = mycursor.fetchone()
-
-            if not result_image:
-                return False
-
-            id_image = result_image[0]
-            
-            required_groups = ['V1', 'V2', 'P2P3', 'P4']
-            
-            for group_code in required_groups:
-                query_check = f"""
-                    SELECT COUNT(*) FROM {TB_UJI_DETAIL} ud
-                    JOIN {TB_UJI} u ON ud.id_uji = u.id_uji
-                    WHERE u.id_image = %s AND u.kode_kelompok_uji = %s
-                """
-                mycursor.execute(query_check, (id_image, group_code))
-                count = mycursor.fetchone()[0]
-                
-                if count == 0:
-                    Logger.info(f"Pengecekan kelengkapan: Kelompok {group_code} belum selesai.")
-                    return False
-
-            Logger.info("Pengecekan kelengkapan: Semua kelompok uji telah selesai.")
-            return True
-
-        except Exception as e:
-            Logger.error(f"{self.name}: Error saat check_all_inspections_complete: {e}")
-            return False
-        finally:
-            if mycursor:
-                mycursor.close()
-
-    def on_leave(self):
-        Clock.unschedule(self.update_save_button_status)
-        
-    def update_save_button_status(self, dt):
-        """Fungsi yang akan dipanggil oleh Clock untuk mengupdate tombol."""
-        if self.check_all_inspections_complete():
-            self.ids.bt_save.disabled = False
-            self.ids.bt_save.md_bg_color = "#2CA02C" 
-        else:
-            self.ids.bt_save.disabled = True
-            self.ids.bt_save.md_bg_color = (0.8, 0.8, 0.8, 1) 
+            toast_msg = f'Gagal memproses data gambar kendaraan'
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, Error: {e}")
 
     def sftp_make_dir(self, remote_path):
         ssh = paramiko.SSHClient()
@@ -2218,22 +2153,24 @@ class ScreenInspectId(MDScreen):
         try:
             Logger.info(f"reload menu komentar uji {selected_kode_subkomponen_uji}")
             tb_komentar_uji = mydb.cursor()
-            tb_komentar_uji.execute(f"SELECT id, id_komponen_uji, id_subkomponen_uji, komentar FROM {TB_KOMENTAR_UJI} WHERE id_subkomponen_uji = '{selected_kode_subkomponen_uji}'")
-            result_tb_komentar_uji = tb_komentar_uji.fetchall()
+            query = f"SELECT id, id_komponen_uji, id_subkomponen_uji, komentar FROM {TB_KOMENTAR_UJI} WHERE id_subkomponen_uji = %s"
+            tb_komentar_uji.execute(query, (selected_kode_subkomponen_uji,))
+            
+            result_list = tb_komentar_uji.fetchall()
             mydb.commit()
-            db_komentar_uji = np.array(result_tb_komentar_uji).T
 
-            if(db_komentar_uji.size == 0 ):
+            if not result_list:
                 self.ids.bt_dropdown_caller.disabled = True
                 toast('Tidak Ada Rekomendasi Komentar, Silahkan Isi Komentar Sendiri')
+                return 
 
             self.menu_komentar_uji_items = [
                 {
-                    "text": f"{db_komentar_uji[3,i]}",                   
+                    "text": f"{row[3]}",
                     "viewclass": "ListItem",
                     "height": dp(int(60 * 800 / window_size_y)),
-                    "on_release": lambda x=f"{db_komentar_uji[3,i]}": self.menu_komentar_callback(x),
-                } for i in range(db_komentar_uji[0,:].size)
+                    "on_release": lambda x=f"{row[3]}": self.menu_komentar_callback(x),
+                } for row in result_list 
             ]
 
             self.menu_komentar_uji = MDDropdownMenu(
@@ -2244,8 +2181,8 @@ class ScreenInspectId(MDScreen):
 
         except Exception as e:
             toast_msg = f'Gagal Menampilkan Rekomendasi Komentar'
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
-
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}", exc_info=True)
     def open_screen_menu(self):
         self.screen_manager.current = 'screen_menu'
 
@@ -2323,8 +2260,6 @@ class ScreenInspectId(MDScreen):
 class ScreenInspectDimension(MDScreen):        
     def __init__(self, **kwargs):
         super(ScreenInspectDimension, self).__init__(**kwargs)
-        global selected_row_komponen_uji
-        selected_row_komponen_uji = None
         Clock.schedule_once(self.delayed_init, 1)
     
     def delayed_init(self, dt):
@@ -2490,83 +2425,83 @@ class ScreenInspectDimension(MDScreen):
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
     def exec_reload_subkomponen_uji(self, kode_komponen_uji, default=True):
-            global mydb, db_subkomponen_uji, dt_no_pol, flags_subkomponen_uji
-            global window_size_x, window_size_y
+        global mydb, db_subkomponen_uji, dt_no_pol
+        global flags_subkomponen_uji, db_last_data, dt_jns_kend
+        global window_size_x, window_size_y
 
-            mycursor = None
-            try:
-                # 1. Ambil daftar subkomponen & NAMA KOLOM dari kolom 'value'
-                mycursor = mydb.cursor(buffered=True)
-                mycursor.execute(f"""
-                    SELECT kode_subkomponen_uji, nama, value 
-                    FROM {TB_SUBKOMPONEN_UJI} 
-                    WHERE kode_komponen_uji = %s ORDER BY urut
-                """, (kode_komponen_uji,))
-                result_tb_subkomponen_uji = mycursor.fetchall()
+        try:
+            tb_subkomponen_uji = mydb.cursor()
+            tb_subkomponen_uji.execute(f"SELECT kode_subkomponen_uji, nama, value FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = '{kode_komponen_uji}' ORDER BY urut")
+            result_tb_subkomponen_uji = tb_subkomponen_uji.fetchall()
+            mydb.commit()
+            db_subkomponen_uji = np.array(result_tb_subkomponen_uji).T
+            if(default):
+                flags_subkomponen_uji = np.ones(db_subkomponen_uji[0,:].size, dtype='bool')
+            else:
+                flags_subkomponen_uji = np.zeros(db_subkomponen_uji[0,:].size, dtype='bool')
+        except Exception as e:
+            toast_msg = f'Gagal Mengambil Data dari Database Tabel Subkomponen Uji'
+            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+
+        try:
+            layout_list = self.ids.layout_list_subkomponen_uji
+            layout_list.clear_widgets(children=None)
+        except Exception as e:
+            toast_msg = f'Gagal Menghapus Widget'
+            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+        
+        try:           
+            layout_list = self.ids.layout_list_subkomponen_uji
+            for i in range(db_subkomponen_uji[0,:].size):
+                card = MDCard(
+                    MDLabel(text=f"{db_subkomponen_uji[1, i]}", size_hint_x= 0.4),
+                    
+                    ripple_behavior = False,
+                    padding = [20, 0],
+                    spacing = 10,
+                    id=f'card_subkomponen_uji{i}',
+                    on_press = self.on_subkomponen_uji_row_press,
+                    size_hint_y=None,
+                    height=dp(int(60 * 800 / window_size_y)),
+                    )
+                self.ids[f'card_subkomponen_uji{i}'] = card
+                layout_list.add_widget(card)
                 
-                if not result_tb_subkomponen_uji:
-                    self.ids.layout_list_subkomponen_uji.clear_widgets()
-                    if mycursor: mycursor.close()
-                    return
+                tx_value = MDTextField(size_hint_x= 0.2, hint_text="Data",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
+                tx_comment = MDTextField(size_hint_x= 0.2, hint_text="Komentar",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
+                if(default):
+                    bt_check = MDIconButton(size_hint_x= 0.1, icon="check-bold", md_bg_color="#2CA02C",)
+                else:
+                    bt_check = MDIconButton(size_hint_x= 0.1, icon="cancel", md_bg_color="#FF2A2A",)                            
+                self.ids[f'tx_value{i}'] = tx_value
+                self.ids[f'tx_comment{i}'] = tx_comment
+                self.ids[f'bt_subkomponen_uji{i}'] = bt_check
+                card.add_widget(tx_value)
+                card.add_widget(tx_comment)
+                card.add_widget(bt_check)
 
-                db_subkomponen_uji = np.array(result_tb_subkomponen_uji).T
+        except Exception as e:
+            toast_msg = f'Gagal Memperbaharui Data Tabel Subkomponen Uji'
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+
+        try:
+            for i in range(db_subkomponen_uji[0, :].size):
+                column_name = db_subkomponen_uji[2, i]
                 
-                # Inisialisasi status Lulus/Tidak Lulus
-                if db_subkomponen_uji.size > 0:
-                    flags_subkomponen_uji = np.ones(db_subkomponen_uji[0, :].size, dtype='bool') if default else np.zeros(db_subkomponen_uji[0, :].size, dtype='bool')
-                
-                # 2. Hapus widget lama
-                self.ids.layout_list_subkomponen_uji.clear_widgets()
-
-                # 3. Ambil data terakhir dari image_kendaraan dalam satu kali query
-                last_data_dict = {}
-                if db_subkomponen_uji.size > 0:
-                    column_names_from_value = [col for col in db_subkomponen_uji[2, :] if col and str(col).strip()]
-                    if column_names_from_value:
-                        query_cols = ", ".join([f"`{col}`" for col in column_names_from_value])
-                        mycursor.execute(f"SELECT {query_cols} FROM {TB_DATA_IMAGE} WHERE nopol = %s ORDER BY id DESC LIMIT 1", (dt_no_pol,))
-                        last_data_result = mycursor.fetchone()
-                        if last_data_result:
-                            last_data_dict = dict(zip(column_names_from_value, last_data_result))
-
-                # 4. Buat widget baru dan isi dengan data
-                if db_subkomponen_uji.size > 0:
-                    for i in range(db_subkomponen_uji[0, :].size):
-                        card = MDCard(
-                            MDLabel(text=f"{db_subkomponen_uji[1, i]}", size_hint_x=0.4),
-                            ripple_behavior=False, padding=[20, 0], spacing=10,
-                            id=f'card_subkomponen_uji{i}', on_press=self.on_subkomponen_uji_row_press,
-                            size_hint_y=None, height=dp(int(60 * 800 / window_size_y))
-                        )
-                        self.ids[f'card_subkomponen_uji{i}'] = card
-                        self.ids.layout_list_subkomponen_uji.add_widget(card)
-
-                        tx_value = MDTextField(size_hint_x=0.2, hint_text="Data", text_color_focus="#4471C4", hint_text_color_focus="#4471C4", line_color_focus="#4471C4", icon_left_color_focus="#4471C4")
-                        tx_comment = MDTextField(size_hint_x=0.2, hint_text="Komentar", text_color_focus="#4471C4", hint_text_color_focus="#4471C4", line_color_focus="#4471C4", icon_left_color_focus="#4471C4")
-                        
-                        column_name_for_data = db_subkomponen_uji[2, i]
-                        last_value = last_data_dict.get(column_name_for_data)
-                        tx_value.text = str(last_value if last_value is not None else "")
-                        
-                        bt_icon = "check-bold" if flags_subkomponen_uji[i] else "cancel"
-                        bt_color = "#2CA02C" if flags_subkomponen_uji[i] else "#FF2A2A"
-                        bt_check = MDIconButton(size_hint_x=0.1, icon=bt_icon, md_bg_color=bt_color)
-
-                        self.ids[f'tx_value{i}'] = tx_value
-                        self.ids[f'tx_comment{i}'] = tx_comment
-                        self.ids[f'bt_subkomponen_uji{i}'] = bt_check
-                        card.add_widget(tx_value)
-                        card.add_widget(tx_comment)
-                        card.add_widget(bt_check)
-                
-                mycursor.close()
-
-            except Exception as e:
-                toast_msg = 'Gagal memuat sub-komponen uji dimensi'
-                toast(toast_msg)
-                Logger.error(f"{self.name}: {toast_msg}, {e}")
-                if 'mycursor' in locals() and mycursor and mycursor.is_connected():
-                    mycursor.close()
+                if column_name:
+                    tb_image_kendaraan = mydb.cursor()
+                    query = f"SELECT `{column_name}` FROM {TB_DATA_IMAGE} WHERE nopol = %s ORDER BY id DESC LIMIT 1"
+                    tb_image_kendaraan.execute(query, (dt_no_pol,))
+                    result_tb_image_kendaraan = tb_image_kendaraan.fetchone()
+                    
+                    if result_tb_image_kendaraan:
+                        last_data = result_tb_image_kendaraan[0]
+                        self.ids[f'tx_value{i}'].text = str(last_data) if last_data is not None else ""
+        except Exception as e:
+            toast_msg = 'Gagal mengambil data terakhir'
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
     def reload_menu_komentar_uji(self, selected_kode_subkomponen_uji=""):
         global window_size_x, window_size_y
@@ -2610,15 +2545,12 @@ class ScreenInspectDimension(MDScreen):
         global db_komponen_uji, db_subkomponen_uji
         global mydb, dt_no_pol, selected_row_komponen_uji
 
-
         if selected_row_komponen_uji is None or not hasattr(self, 'ids') or not self.ids.get(f'bt_komponen_uji{selected_row_komponen_uji}'):
             toast("Silakan pilih salah satu komponen uji terlebih dahulu.")
             return
 
-        mycursor = None
         try:
-            # BAGIAN 1: Update tabel 'uji' dan 'image_kendaraan'
-            mycursor = mydb.cursor(buffered=True)
+            mycursor = mydb.cursor()
             mycursor.execute(f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = %s ORDER BY id DESC LIMIT 1", (dt_no_pol,))
             result_image = mycursor.fetchone()
             if not result_image:
@@ -2631,30 +2563,26 @@ class ScreenInspectDimension(MDScreen):
                 sql_update_uji = f"UPDATE {TB_UJI} SET lulus_uji = '0' WHERE id_image = %s AND kode_kelompok_uji = %s"
                 mycursor.execute(sql_update_uji, (id_image, kode_kelompok_uji))
             
-            # Loop melalui sub-komponen untuk UPDATE data dimensi ke image_kendaraan
-            for i in range(db_subkomponen_uji[0, :].size):
-                # Ambil nama kolom dari kolom 'value' (indeks ke-2)
-                column_name = db_subkomponen_uji[2, i] 
-                
-                # HANYA JALANKAN UPDATE JIKA NAMA KOLOMNYA VALID (TIDAK None)
-                if column_name and str(column_name).strip():
-                    new_data = self.ids[f'tx_value{i}'].text
-                    sql_update_dimensi = f"UPDATE {TB_DATA_IMAGE} SET `{column_name}` = %s WHERE id = %s"
-                    mycursor.execute(sql_update_dimensi, (new_data, id_image))
-            
+            if self.__class__.__name__ == 'ScreenInspectDimension':
+                            for i in range(db_subkomponen_uji[0,:].size):
+                                column_name = db_subkomponen_uji[2, i]
+                    
+                                if column_name:
+                                    new_data = self.ids[f'tx_value{i}'].text
+                                    sql_update_dimensi = f"UPDATE {TB_DATA_IMAGE} SET `{column_name}` = %s WHERE id = %s"
+                                    mycursor.execute(sql_update_dimensi, (new_data, id_image))
+
             mydb.commit()
 
         except Exception as e:
-            mydb.rollback()
-            toast(f'Gagal memperbaharui data utama dimensi: {e}')
+            toast(f'Gagal memperbaharui data utama: {e}')
             Logger.error(f"{self.name}: Gagal di BAGIAN 1 exec_save: {e}")
-            if mycursor: mycursor.close()
             return
 
-        # BAGIAN 2: Simpan detail hasil ke 'uji_detail' (Tidak Berubah)
         try:
+            mycursor = mydb.cursor()
             kode_kelompok_uji_from_db = db_komponen_uji[0, selected_row_komponen_uji]
-            mycursor.execute(f"SELECT id_uji FROM {TB_UJI} WHERE id_image = %s AND kode_kelompok_uji = %s ORDER BY id_uji DESC LIMIT 1", (id_image, kode_kelompok_uji_from_db))
+            mycursor.execute(f"SELECT id_uji FROM {TB_UJI} WHERE nopol = %s AND kode_kelompok_uji = %s ORDER BY id_uji DESC LIMIT 1", (dt_no_pol, kode_kelompok_uji_from_db))
             result_tb_uji = mycursor.fetchone()
             if not result_tb_uji:
                 raise Exception("id_uji tidak ditemukan.")
@@ -2662,12 +2590,17 @@ class ScreenInspectDimension(MDScreen):
             
             dt_selected_kode_komponen_uji = db_komponen_uji[1, selected_row_komponen_uji]
 
-            for i in range(db_subkomponen_uji[0, :].size):
-                kode_subkomponen_uji = db_subkomponen_uji[0, i]
+            for i in range(db_subkomponen_uji[0,:].size):
+                kode_subkomponen_uji = db_subkomponen_uji[0,i]
                 comment_subkomponen_uji = self.ids[f'tx_comment{i}'].text
-                hasil_inspeksi = '1' if self.ids[f'bt_subkomponen_uji{i}'].icon == "check-bold" else '0'
+                
+                if self.ids[f'bt_subkomponen_uji{i}'].icon == "check-bold":
+                    hasil_inspeksi = '1' 
+                else:
+                    hasil_inspeksi = '0' 
 
-                mycursor.execute(f"SELECT id_uji_detail FROM {TB_UJI_DETAIL} WHERE id_uji = %s AND kode_subkomponen_uji = %s", (id_uji, kode_subkomponen_uji))
+                check_sql = f"SELECT id_uji_detail FROM {TB_UJI_DETAIL} WHERE id_uji = %s AND kode_subkomponen_uji = %s"
+                mycursor.execute(check_sql, (id_uji, kode_subkomponen_uji))
                 existing_record = mycursor.fetchone()
 
                 if existing_record:
@@ -2678,18 +2611,14 @@ class ScreenInspectDimension(MDScreen):
                     values = (id_uji, hasil_inspeksi, dt_selected_kode_komponen_uji, kode_subkomponen_uji, comment_subkomponen_uji)
                 
                 mycursor.execute(sql, values)
-            
-            mydb.commit()
+                mydb.commit()
+
             toast('Berhasil menyimpan data inspeksi')
             self.open_screen_menu()
-
+            
         except Exception as e:
-            mydb.rollback()
             toast(f'Gagal menyimpan detail uji: {e}')
             Logger.error(f"{self.name}: Gagal di BAGIAN 2 exec_save: {e}")
-        finally:
-            if mycursor:
-                mycursor.close()
 
     def exec_cancel(self):
         self.open_screen_menu()
@@ -2697,8 +2626,6 @@ class ScreenInspectDimension(MDScreen):
 class ScreenInspectVisual(MDScreen):        
     def __init__(self, **kwargs):
         super(ScreenInspectVisual, self).__init__(**kwargs)
-        global selected_row_komponen_uji
-        selected_row_komponen_uji = None
         Clock.schedule_once(self.delayed_init, 1)
     
     def delayed_init(self, dt):
@@ -3033,8 +2960,6 @@ class ScreenInspectVisual(MDScreen):
 class ScreenInspectVisual2(MDScreen):        
     def __init__(self, **kwargs):
         super(ScreenInspectVisual2, self).__init__(**kwargs)
-        global selected_row_komponen_uji
-        selected_row_komponen_uji = None
         Clock.schedule_once(self.delayed_init, 1)
     
     def delayed_init(self, dt):
@@ -3370,8 +3295,6 @@ class ScreenInspectVisual2(MDScreen):
 class ScreenInspectPit(MDScreen):        
     def __init__(self, **kwargs):
         super(ScreenInspectPit, self).__init__(**kwargs)
-        global selected_row_komponen_uji
-        selected_row_komponen_uji = None
         Clock.schedule_once(self.delayed_init, 1)
     
     def delayed_init(self, dt):
@@ -3709,8 +3632,6 @@ class ScreenInspectPit(MDScreen):
 class ScreenRealtimeCctv(MDScreen):        
     def __init__(self, **kwargs):
         super(ScreenRealtimeCctv, self).__init__(**kwargs)
-        global selected_row_komponen_uji
-        selected_row_komponen_uji = None
         Clock.schedule_once(self.delayed_init, 1)
 
     def delayed_init(self, dt):
@@ -3896,7 +3817,8 @@ class ScreenRealtimeCctv(MDScreen):
                 return
             # Step 3: Resize cropped 1000x1000 → 600x600
             resized_img = cv2.resize(cropped_img, (600, 600), interpolation=cv2.INTER_AREA)
-            encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 70]
+            # Step 4: Save with compression (JPEG quality 75)
+            encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 65]
             success = cv2.imwrite(local_path, resized_img, encode_param)
             if not success:
                 raise Exception(f"cv2.imwrite failed. Check image data or disk space.")
@@ -3967,8 +3889,6 @@ class ScreenRealtimeCctv(MDScreen):
 class ScreenRealtimePit(MDScreen):        
     def __init__(self, **kwargs):
         super(ScreenRealtimePit, self).__init__(**kwargs)
-        global selected_row_komponen_uji
-        selected_row_komponen_uji = None
         Clock.schedule_once(self.delayed_init, 1)
     
     def delayed_init(self, dt):
@@ -4148,8 +4068,8 @@ class ScreenRealtimePit(MDScreen):
                 return
             # Step 3: Resize cropped 1000x1000 → 600x600
             resized_img = cv2.resize(cropped_img, (600, 600), interpolation=cv2.INTER_AREA)
-            # Step 4: Save with compression (JPEG quality 70)
-            encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 70]
+            # Step 4: Save with compression (JPEG quality 75)
+            encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 65]
             success = cv2.imwrite(local_path, resized_img, encode_param)
             if not success:
                 raise Exception(f"cv2.imwrite failed. Check image data or disk space.")
@@ -4223,8 +4143,6 @@ class RootScreen(ScreenManager):
 class VisualInspectionApp(MDApp):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        global selected_row_komponen_uji
-        selected_row_komponen_uji = None
         Window.bind(on_resize=self.on_window_resize)
 
     def build(self):
