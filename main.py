@@ -199,7 +199,7 @@ class ScreenLogin(MDScreen):
 
     def exec_login(self):
         global mydb, db_users
-        global dt_id_user, dt_user, dt_foto_user
+        global dt_id_user, dt_user, dt_foto_user, dt_nip_user
 
         screen_main = self.screen_manager.get_screen('screen_main')
 
@@ -213,7 +213,7 @@ class ScreenLogin(MDScreen):
             hashed_password = hashlib.md5(dataBase_password.encode())
 
             mycursor = mydb.cursor()
-            mycursor.execute(f"SELECT id_user, nama, username, password, image FROM {TB_USER} WHERE username = '{input_username}' and password = '{hashed_password.hexdigest()}'")
+            mycursor.execute(f"SELECT id_user, nama, username, password, image, nip FROM {TB_USER} WHERE username = '{input_username}' and password = '{hashed_password.hexdigest()}'")
             myresult = mycursor.fetchone()
             db_users = np.array(myresult).T
             
@@ -225,6 +225,7 @@ class ScreenLogin(MDScreen):
                 dt_id_user = myresult[0]
                 dt_user = myresult[1]
                 dt_foto_user = myresult[4]
+                dt_nip_user = myresult[5]
                 self.ids.tx_username.text = ""
                 self.ids.tx_password.text = "" 
                 self.screen_manager.current = 'screen_main'
@@ -1562,7 +1563,7 @@ class ScreenMenu(MDScreen):
             existing_record = mycursor.fetchone()
 
             if existing_record:
-                toast("Data aaksintrian sudah ada, melakukan update...")
+                toast("Data antrian sudah ada, melakukan update...")
                 
                 update_fields = {}
                 if dt_no_pol: update_fields['NOPOL'] = dt_no_pol
@@ -1589,10 +1590,8 @@ class ScreenMenu(MDScreen):
                 sql_insert = f"""
                     INSERT INTO {target_table} (
                         ID, NOANTRIAN, NOUJI, NOPOL, NAMA, ALAMAT, MERK_ID, TYPE, JBB, WARNA_KEND, idjeniskendaraan, TGL_LASTUJI
-                        # Tambahkan semua kolom lain di sini
                     ) VALUES (
                         %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
-                        # Tambahkan %s sesuai jumlah kolom
                     )
                 """
                 values_tuple = (
@@ -1630,115 +1629,106 @@ class ScreenMenu(MDScreen):
         dt_tgl_baru_uji = str(time.strftime("%Y/%m/%d %H:%M:%S", time.localtime()))
 
         try:
-            dt_tgl_baru_uji = datetime.datetime.now() 
-
+            dt_tgl_baru_uji_obj = datetime.datetime.now()
             mycursor = mydb.cursor()
-            if dt_sts_uji in ("B", "U"):
-                target_table = TB_DAFTAR_BERKALA
-            else:
-                target_table = TB_DAFTAR_BARU
-
-            sql = f"UPDATE {target_table} SET STS_SPP = '1', TGL_SPP = %s WHERE NOANTRIAN = %s "
-            values = (dt_tgl_baru_uji, dt_no_antri)
-            mycursor.execute(sql, values)
+            target_table_spp = TB_DAFTAR_BERKALA if dt_sts_uji in ("B", "U") else TB_DAFTAR_BARU
+            sql_spp = f"UPDATE {target_table_spp} SET STS_SPP = '1', TGL_SPP = %s WHERE NOANTRIAN = %s"
+            mycursor.execute(sql_spp, (dt_tgl_baru_uji_obj, dt_no_antri))
             mydb.commit()
             dt_verified_payment = 1
-            toast_msg = f'Berhasil Memverifikasi Pembayaran'
-            toast(toast_msg)
+            toast('Berhasil Memverifikasi Pembayaran')
         except Exception as e:
-            toast_msg = f'Gagal Memverifikasi Pembayaran'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+            toast(f'Gagal Memverifikasi Pembayaran: {e}')
+            Logger.error(f"{self.name}: Gagal verifikasi SPP, {e}")
+            return
 
         try:
-            today = str(time.strftime("%Y-%m-%d", time.localtime()))
-            make_dir_path = f'/var/www/system/storage/app/capture/{today}/{dt_sts_uji}-{dt_no_antri}'
+            today_str = dt_tgl_baru_uji_obj.strftime("%Y-%m-%d")
+            make_dir_path = f'/var/www/system/storage/app/capture/{today_str}/{dt_sts_uji}-{dt_no_antri}'
             self.sftp_make_dir(make_dir_path)
         except Exception as e:
-            toast_msg = f'Gagal Menemukan Folder Remote'
-            toast(toast_msg)  
-            Logger.error(f"{self.name}: {toast_msg}, {e}")
-         
+            toast(f'Gagal Membuat Folder Remote: {e}')
+            Logger.error(f"{self.name}: Gagal SFTP mkdir, {e}")
 
         try:
             mycursor = mydb.cursor(dictionary=True)
-            last_record = None
+            
+            session_updates = {
+                'noantrian': dt_no_antri,
+                'nouji': dt_no_uji,
+                'NEW_NOUJI': dt_no_uji,
+                'nopol': dt_no_pol,
+                'statusuji': dt_sts_uji,
+                'SUBJENIS_ID': dt_temp_id_subjenis,
+                'idjeniskendaraan': dt_temp_jenis_kendaraan,
+                'kd_jeniskendaraan': dt_temp_kode_jenis_kendaraan,
+                'dcreate': dt_tgl_baru_uji_obj,
+                'tgl_habis_uji': None,
+                'trfstat': None,
+                'hasil_uji': None,
+                'NIP_ID1': None, 
+                'NIP_ID2': None, 
+                'NIP_ID3': None, 
+                'NIP_ID4': None, 
+                'NIP_ID5': None,
+                'VERIFIKATOR': None,
+                'kadis' : None,
+                "direktur": None,
+                'id_penguji': None,
+                'tgl_capture': dt_tgl_baru_uji,
+            }
 
-            query_main = f"SELECT * FROM {TB_DATA_IMAGE} WHERE nopol = %s ORDER BY id DESC LIMIT 1"
-            mycursor.execute(query_main, (dt_no_pol,))
-            last_record = mycursor.fetchone()
+            # 1. Cek dulu apakah sudah ada record untuk kendaraan ini HARI INI.
+            check_today_sql = f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = %s AND DATE(dcreate) = CURDATE()"
+            mycursor.execute(check_today_sql, (dt_no_pol,))
+            todays_record = mycursor.fetchone()
 
-            if not last_record:
-                toast("Mencari di data sementara...")
-                query_temp = f"SELECT * FROM temp_image_kendaraanbr WHERE nopol = %s ORDER BY id DESC LIMIT 1"
-                mycursor.execute(query_temp, (dt_no_pol,))
+            if todays_record:
+                # SKENARIO 1: Record hari ini sudah ada, lakukan UPDATE
+                toast("Data hari ini sudah ada. Memperbarui sesi...")
+                record_id = todays_record['id']
+                
+                # Buat SET clause secara dinamis dari dictionary
+                set_clause = ", ".join([f"`{key}` = %s" for key in session_updates.keys()])
+                sql_update_today = f"UPDATE {TB_DATA_IMAGE} SET {set_clause} WHERE id = %s"
+                
+                # Gabungkan nilai dari dictionary dengan record_id
+                update_values = list(session_updates.values()) + [record_id]
+                mycursor.execute(sql_update_today, tuple(update_values))
+            else:
+                query_hist = f"SELECT * FROM {TB_DATA_IMAGE} WHERE nopol = %s ORDER BY id DESC LIMIT 1"
+                mycursor.execute(query_hist, (dt_no_pol,))
                 last_record = mycursor.fetchone()
 
-            today = datetime.date.today()
-            record_date = None
-            if last_record and last_record.get('dcreate'):
-                if isinstance(last_record['dcreate'], datetime.datetime):
-                    record_date = last_record['dcreate'].date()
-            
-            if last_record and record_date == today:
-                toast("Data hari ini sudah ada. Mengupdate sesi...")
-                record_id = last_record['id']
+                if not last_record:
+                    query_fallback = f"SELECT * FROM temp_image_kendaraanbr WHERE nopol = %s ORDER BY id DESC LIMIT 1"
+                    mycursor.execute(query_fallback, (dt_no_pol,))
+                    last_record = mycursor.fetchone()
 
-                sql_update_today = f"""
-                    UPDATE {TB_DATA_IMAGE}
-                    SET
-                        noantrian = %s,
-                        statusuji = %s,
-                        nouji = %s,
-                        NEW_NOUJI = %s,
-                        tgl_capture = %s
-                    WHERE id = %s
-                """
-                update_values = (
-                    dt_no_antri, dt_sts_uji, dt_no_uji, dt_no_uji, dt_tgl_baru_uji, record_id
-                )
-                mycursor.execute(sql_update_today, update_values)
-                mydb.commit()
-                self.exec_initialize_inspection_status() 
-                toast(f"Berhasil update sesi untuk antrian {dt_no_antri}")
-
-            else:
                 if last_record:
                     toast("Data lama ditemukan. Melakukan kloning...")
-                    new_data = last_record.copy() # Kloning semua data persis
-                    new_data.pop('id', None) # Hapus ID lama
+                    new_data = last_record.copy()
+                    new_data.pop('id', None) 
+                    new_data.pop('tgl_daftar', None) 
+                    new_data.pop('KOTA_ASAL', None)
+                    new_data.update(session_updates)
+
+                    columns = ", ".join([f"`{k}`" for k in new_data.keys()])
+                    placeholders = ", ".join(["%s"] * len(new_data))
+                    sql_insert_clone = f"INSERT INTO {TB_DATA_IMAGE} ({columns}) VALUES ({placeholders})"
+                    mycursor.execute(sql_insert_clone, tuple(new_data.values()))
                 else:
-                    toast("Tidak ada data lama. Membuat record baru...")
-                    new_data = {} 
+                    toast_msg = "Data belum terdaftar dan belum dapat diproses"
+                    toast(toast_msg)
+                    Logger.warning(f"{self.name}: NOPOL {dt_no_pol} tidak ditemukan. Proses verifikasi dibatalkan.")
+                    return
 
-                updates = {
-                    'noantrian': dt_no_antri,
-                    'nouji': dt_no_uji,
-                    'NEW_NOUJI': dt_no_uji,
-                    'nopol': dt_no_pol,
-                    'statusuji': dt_sts_uji,
-                    'dcreate': dt_tgl_baru_uji,
-                    'tgl_capture': dt_tgl_baru_uji,
-                }
-                new_data.update(updates)
+            mydb.commit()
+            self.exec_initialize_inspection_status()
 
-                columns = ", ".join([f"`{k}`" for k in new_data.keys()])
-                placeholders = ", ".join(["%s"] * len(new_data))
-                sql_insert_clone = f"INSERT INTO {TB_DATA_IMAGE} ({columns}) VALUES ({placeholders})"
-                
-                mycursor.execute(sql_insert_clone, tuple(new_data.values()))
-                mydb.commit()
-                self.exec_initialize_inspection_status()
-                toast("Berhasil membuat data inspeksi baru.")
-
-        except mysql.connector.Error as err:
-            toast_msg = f'Error Database saat kloning: {err}'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}")
         except Exception as e:
-            toast_msg = f'Gagal memproses data gambar kendaraan'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, Error: {e}")
+            toast(f'Gagal proses data image: {e}')
+            Logger.error(f"{self.name}: Gagal di BAGIAN 3, {e}", exc_info=True)
 
     def sftp_make_dir(self, remote_path):
         ssh = paramiko.SSHClient()
@@ -1907,7 +1897,19 @@ class ScreenMenu(MDScreen):
 
     def exec_save(self):
         try:
-            mycursor = mydb.cursor()
+            mycursor = mydb.cursor(dictionary=True)
+            check_today_sql = f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = %s AND DATE(dcreate) = CURDATE()"
+            mycursor.execute(check_today_sql, (dt_no_pol,))
+            todays_image_record = mycursor.fetchone()
+
+            if todays_image_record:
+                image_id_today = todays_image_record['id']
+                sql_update_nip = f"UPDATE {TB_DATA_IMAGE} SET NIP_ID1 = %s, NIP_ID2 = %s WHERE id = %s"
+                mycursor.execute(sql_update_nip, (dt_nip_user, dt_nip_user, image_id_today))
+                Logger.info(f"NIP {dt_nip_user} berhasil disimpan untuk image_id {image_id_today}")
+            else:
+                Logger.warning(f"Tidak ditemukan record di image_kendaraan untuk NOPOL {dt_no_pol} hari ini. NIP tidak tersimpan.")
+
             sql = f"UPDATE {TB_DATA} SET check_flag = '1' WHERE noantrian = '{dt_no_antri}' "
             mycursor.execute(sql)
             mydb.commit()
