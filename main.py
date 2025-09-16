@@ -1,4 +1,5 @@
 import datetime
+from encodings.punycode import T
 from re import L
 import os, sys, time
 import threading
@@ -557,7 +558,7 @@ class ScreenMain(MDScreen):
                         MDLabel(text=f"{db_antrian[0, i]}", size_hint_x= 0.05),
                         MDLabel(text=f"{db_antrian[1, i]}", size_hint_x= 0.07),
                         MDLabel(text=f"{db_antrian[2, i]}", size_hint_x= 0.08),
-                        MDLabel(text='Berkala' if db_antrian[3, i] == 'B' else 'Uji Ulang' if (db_antrian[3, i]) == 'U' else 'Baru' if (db_antrian[3, i]) == 'BR' else 'Numpang Uji' if (db_antrian[3, i]) == 'NB' else 'Mutasi', size_hint_x= 0.07),
+                        MDLabel(text='Berkala' if db_antrian[3, i] == 'B' else 'Uji Ulang' if (db_antrian[3, i]) == 'U' else 'Baru' if (db_antrian[3, i]) == 'BR' else 'Numpang Uji' if (db_antrian[3, i]) == 'ND' else 'Mutasi Masuk', size_hint_x= 0.07),
                         MDLabel(text='-' if db_antrian[4, i] == None else f"{db_merk[np.where(db_merk == db_antrian[4, i])[0][0],1]}" , size_hint_x= 0.08),
                         MDLabel(text=f"{db_antrian[5, i]}", size_hint_x= 0.07),
                         MDLabel(text=f"{db_antrian[6, i]}", size_hint_x= 0.15),
@@ -1443,9 +1444,9 @@ class ScreenMenu(MDScreen):
             self.ids.lb_no_uji.text = str(dt_no_uji)
             self.ids.lb_temp_nama.text = str(dt_temp_nama)
             self.ids.lb_temp_alamat.text = str(dt_temp_alamat)
-            self.ids.lb_temp_status_uji.text = 'Berkala' if dt_sts_uji == 'B' else 'Uji Ulang' if dt_sts_uji == 'U' else 'Baru' if dt_sts_uji == 'BR' else 'Numpang Uji' if dt_sts_uji == 'NB' else 'Mutasi'
-            self.ids.lb_temp_tgl_uji_terakhir.text = f'{dt_temp_tgl_uji_terakhir}'
-            self.ids.lb_temp_tgl_uji_habis.text = f'{dt_temp_tgl_uji_habis}'
+            self.ids.lb_temp_status_uji.text = 'Berkala' if dt_sts_uji == 'B' else 'Uji Ulang' if dt_sts_uji == 'U' else 'Baru' if dt_sts_uji == 'BR' else 'Numpang Uji' if dt_sts_uji == 'ND' else 'Mutasi Masuk'
+            # self.ids.lb_temp_tgl_uji_terakhir.text = f'{dt_temp_tgl_uji_terakhir}'
+            # self.ids.lb_temp_tgl_uji_habis.text = f'{dt_temp_tgl_uji_habis}'
             self.ids.lb_temp_merk.text = '-' if dt_merk == None else f"{db_merk[np.where(db_merk == dt_merk)[0][0],1]}"
             self.ids.lb_temp_type.text = str(dt_type)
             self.ids.lb_temp_jenis_kendaraan.text = str(dt_jns_kend)
@@ -1603,10 +1604,30 @@ class ScreenMenu(MDScreen):
                 mycursor.execute(sql_insert, values_tuple)
                 mydb.commit()
 
-            dt_verified_data = 1
-            dt_verified_payment = 0
-            toast(f'Berhasil memverifikasi data untuk antrian {dt_no_antri}')
-            self.exec_verify_payment()
+            check_today_sql = f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = %s AND DATE(dcreate) = CURDATE()"
+            mycursor.execute(check_today_sql, (dt_no_pol,))
+            todays_record = mycursor.fetchone()
+
+            last_record = None
+            if not todays_record:
+                query_hist = f"SELECT * FROM {TB_DATA_IMAGE} WHERE nopol = %s ORDER BY id DESC LIMIT 1"
+                mycursor.execute(query_hist, (dt_no_pol,))
+                last_record = mycursor.fetchone()
+                if not last_record:
+                    query_fallback = f"SELECT * FROM temp_image_kendaraanbr WHERE nopol = %s ORDER BY id DESC LIMIT 1"
+                    mycursor.execute(query_fallback, (dt_no_pol,))
+                    last_record = mycursor.fetchone()
+
+            if todays_record or last_record:
+                dt_verified_data = 1
+                dt_verified_payment = 0
+                toast(f'Berhasil memverifikasi data untuk antrian {dt_no_antri}')
+                self.exec_verify_payment()
+            else:
+                toast_msg = "Data riwayat kendaraan tidak ditemukan, verifikasi dibatalkan."
+                toast(toast_msg)
+                Logger.warning(f"{self.name}: NOPOL {dt_no_pol} tidak ditemukan di image_kendaraan. Proses verifikasi dibatalkan.")
+                return
 
         except mysql.connector.Error as err:
             toast(f'Error Database: {err}')
@@ -1909,7 +1930,22 @@ class ScreenMenu(MDScreen):
                 Logger.info(f"NIP {dt_nip_user} berhasil disimpan untuk image_id {image_id_today}")
             else:
                 Logger.warning(f"Tidak ditemukan record di image_kendaraan untuk NOPOL {dt_no_pol} hari ini. NIP tidak tersimpan.")
-
+            target_table = None
+            if dt_sts_uji in ("B", "U"):
+                target_table = TB_DAFTAR_BERKALA
+            elif dt_sts_uji in ("BR", "ND", "MD"):
+                target_table = TB_DAFTAR_BARU
+            else:
+                toast(f"Status Uji '{dt_sts_uji}' tidak valid, NIP di tabel pendaftaran tidak diupdate.")
+                Logger.warning(f"Status Uji '{dt_sts_uji}' tidak valid saat mencoba update NIP di tabel pendaftaran.")
+            if target_table:
+                sql_update_pendaftaran = f"""
+                    UPDATE {target_table}
+                    SET NIP_ID1 = %s, NIP_ID2 = %s
+                    WHERE NOANTRIAN = %s
+                """
+                mycursor.execute(sql_update_pendaftaran, (dt_nip_user, dt_nip_user, dt_no_antri))
+                Logger.info(f"NIP {dt_nip_user} berhasil disimpan di tabel {target_table} untuk antrian {dt_no_antri}")
             sql = f"UPDATE {TB_DATA} SET check_flag = '1' WHERE noantrian = '{dt_no_antri}' "
             mycursor.execute(sql)
             mydb.commit()
@@ -2005,20 +2041,23 @@ class ScreenInspectId(MDScreen):
         global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
 
         try:
-            self.ids.bt_dropdown_caller.disabled = False
+            self.ids.bt_dropdown_caller.disabled = True
             row = int(str(instance.id).replace("card_subkomponen_uji",""))
             selected_row_subkomponen_uji = row
             selected_kode_subkomponen_uji = db_subkomponen_uji[0, row]
             selected_nama_komponen_uji = db_komponen_uji[2, selected_row_komponen_uji]
+            komentar_otomatis = db_subkomponen_uji[3, row]
 
             if(flags_subkomponen_uji[row]):
                 flags_subkomponen_uji[row] = False
                 self.ids[f'bt_subkomponen_uji{row}'].icon = "cancel"
                 self.ids[f'bt_subkomponen_uji{row}'].md_bg_color = "#FF2A2A"
+                self.ids[f'tx_comment{row}'].text = str(komentar_otomatis)
             else:
                 flags_subkomponen_uji[row] = True
                 self.ids[f'bt_subkomponen_uji{row}'].icon = "check-bold"
                 self.ids[f'bt_subkomponen_uji{row}'].md_bg_color = "#2CA02C"
+                self.ids[f'tx_comment{row}'].text = "" 
 
             if(np.all(flags_subkomponen_uji == True)):
                 self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon = "check-bold"
@@ -2029,7 +2068,7 @@ class ScreenInspectId(MDScreen):
                 self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].md_bg_color = "#FF2A2A"
                 self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Inspeksi Identitas: TIDAK LULUS pada komponen uji {selected_nama_komponen_uji}"
             
-            self.reload_menu_komentar_uji(selected_kode_subkomponen_uji)
+            # self.reload_menu_komentar_uji(selected_kode_subkomponen_uji)
 
         except Exception as e:
             toast_msg = f'Gagal Mengeksekusi Perintah dari Baris Tabel Subkomponen Uji'
@@ -2098,7 +2137,7 @@ class ScreenInspectId(MDScreen):
 
         try:
             tb_subkomponen_uji = mydb.cursor()
-            tb_subkomponen_uji.execute(f"SELECT kode_subkomponen_uji, nama, keterangan FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = '{kode_komponen_uji}' ORDER BY urut")
+            tb_subkomponen_uji.execute(f"SELECT kode_subkomponen_uji, string, keterangan, nama FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = '{kode_komponen_uji}' ORDER BY urut")
             result_tb_subkomponen_uji = tb_subkomponen_uji.fetchall()
             mydb.commit()
             db_subkomponen_uji = np.array(result_tb_subkomponen_uji).T
@@ -2134,7 +2173,7 @@ class ScreenInspectId(MDScreen):
                 self.ids[f'card_subkomponen_uji{i}'] = card
                 layout_list.add_widget(card)
                 
-                tx_comment = MDTextField(size_hint_x= 0.3, hint_text="Komentar",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
+                tx_comment = MDTextField(disabled = True, size_hint_x= 0.3, hint_text="Komentar",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
                 if(default):
                     bt_check = MDIconButton(size_hint_x= 0.1, icon="check-bold", md_bg_color="#2CA02C",)
                 else:
@@ -2338,20 +2377,24 @@ class ScreenInspectDimension(MDScreen):
         global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
 
         try:
-            self.ids.bt_dropdown_caller.disabled = False
+            self.ids.bt_dropdown_caller.disabled = True
             row = int(str(instance.id).replace("card_subkomponen_uji",""))
             selected_row_subkomponen_uji = row
             selected_kode_subkomponen_uji = db_subkomponen_uji[0, row]
             selected_nama_komponen_uji = db_komponen_uji[2, selected_row_komponen_uji]
 
+            komentar_otomatis = db_subkomponen_uji[3, row]
+
             if(flags_subkomponen_uji[row]):
                 flags_subkomponen_uji[row] = False
                 self.ids[f'bt_subkomponen_uji{row}'].icon = "cancel"
                 self.ids[f'bt_subkomponen_uji{row}'].md_bg_color = "#FF2A2A"
+                self.ids[f'tx_comment{row}'].text = str(komentar_otomatis)
             else:
                 flags_subkomponen_uji[row] = True
                 self.ids[f'bt_subkomponen_uji{row}'].icon = "check-bold"
                 self.ids[f'bt_subkomponen_uji{row}'].md_bg_color = "#2CA02C"
+                self.ids[f'tx_comment{row}'].text = ""
 
             if(np.all(flags_subkomponen_uji == True)):
                 self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon = "check-bold"
@@ -2362,7 +2405,7 @@ class ScreenInspectDimension(MDScreen):
                 self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].md_bg_color = "#FF2A2A"
                 self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Inspeksi DImensi: TIDAK LULUS pada komponen uji {selected_nama_komponen_uji}"
             
-            self.reload_menu_komentar_uji(selected_kode_subkomponen_uji)
+            # self.reload_menu_komentar_uji(selected_kode_subkomponen_uji)
 
         except Exception as e:
             toast_msg = f'Gagal Mengeksekusi Perintah dari Baris Tabel Subkomponen Uji'
@@ -2433,7 +2476,7 @@ class ScreenInspectDimension(MDScreen):
 
         try:
             tb_subkomponen_uji = mydb.cursor()
-            tb_subkomponen_uji.execute(f"SELECT kode_subkomponen_uji, nama, value FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = '{kode_komponen_uji}' ORDER BY urut")
+            tb_subkomponen_uji.execute(f"SELECT kode_subkomponen_uji, string, value, nama FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = '{kode_komponen_uji}' ORDER BY urut")
             result_tb_subkomponen_uji = tb_subkomponen_uji.fetchall()
             mydb.commit()
             db_subkomponen_uji = np.array(result_tb_subkomponen_uji).T
@@ -2470,7 +2513,7 @@ class ScreenInspectDimension(MDScreen):
                 layout_list.add_widget(card)
                 
                 tx_value = MDTextField(size_hint_x= 0.2, hint_text="Data",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
-                tx_comment = MDTextField(size_hint_x= 0.2, hint_text="Komentar",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
+                tx_comment = MDTextField(disabled = True, size_hint_x= 0.2, hint_text="Komentar",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
                 if(default):
                     bt_check = MDIconButton(size_hint_x= 0.1, icon="check-bold", md_bg_color="#2CA02C",)
                 else:
@@ -2704,20 +2747,24 @@ class ScreenInspectVisual(MDScreen):
         global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
 
         try:
-            self.ids.bt_dropdown_caller.disabled = False
+            self.ids.bt_dropdown_caller.disabled = True
             row = int(str(instance.id).replace("card_subkomponen_uji",""))
             selected_row_subkomponen_uji = row
             selected_kode_subkomponen_uji = db_subkomponen_uji[0, row]
             selected_nama_komponen_uji = db_komponen_uji[2, selected_row_komponen_uji]
+            komentar_otomatis = db_subkomponen_uji[3, row]
 
             if(flags_subkomponen_uji[row]):
                 flags_subkomponen_uji[row] = False
                 self.ids[f'bt_subkomponen_uji{row}'].icon = "cancel"
                 self.ids[f'bt_subkomponen_uji{row}'].md_bg_color = "#FF2A2A"
+                self.ids[f'tx_comment{row}'].text = str(komentar_otomatis)
+
             else:
                 flags_subkomponen_uji[row] = True
                 self.ids[f'bt_subkomponen_uji{row}'].icon = "check-bold"
                 self.ids[f'bt_subkomponen_uji{row}'].md_bg_color = "#2CA02C"
+                self.ids[f'tx_comment{row}'].text = ""
 
             if(np.all(flags_subkomponen_uji == True)):
                 self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon = "check-bold"
@@ -2728,7 +2775,7 @@ class ScreenInspectVisual(MDScreen):
                 self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].md_bg_color = "#FF2A2A"
                 self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Inspeksi Visual 1: TIDAK LULUS pada komponen uji {selected_nama_komponen_uji}"
             
-            self.reload_menu_komentar_uji(selected_kode_subkomponen_uji)
+            # self.reload_menu_komentar_uji(selected_kode_subkomponen_uji)
 
         except Exception as e:
             toast_msg = f'Gagal Mengeksekusi Perintah dari Baris Tabel Subkomponen Uji'
@@ -2798,7 +2845,7 @@ class ScreenInspectVisual(MDScreen):
 
         try:
             tb_subkomponen_uji = mydb.cursor()
-            tb_subkomponen_uji.execute(f"SELECT kode_subkomponen_uji, nama, keterangan FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = '{kode_komponen_uji}'")
+            tb_subkomponen_uji.execute(f"SELECT kode_subkomponen_uji, string, keterangan, nama FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = '{kode_komponen_uji}'")
             result_tb_subkomponen_uji = tb_subkomponen_uji.fetchall()
             mydb.commit()
             db_subkomponen_uji = np.array(result_tb_subkomponen_uji).T
@@ -2835,7 +2882,7 @@ class ScreenInspectVisual(MDScreen):
                 self.ids[f'card_subkomponen_uji{i}'] = card
                 layout_list.add_widget(card)
                 
-                tx_comment = MDTextField(size_hint_x= 0.3, hint_text="Komentar",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
+                tx_comment = MDTextField(disabled = True, size_hint_x= 0.3, hint_text="Komentar",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
                 if(default):
                     bt_check = MDIconButton(size_hint_x= 0.1, icon="check-bold", md_bg_color="#2CA02C",)
                 else:
@@ -3038,20 +3085,23 @@ class ScreenInspectVisual2(MDScreen):
         global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
 
         try:
-            self.ids.bt_dropdown_caller.disabled = False
+            self.ids.bt_dropdown_caller.disabled = True
             row = int(str(instance.id).replace("card_subkomponen_uji",""))
             selected_row_subkomponen_uji = row
             selected_kode_subkomponen_uji = db_subkomponen_uji[0, row]
             selected_nama_komponen_uji = db_komponen_uji[2, selected_row_komponen_uji]
+            komentar_otomatis = db_subkomponen_uji[3, row]
 
             if(flags_subkomponen_uji[row]):
                 flags_subkomponen_uji[row] = False
                 self.ids[f'bt_subkomponen_uji{row}'].icon = "cancel"
                 self.ids[f'bt_subkomponen_uji{row}'].md_bg_color = "#FF2A2A"
+                self.ids[f'tx_comment{row}'].text = str(komentar_otomatis)
             else:
                 flags_subkomponen_uji[row] = True
                 self.ids[f'bt_subkomponen_uji{row}'].icon = "check-bold"
                 self.ids[f'bt_subkomponen_uji{row}'].md_bg_color = "#2CA02C"
+                self.ids[f'tx_comment{row}'].text = ""
 
             if(np.all(flags_subkomponen_uji == True)):
                 self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon = "check-bold"
@@ -3062,7 +3112,7 @@ class ScreenInspectVisual2(MDScreen):
                 self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].md_bg_color = "#FF2A2A"
                 self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Inspeksi Visual 2: TIDAK LULUS pada komponen uji {selected_nama_komponen_uji}"
             
-            self.reload_menu_komentar_uji(selected_kode_subkomponen_uji)
+            # self.reload_menu_komentar_uji(selected_kode_subkomponen_uji)
 
         except Exception as e:
             toast_msg = f'Gagal Mengeksekusi Perintah dari Baris Tabel Subkomponen Uji'
@@ -3133,7 +3183,7 @@ class ScreenInspectVisual2(MDScreen):
 
         try:
             tb_subkomponen_uji = mydb.cursor()
-            tb_subkomponen_uji.execute(f"SELECT kode_subkomponen_uji, nama, keterangan FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = '{kode_komponen_uji}' ")
+            tb_subkomponen_uji.execute(f"SELECT kode_subkomponen_uji, string, keterangan, nama FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = '{kode_komponen_uji}' ")
             result_tb_subkomponen_uji = tb_subkomponen_uji.fetchall()
             mydb.commit()
             db_subkomponen_uji = np.array(result_tb_subkomponen_uji).T
@@ -3170,7 +3220,7 @@ class ScreenInspectVisual2(MDScreen):
                 self.ids[f'card_subkomponen_uji{i}'] = card
                 layout_list.add_widget(card)
                 
-                tx_comment = MDTextField(size_hint_x= 0.3, hint_text="Komentar",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
+                tx_comment = MDTextField(disabled = True, size_hint_x= 0.3, hint_text="Komentar",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
                 if(default):
                     bt_check = MDIconButton(size_hint_x= 0.1, icon="check-bold", md_bg_color="#2CA02C",)
                 else:
@@ -3378,15 +3428,18 @@ class ScreenInspectPit(MDScreen):
             selected_row_subkomponen_uji = row
             selected_kode_subkomponen_uji = db_subkomponen_uji[0, row]
             selected_nama_komponen_uji = db_komponen_uji[2, selected_row_komponen_uji]
+            komentar_otomatis = db_subkomponen_uji[3, row]
 
             if(flags_subkomponen_uji[row]):
                 flags_subkomponen_uji[row] = False
                 self.ids[f'bt_subkomponen_uji{row}'].icon = "cancel"
                 self.ids[f'bt_subkomponen_uji{row}'].md_bg_color = "#FF2A2A"
+                self.ids[f'tx_comment{row}'].text = str(komentar_otomatis)
             else:
                 flags_subkomponen_uji[row] = True
                 self.ids[f'bt_subkomponen_uji{row}'].icon = "check-bold"
                 self.ids[f'bt_subkomponen_uji{row}'].md_bg_color = "#2CA02C"
+                self.ids[f'tx_comment{row}'].text = ""
 
             if(np.all(flags_subkomponen_uji == True)):
                 self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon = "check-bold"
@@ -3397,7 +3450,7 @@ class ScreenInspectPit(MDScreen):
                 self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].md_bg_color = "#FF2A2A"
                 self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Inspeksi Kolong: TIDAK LULUS pada komponen uji {selected_nama_komponen_uji}"
             
-            self.reload_menu_komentar_uji(selected_kode_subkomponen_uji)
+            # self.reload_menu_komentar_uji(selected_kode_subkomponen_uji)
 
         except Exception as e:
             toast_msg = f'Gagal Mengeksekusi Perintah dari Baris Tabel Subkomponen Uji'
@@ -3468,7 +3521,7 @@ class ScreenInspectPit(MDScreen):
 
         try:
             tb_subkomponen_uji = mydb.cursor()
-            tb_subkomponen_uji.execute(f"SELECT kode_subkomponen_uji, nama, keterangan FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = '{kode_komponen_uji}' ")
+            tb_subkomponen_uji.execute(f"SELECT kode_subkomponen_uji, string, keterangan, nama FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = '{kode_komponen_uji}' ")
             result_tb_subkomponen_uji = tb_subkomponen_uji.fetchall()
             mydb.commit()
             db_subkomponen_uji = np.array(result_tb_subkomponen_uji).T
@@ -3504,7 +3557,7 @@ class ScreenInspectPit(MDScreen):
                 self.ids[f'card_subkomponen_uji{i}'] = card
                 layout_list.add_widget(card)
                 
-                tx_comment = MDTextField(size_hint_x= 0.3, hint_text="Komentar",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
+                tx_comment = MDTextField(disabled = True, size_hint_x= 0.3, hint_text="Komentar",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
                 if(default):
                     bt_check = MDIconButton(size_hint_x= 0.1, icon="check-bold", md_bg_color="#2CA02C",)
                 else:
