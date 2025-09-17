@@ -1,5 +1,6 @@
 import datetime
 from encodings.punycode import T
+from pickle import FALSE
 from re import L
 import os, sys, time
 import threading
@@ -86,7 +87,7 @@ TB_DAFTAR_BERKALA = "temp_pendaftaranberkala"
 TB_DAFTAR_BARU = "temp_pendaftaranbr"
 TB_DATA_MASTER = "identkendaraan"
 TB_DATA_IMAGE = "image_kendaraan"
-TB_DATA_KENDARAAN = "tb_jeniskendaraan"
+TB_DATA_KENDARAAN = "jeniskendaraan"
 TB_KOMPONEN_UJI = "komponen_uji"
 TB_SUBKOMPONEN_UJI = "subkomponen_uji"
 TB_KOMENTAR_UJI = "komentar_uji"
@@ -1466,7 +1467,6 @@ class ScreenMenu(MDScreen):
         try:
             mycursor = mydb.cursor()
 
-            # 1. Dapatkan id_image sebagai kunci utama sesi inspeksi
             mycursor.execute(f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = %s ORDER BY id DESC LIMIT 1", (dt_no_pol,))
             result_image = mycursor.fetchone()
             if not result_image:
@@ -1475,7 +1475,6 @@ class ScreenMenu(MDScreen):
                 return
             id_image = result_image[0]
 
-            # 2. Hapus data uji LAMA yang mungkin terkait dengan sesi ini untuk memulai dari awal
             mycursor.execute(f"SELECT id_uji FROM {TB_UJI} WHERE id_image = %s", (id_image,))
             uji_ids_to_delete = [item[0] for item in mycursor.fetchall()]
             if uji_ids_to_delete:
@@ -1483,13 +1482,10 @@ class ScreenMenu(MDScreen):
                 mycursor.execute(f"DELETE FROM {TB_UJI_DETAIL} WHERE id_uji IN ({id_placeholders})", uji_ids_to_delete)
                 mycursor.execute(f"DELETE FROM {TB_UJI} WHERE id_image = %s", (id_image,))
 
-            # 3. Definisikan semua KELOMPOK UJI yang harus dibuat
-            # Anda bisa menyesuaikan daftar ini sesuai kebutuhan
-            relevant_groups = ('V1', 'V2', 'P2P3', 'P4', 'ID1') # V1=Visual1, V2=Visual2, ID1=Identitas, dll.
+            relevant_groups = ('V1', 'V2')
 
             now = datetime.datetime.now()
 
-            # 4. Loop untuk membuat semua record induk di tabel 'uji'
             for group in relevant_groups:
                 sql_insert_uji = f"""
                     INSERT INTO {TB_UJI} (id_image, nouji, newnouji, nopol, tanggal, kode_kelompok_uji, lulus_uji, noantrian)
@@ -1523,7 +1519,7 @@ class ScreenMenu(MDScreen):
                     mycursor.execute(sql_insert_detail, params_detail)
 
             mydb.commit()
-            toast("Status inspeksi berhasil diinisialisasi untuk semua komponen.")
+            toast("Status inspeksi berhasil diinisialisasi untuk V1 dan V2.")
             Logger.info(f"{self.name}: Inisialisasi status inspeksi untuk nopol {dt_no_pol} berhasil.")
 
         except Exception as e:
@@ -1534,7 +1530,7 @@ class ScreenMenu(MDScreen):
         finally:
             if mycursor:
                 mycursor.close()
-                
+
     def exec_verify_data(self):
         global dt_id_pendaftaran, dt_no_antri, dt_verified_data, dt_sts_uji, dt_no_uji, dt_no_pol
         global dt_temp_nama, dt_temp_alamat, dt_merk, dt_type, dt_jbb, dt_jns_kend, dt_warna
@@ -1544,98 +1540,42 @@ class ScreenMenu(MDScreen):
         global dt_temp_warna_plat, dt_temp_bhn_bkr, dt_temp_daya_motor, dt_temp_status_penerbitan
         global dt_temp_kode_jenis_kendaraan, dt_temp_kode_wilayah, dt_temp_tgl_uji_terakhir
 
+        if dt_verified_data == 1:
+            toast('Data sudah diverifikasi, Silahkan lanjutkan pengujian.')
+            self.exec_verify_payment()
+            return
+
+        if dt_sts_uji in ("B", "U"):
+            target_table = TB_DAFTAR_BERKALA
+        elif dt_sts_uji in ("BR", "ND", "MD"):
+            target_table = TB_DAFTAR_BARU
+        else:
+            toast(f"Status Uji '{dt_sts_uji}' tidak valid.")
+            return
+
+        mycursor = None
         try:
-            if dt_verified_data == 1:
-                toast('Data sudah diverifikasi, lanjut ke pembayaran.')
-                self.exec_verify_payment()
-                return
-
-            if dt_sts_uji in ("B", "U"):
-                target_table = TB_DAFTAR_BERKALA
-            elif dt_sts_uji in ("BR", "ND", "MD"):
-                target_table = TB_DAFTAR_BARU
-            else:
-                toast(f"Status Uji '{dt_sts_uji}' tidak valid.")
-                return
-
-            mycursor = mydb.cursor(dictionary=True) 
-
-            mycursor.execute(f"SELECT * FROM {target_table} WHERE NOANTRIAN = %s", (dt_no_antri,))
+            mycursor = mydb.cursor()
+            
+            check_sql = f"SELECT ID FROM {target_table} WHERE NOANTRIAN = %s LIMIT 1"
+            mycursor.execute(check_sql, (dt_no_antri,))
             existing_record = mycursor.fetchone()
 
             if existing_record:
-                toast("Data antrian sudah ada, melakukan update...")
-                
-                update_fields = {}
-                if dt_no_pol: update_fields['NOPOL'] = dt_no_pol
-                if dt_no_uji: update_fields['NOUJI'] = dt_no_uji
-                if dt_temp_nama: update_fields['NAMA'] = dt_temp_nama
-                if dt_temp_alamat: update_fields['ALAMAT'] = dt_temp_alamat
-                if dt_merk: update_fields['MERK_ID'] = dt_merk
-                if dt_type: update_fields['TYPE'] = dt_type
-
-                if update_fields:
-                    set_clause = ", ".join([f"`{key}` = %s" for key in update_fields.keys()])
-                    sql_update = f"UPDATE {target_table} SET {set_clause} WHERE NOANTRIAN = %s"
-                    
-                    values_tuple = list(update_fields.values()) + [dt_no_antri]
-                    
-                    mycursor.execute(sql_update, tuple(values_tuple))
-                    mydb.commit()
-                else:
-                    toast("Tidak ada data baru untuk diupdate.")
-
-            else:
-                toast("Data antrian baru, melakukan insert...")
-
-                sql_insert = f"""
-                    INSERT INTO {target_table} (
-                        ID, NOANTRIAN, NOUJI, NOPOL, NAMA, ALAMAT, MERK_ID, TYPE, JBB, WARNA_KEND, idjeniskendaraan, TGL_LASTUJI
-                    ) VALUES (
-                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
-                    )
-                """
-                values_tuple = (
-                    dt_id_pendaftaran, dt_no_antri, dt_no_uji, dt_no_pol, dt_temp_nama, 
-                    dt_temp_alamat, dt_merk, dt_type, dt_jbb, dt_warna, dt_jns_kend,
-                    dt_temp_tgl_uji_terakhir
-                )
-                
-                mycursor.execute(sql_insert, values_tuple)
-                mydb.commit()
-
-            check_today_sql = f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = %s AND DATE(dcreate) = CURDATE()"
-            mycursor.execute(check_today_sql, (dt_no_pol,))
-            todays_record = mycursor.fetchone()
-
-            last_record = None
-            if not todays_record:
-                query_hist = f"SELECT * FROM {TB_DATA_IMAGE} WHERE nopol = %s ORDER BY id DESC LIMIT 1"
-                mycursor.execute(query_hist, (dt_no_pol,))
-                last_record = mycursor.fetchone()
-                if not last_record:
-                    query_fallback = f"SELECT * FROM temp_image_kendaraanbr WHERE nopol = %s ORDER BY id DESC LIMIT 1"
-                    mycursor.execute(query_fallback, (dt_no_pol,))
-                    last_record = mycursor.fetchone()
-
-            if todays_record or last_record:
+                toast('Data pendaftaran ditemukan, mempersiapkan sesi inpeksi.')
                 dt_verified_data = 1
-                dt_verified_payment = 0
-                toast(f'Berhasil memverifikasi data untuk antrian {dt_no_antri}')
                 self.exec_verify_payment()
             else:
-                toast_msg = "Data riwayat kendaraan tidak ditemukan, verifikasi dibatalkan."
-                toast(toast_msg)
-                Logger.warning(f"{self.name}: NOPOL {dt_no_pol} tidak ditemukan di image_kendaraan. Proses verifikasi dibatalkan.")
+                toast('Data pendaftaran tidak ditemukan, silakan hubungi petugas')
+                dt_verified_data = 0
                 return
 
-        except mysql.connector.Error as err:
-            toast(f'Error Database: {err}')
-            Logger.error(f"{self.name}: DB Error in exec_verify_data: {err}")
         except Exception as e:
-            toast('Gagal memverifikasi data')
-            Logger.error(f"{self.name}: General Error in exec_verify_data: {e}")
-
+            toast('Gagal melakukan verifikasi data ke database.')
+            Logger.error(f"{self.name}: Error saat memeriksa data di {target_table}: {e}")
+        finally:
+            if mycursor:
+                mycursor.close()
 
     def exec_verify_payment(self):
         global dt_no_antri, dt_sts_uji, dt_verified_payment
@@ -1657,9 +1597,9 @@ class ScreenMenu(MDScreen):
             mycursor.execute(sql_spp, (dt_tgl_baru_uji_obj, dt_no_antri))
             mydb.commit()
             dt_verified_payment = 1
-            toast('Berhasil Memverifikasi Pembayaran')
+            toast('Verifikasi Selesai, Kendaraan siap untuk diinspeksi')
         except Exception as e:
-            toast(f'Gagal Memverifikasi Pembayaran: {e}')
+            toast(f'Gagal Memverifikasi Pembayaran. Silakan coba lagi {e}')
             Logger.error(f"{self.name}: Gagal verifikasi SPP, {e}")
             return
 
@@ -1672,7 +1612,7 @@ class ScreenMenu(MDScreen):
             Logger.error(f"{self.name}: Gagal SFTP mkdir, {e}")
 
         try:
-            mycursor = mydb.cursor(dictionary=True)
+            mycursor = mydb.cursor(buffered=True, dictionary=True)
             
             session_updates = {
                 'noantrian': dt_no_antri,
@@ -1699,21 +1639,17 @@ class ScreenMenu(MDScreen):
                 'tgl_capture': dt_tgl_baru_uji,
             }
 
-            # 1. Cek dulu apakah sudah ada record untuk kendaraan ini HARI INI.
             check_today_sql = f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = %s AND DATE(dcreate) = CURDATE()"
             mycursor.execute(check_today_sql, (dt_no_pol,))
             todays_record = mycursor.fetchone()
 
             if todays_record:
-                # SKENARIO 1: Record hari ini sudah ada, lakukan UPDATE
                 toast("Data hari ini sudah ada. Memperbarui sesi...")
                 record_id = todays_record['id']
                 
-                # Buat SET clause secara dinamis dari dictionary
                 set_clause = ", ".join([f"`{key}` = %s" for key in session_updates.keys()])
                 sql_update_today = f"UPDATE {TB_DATA_IMAGE} SET {set_clause} WHERE id = %s"
                 
-                # Gabungkan nilai dari dictionary dengan record_id
                 update_values = list(session_updates.values()) + [record_id]
                 mycursor.execute(sql_update_today, tuple(update_values))
             else:
@@ -1983,15 +1919,15 @@ class ScreenInspectId(MDScreen):
         self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Inspeksi Identitas: LULUS"
         self.exec_reload_komponen_uji()
 
-    def menu_komentar_callback(self, text_item):
-        global selected_row_subkomponen_uji
+    # def menu_komentar_callback(self, text_item):
+    #     global selected_row_subkomponen_uji
 
-        try:
-            self.ids[f'tx_comment{selected_row_subkomponen_uji}'].text = text_item
-        except Exception as e:
-            toast_msg = f'Gagal Mengeksekusi Perintah dari Menu Komentar'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+    #     try:
+    #         self.ids[f'tx_comment{selected_row_subkomponen_uji}'].text = text_item
+    #     except Exception as e:
+    #         toast_msg = f'Gagal Mengeksekusi Perintah dari Menu Komentar'
+    #         toast(toast_msg)
+    #         Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
     def on_komponen_uji_row_press(self, instance):
         global dt_no_antri, dt_no_pol, dt_no_uji, dt_visual_flag, dt_nama
@@ -1999,7 +1935,7 @@ class ScreenInspectId(MDScreen):
         global db_komponen_uji, selected_row_komponen_uji, flags_komponen_uji
 
         try:
-            self.ids.bt_dropdown_caller.disabled = True
+            # self.ids.bt_dropdown_caller.disabled = True
             row = int(str(instance.id).replace("card_komponen_uji",""))
             selected_row_komponen_uji = row
             self.exec_reload_subkomponen_uji(db_komponen_uji[1, row])
@@ -2015,7 +1951,7 @@ class ScreenInspectId(MDScreen):
         global db_komponen_uji, selected_row_komponen_uji, flags_komponen_uji
 
         try:
-            self.ids.bt_dropdown_caller.disabled = True
+            # self.ids.bt_dropdown_caller.disabled = True
             row = int(str(instance.id).replace("bt_komponen_uji",""))
             selected_row_komponen_uji = row
             if(flags_komponen_uji[row]):
@@ -2041,7 +1977,7 @@ class ScreenInspectId(MDScreen):
         global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
 
         try:
-            self.ids.bt_dropdown_caller.disabled = True
+            # self.ids.bt_dropdown_caller.disabled = True
             row = int(str(instance.id).replace("card_subkomponen_uji",""))
             selected_row_subkomponen_uji = row
             selected_kode_subkomponen_uji = db_subkomponen_uji[0, row]
@@ -2130,14 +2066,15 @@ class ScreenInspectId(MDScreen):
             toast_msg = f'Gagal Memperbaharui Tabel Komponen Uji'
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
+
     def exec_reload_subkomponen_uji(self, kode_komponen_uji, default=True):
-        global mydb, db_subkomponen_uji
+        global mydb, db_subkomponen_uji, dt_no_pol, dt_sts_uji, dt_no_antri
         global flags_subkomponen_uji
         global window_size_x, window_size_y
 
         try:
             tb_subkomponen_uji = mydb.cursor()
-            tb_subkomponen_uji.execute(f"SELECT kode_subkomponen_uji, string, keterangan, nama FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = '{kode_komponen_uji}' ORDER BY urut")
+            tb_subkomponen_uji.execute(f"SELECT kode_subkomponen_uji, string, value, nama FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = '{kode_komponen_uji}' ORDER BY urut")
             result_tb_subkomponen_uji = tb_subkomponen_uji.fetchall()
             mydb.commit()
             db_subkomponen_uji = np.array(result_tb_subkomponen_uji).T
@@ -2146,22 +2083,21 @@ class ScreenInspectId(MDScreen):
             else:
                 flags_subkomponen_uji = np.zeros(db_subkomponen_uji[0,:].size, dtype='bool')
         except Exception as e:
-            toast_msg = f'Gagal Mengambil Data dari Database Tabel Subkomponen Uji'
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+            toast_msg = f'Gagal Mengambil Data Subkomponen Uji'
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
 
         try:
             layout_list = self.ids.layout_list_subkomponen_uji
             layout_list.clear_widgets(children=None)
         except Exception as e:
             toast_msg = f'Gagal Menghapus Widget'
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
-        
-        try:           
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
+            
+        try:
             layout_list = self.ids.layout_list_subkomponen_uji
             for i in range(db_subkomponen_uji[0,:].size):
                 card = MDCard(
                     MDLabel(text=f"{db_subkomponen_uji[1, i]}", size_hint_x= 0.4),
-                    
                     ripple_behavior = False,
                     padding = [20, 0],
                     spacing = 10,
@@ -2173,57 +2109,86 @@ class ScreenInspectId(MDScreen):
                 self.ids[f'card_subkomponen_uji{i}'] = card
                 layout_list.add_widget(card)
                 
-                tx_comment = MDTextField(disabled = True, size_hint_x= 0.3, hint_text="Komentar",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
+                # <--- DIUBAH: Dibuat Read-Only dengan disabled=True
+                tx_value = MDTextField(disabled=True, size_hint_x= 0.2, hint_text="Data",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
+                tx_comment = MDTextField(disabled = True, size_hint_x= 0.2, hint_text="Komentar",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
                 if(default):
                     bt_check = MDIconButton(size_hint_x= 0.1, icon="check-bold", md_bg_color="#2CA02C",)
                 else:
                     bt_check = MDIconButton(size_hint_x= 0.1, icon="cancel", md_bg_color="#FF2A2A",)
-                                
+                self.ids[f'tx_value{i}'] = tx_value
                 self.ids[f'tx_comment{i}'] = tx_comment
                 self.ids[f'bt_subkomponen_uji{i}'] = bt_check
+                card.add_widget(tx_value)
                 card.add_widget(tx_comment)
                 card.add_widget(bt_check)
-
         except Exception as e:
-            toast_msg = f'Gagal Memperbaharui Data Tabel Subkomponen Uji'
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
-
-    def reload_menu_komentar_uji(self, selected_kode_subkomponen_uji=""):
-        global window_size_x, window_size_y
+            toast_msg = f'Gagal Memperbaharui UI Subkomponen'
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
 
         try:
-            Logger.info(f"reload menu komentar uji {selected_kode_subkomponen_uji}")
-            tb_komentar_uji = mydb.cursor()
-            query = f"SELECT id, id_komponen_uji, id_subkomponen_uji, komentar FROM {TB_KOMENTAR_UJI} WHERE id_subkomponen_uji = %s"
-            tb_komentar_uji.execute(query, (selected_kode_subkomponen_uji,))
-            
-            result_list = tb_komentar_uji.fetchall()
-            mydb.commit()
+            target_table = None
+            if dt_sts_uji in ("B", "U"):
+                target_table = TB_DAFTAR_BERKALA
+            elif dt_sts_uji in ("BR", "ND", "MD"):
+                target_table = TB_DAFTAR_BARU
 
-            if not result_list:
-                self.ids.bt_dropdown_caller.disabled = True
-                toast('Tidak Ada Rekomendasi Komentar, Silahkan Isi Komentar Sendiri')
-                return 
+            if target_table:
+                mycursor = mydb.cursor(dictionary=True)
+                query = f"SELECT * FROM {target_table} WHERE NOANTRIAN = %s LIMIT 1"
+                mycursor.execute(query, (dt_no_antri,))
+                vehicle_data_row = mycursor.fetchone()
 
-            self.menu_komentar_uji_items = [
-                {
-                    "text": f"{row[3]}",
-                    "viewclass": "ListItem",
-                    "height": dp(int(60 * 800 / window_size_y)),
-                    "on_release": lambda x=f"{row[3]}": self.menu_komentar_callback(x),
-                } for row in result_list 
-            ]
-
-            self.menu_komentar_uji = MDDropdownMenu(
-                caller=self.ids.bt_dropdown_caller,
-                items=self.menu_komentar_uji_items,
-                width_mult=4,
-            )
-
+                if vehicle_data_row:
+                    for i in range(db_subkomponen_uji[0, :].size):
+                        column_name = db_subkomponen_uji[2, i]
+                        if column_name in vehicle_data_row:
+                            data_value = vehicle_data_row[column_name]
+                            self.ids[f'tx_value{i}'].text = str(data_value) if data_value is not None else ""
+                else:
+                    toast(f"Data pendaftaran untuk antrian {dt_no_antri} tidak ditemukan")
         except Exception as e:
-            toast_msg = f'Gagal Menampilkan Rekomendasi Komentar'
+            toast_msg = f'Gagal mengambil data dari tabel pendaftaran: {e}'
             toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}", exc_info=True)
+            Logger.error(f"{self.name}: {toast_msg}")
+
+    # def reload_menu_komentar_uji(self, selected_kode_subkomponen_uji=""):
+    #     global window_size_x, window_size_y
+
+    #     try:
+    #         Logger.info(f"reload menu komentar uji {selected_kode_subkomponen_uji}")
+    #         tb_komentar_uji = mydb.cursor()
+    #         query = f"SELECT id, id_komponen_uji, id_subkomponen_uji, komentar FROM {TB_KOMENTAR_UJI} WHERE id_subkomponen_uji = %s"
+    #         tb_komentar_uji.execute(query, (selected_kode_subkomponen_uji,))
+            
+    #         result_list = tb_komentar_uji.fetchall()
+    #         mydb.commit()
+
+    #         if not result_list:
+    #             self.ids.bt_dropdown_caller.disabled = True
+    #             toast('Tidak Ada Rekomendasi Komentar, Silahkan Isi Komentar Sendiri')
+    #             return 
+
+    #         self.menu_komentar_uji_items = [
+    #             {
+    #                 "text": f"{row[3]}",
+    #                 "viewclass": "ListItem",
+    #                 "height": dp(int(60 * 800 / window_size_y)),
+    #                 "on_release": lambda x=f"{row[3]}": self.menu_komentar_callback(x),
+    #             } for row in result_list 
+    #         ]
+
+    #         self.menu_komentar_uji = MDDropdownMenu(
+    #             caller=self.ids.bt_dropdown_caller,
+    #             items=self.menu_komentar_uji_items,
+    #             width_mult=4,
+    #         )
+
+    #     except Exception as e:
+    #         toast_msg = f'Gagal Menampilkan Rekomendasi Komentar'
+    #         toast(toast_msg)
+    #         Logger.error(f"{self.name}: {toast_msg}, {e}", exc_info=True)
+
     def open_screen_menu(self):
         self.screen_manager.current = 'screen_menu'
 
@@ -2248,10 +2213,13 @@ class ScreenInspectId(MDScreen):
             if self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon == "cancel":
                 sql_update_uji = f"UPDATE {TB_UJI} SET lulus_uji = '0' WHERE id_image = %s AND kode_kelompok_uji = %s"
                 mycursor.execute(sql_update_uji, (id_image, kode_kelompok_uji))
+            else:
+                sql_update_uji = f"UPDATE {TB_UJI} SET lulus_uji = '1' WHERE id_image = %s AND kode_kelompok_uji = %s"
+                mycursor.execute(sql_update_uji, (id_image, kode_kelompok_uji))
             mydb.commit()
 
         except Exception as e:
-            toast(f'Gagal memperbaharui data utama: {e}')
+            toast(f'Gagal memperbaharui status komponen uji: {e}')
             Logger.error(f"{self.name}: Gagal di BAGIAN 1 exec_save: {e}")
             return
 
@@ -2312,22 +2280,38 @@ class ScreenInspectDimension(MDScreen):
         self.ids.lb_dishub.text = LB_DISHUB
         self.ids.lb_unit.text = LB_UNIT
         self.ids.lb_unit_address.text = LB_UNIT_ADDRESS
-    
-    def on_enter(self):
-        global dt_no_antri, dt_no_pol, dt_no_uji
 
-        self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Inspeksi DImensi: LULUS"
+    def on_enter(self):
+        global dt_no_antri, dt_no_pol, dt_no_uji, dt_jns_kend, mydb
+
+        self.stsbak = None  
+        try:
+            mycursor = mydb.cursor()
+            query = f"SELECT stsbak FROM {TB_DATA_KENDARAAN} WHERE namajenis = %s"
+            mycursor.execute(query, (dt_jns_kend,))
+            result = mycursor.fetchone()
+            
+            if result:
+                self.stsbak = str(result[0])
+                Logger.info(f"{self.name}: Ditemukan stsbak = {self.stsbak} untuk kendaraan {dt_no_pol}")
+            else:
+                Logger.warning(f"{self.name}: Tidak ditemukan stsbak untuk idjeniskendaraan: {dt_jns_kend}")
+
+        except Exception as e:
+            Logger.error(f"{self.name}: Gagal mengambil nilai stsbak: {e}")
+        
+        self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Inspeksi Dimensi: LULUS"
         self.exec_reload_komponen_uji()
 
-    def menu_komentar_callback(self, text_item):
-        global selected_row_subkomponen_uji
+    # def menu_komentar_callback(self, text_item):
+    #     global selected_row_subkomponen_uji
 
-        try:
-            self.ids[f'tx_comment{selected_row_subkomponen_uji}'].text = text_item
-        except Exception as e:
-            toast_msg = f'Gagal Mengeksekusi Perintah dari Menu Komentar'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+    #     try:
+    #         self.ids[f'tx_comment{selected_row_subkomponen_uji}'].text = text_item
+    #     except Exception as e:
+    #         toast_msg = f'Gagal Mengeksekusi Perintah dari Menu Komentar'
+    #         toast(toast_msg)
+    #         Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
     def on_komponen_uji_row_press(self, instance):
         global dt_no_antri, dt_no_pol, dt_no_uji, dt_visual_flag, dt_nama
@@ -2335,7 +2319,7 @@ class ScreenInspectDimension(MDScreen):
         global db_komponen_uji, selected_row_komponen_uji
 
         try:
-            self.ids.bt_dropdown_caller.disabled = True
+            # self.ids.bt_dropdown_caller.disabled = FALSE
             row = int(str(instance.id).replace("card_komponen_uji",""))
             selected_row_komponen_uji = row
             self.exec_reload_subkomponen_uji(db_komponen_uji[1, row])
@@ -2351,7 +2335,7 @@ class ScreenInspectDimension(MDScreen):
         global db_komponen_uji, selected_row_komponen_uji, flags_komponen_uji
 
         try:
-            self.ids.bt_dropdown_caller.disabled = True
+            # self.ids.bt_dropdown_caller.disabled = True
             row = int(str(instance.id).replace("bt_komponen_uji",""))
             selected_row_komponen_uji = row
             if(flags_komponen_uji[row]):
@@ -2377,7 +2361,7 @@ class ScreenInspectDimension(MDScreen):
         global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
 
         try:
-            self.ids.bt_dropdown_caller.disabled = True
+            # self.ids.bt_dropdown_caller.disabled = True
             row = int(str(instance.id).replace("card_subkomponen_uji",""))
             selected_row_subkomponen_uji = row
             selected_kode_subkomponen_uji = db_subkomponen_uji[0, row]
@@ -2413,175 +2397,208 @@ class ScreenInspectDimension(MDScreen):
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
     def exec_reload_komponen_uji(self):
-        global mydb, db_komponen_uji
-        global flags_komponen_uji
-        global window_size_x, window_size_y
+            global mydb, db_komponen_uji
+            global flags_komponen_uji
+            global window_size_x, window_size_y
 
-        try:
-            tb_komponen_uji = mydb.cursor()
-            tb_komponen_uji.execute(f"SELECT kode_kelompok_uji, kode_komponen_uji, nama, keterangan FROM {TB_KOMPONEN_UJI} WHERE kode_komponen_uji = 'K02' OR kode_komponen_uji = 'K15' OR kode_komponen_uji = 'K18' ")
-            result_tb_komponen_uji = tb_komponen_uji.fetchall()
-            mydb.commit()
-            db_komponen_uji = np.array(result_tb_komponen_uji).T
-            flags_komponen_uji = np.ones(db_komponen_uji[0,:].size, dtype='bool')            
-        except Exception as e:
-            toast_msg = f'Gagal Mengambil Data dari Database Tabel Komponen Uji'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+            try:
+                komponen_codes = ['K02', 'K18', 'K19', 'K16', 'K20', 'K21'] 
+                
+                if hasattr(self, 'stsbak') and self.stsbak in ('1', '2'):
+                    komponen_codes.append('K15')
 
-        try:
-            layout_list = self.ids.layout_list_komponen_uji
-            layout_list.clear_widgets(children=None)
-        except Exception as e:
-            toast_msg = f'Gagal Menghapus Widget'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
-        
-        try:           
-            layout_list = self.ids.layout_list_komponen_uji
-            for i in range(db_komponen_uji[0,:].size):
-                card = MDCard(
-                        MDLabel(text=f"{db_komponen_uji[2, i]}", size_hint_x= 0.7),
+                placeholders = ', '.join(['%s'] * len(komponen_codes))
+                
+                tb_komponen_uji = mydb.cursor()
+                query = f"SELECT kode_kelompok_uji, kode_komponen_uji, nama, keterangan FROM {TB_KOMPONEN_UJI} WHERE kode_komponen_uji IN ({placeholders})"
+                tb_komponen_uji.execute(query, tuple(komponen_codes))
+                
+                result_tb_komponen_uji = tb_komponen_uji.fetchall()
+                mydb.commit()
+                db_komponen_uji = np.array(result_tb_komponen_uji).T
+                flags_komponen_uji = np.ones(db_komponen_uji[0,:].size, dtype='bool')
 
-                        ripple_behavior = True,
-                        on_press = self.on_komponen_uji_row_press,
+            except Exception as e:
+                toast_msg = f'Gagal Mengambil Data dari Database Tabel Komponen Uji'
+                toast(toast_msg)
+                Logger.error(f"{self.name}: {toast_msg}, {e}")
+
+            try:
+                layout_list = self.ids.layout_list_komponen_uji
+                layout_list.clear_widgets(children=None)
+            except Exception as e:
+                toast_msg = f'Gagal Menghapus Widget'
+                toast(toast_msg)
+                Logger.error(f"{self.name}: {toast_msg}, {e}")
+            
+            try:
+                layout_list = self.ids.layout_list_komponen_uji
+                for i in range(db_komponen_uji[0,:].size):
+                    card = MDCard(
+                            MDLabel(text=f"{db_komponen_uji[2, i]}", size_hint_x= 0.7),
+                            ripple_behavior = True,
+                            on_press = self.on_komponen_uji_row_press,
+                            padding = [20, 0],
+                            spacing = 10,
+                            id=f'card_komponen_uji{i}',
+                            size_hint_y=None,
+                            height=dp(int(60 * 800 / window_size_y)),
+                            )
+                    self.ids[f'card_komponen_uji{i}'] = card
+                    layout_list.add_widget(card)
+                    
+                    bt_check = MDIconButton(
+                            size_hint_x= 0.1, 
+                            icon="check-bold", 
+                            md_bg_color="#2CA02C",
+                            on_press = self.on_komponen_uji_bt_press,
+                            id=f'bt_komponen_uji{i}',
+                            )
+                    self.ids[f'bt_komponen_uji{i}'] = bt_check
+                    card.add_widget(bt_check)
+                    
+            except Exception as e:
+                toast_msg = f'Gagal Memperbaharui Tabel Komponen Uji'
+                toast(toast_msg)
+                Logger.error(f"{self.name}: {toast_msg}, {e}") 
+
+    def exec_reload_subkomponen_uji(self, kode_komponen_uji, default=True):
+            global mydb, db_subkomponen_uji, dt_no_pol
+            global flags_subkomponen_uji, db_last_data, dt_jns_kend
+            global window_size_x, window_size_y
+
+            try:
+                tb_subkomponen_uji = mydb.cursor()
+                query = ""
+                params = ()
+                
+                if kode_komponen_uji == 'K15':
+                    if hasattr(self, 'stsbak') and self.stsbak == '2':
+                        sub_komponen_list = ('Panjang Tangki', 'Lebar Tangki', 'Tinggi Tangki', 'Volume Tangki', 'Jenis Muatan', 'Berat Jenis Muatan')
+                        placeholders = ', '.join(['%s'] * len(sub_komponen_list))
+                        query = f"SELECT kode_subkomponen_uji, string, value, nama FROM {TB_SUBKOMPONEN_UJI} WHERE string IN ({placeholders}) ORDER BY urut"
+                        params = sub_komponen_list
+                    elif hasattr(self, 'stsbak') and self.stsbak == '1':
+                        sub_komponen_list = ('Jenis Bak','Bahan Bak', 'Panjang Bak', 'Lebar Bak', 'Tinggi Bak', 'Volume Bak')
+                        placeholders = ', '.join(['%s'] * len(sub_komponen_list))
+                        query = f"SELECT kode_subkomponen_uji, string, value, nama FROM {TB_SUBKOMPONEN_UJI} WHERE string IN ({placeholders}) ORDER BY urut"
+                        params = sub_komponen_list
+                    else:
+                        Logger.warning(f"{self.name}: Mencoba memuat subkomponen K15 dengan stsbak tidak valid: {self.stsbak}")
+                        result_tb_subkomponen_uji = [] 
+                
+                if not query: 
+                    query = f"SELECT kode_subkomponen_uji, string, value, nama FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = %s ORDER BY urut"
+                    params = (kode_komponen_uji,)
+
+                if query and params:
+                    tb_subkomponen_uji.execute(query, params)
+                    result_tb_subkomponen_uji = tb_subkomponen_uji.fetchall()
+                
+                mydb.commit()
+                db_subkomponen_uji = np.array(result_tb_subkomponen_uji).T
+                if(default):
+                    flags_subkomponen_uji = np.ones(db_subkomponen_uji[0,:].size, dtype='bool')
+                else:
+                    flags_subkomponen_uji = np.zeros(db_subkomponen_uji[0,:].size, dtype='bool')
+            except Exception as e:
+                toast_msg = f'Gagal Mengambil Data dari Database Tabel Subkomponen Uji'
+                Logger.error(f"{self.name}: {toast_msg}, {e}")
+
+            try:
+                layout_list = self.ids.layout_list_subkomponen_uji
+                layout_list.clear_widgets(children=None)
+            except Exception as e:
+                toast_msg = f'Gagal Menghapus Widget'
+                Logger.error(f"{self.name}: {toast_msg}, {e}")
+            
+            try:
+                layout_list = self.ids.layout_list_subkomponen_uji
+                for i in range(db_subkomponen_uji[0,:].size):
+                    card = MDCard(
+                        MDLabel(text=f"{db_subkomponen_uji[1, i]}", size_hint_x= 0.4),
+                        
+                        ripple_behavior = False,
                         padding = [20, 0],
                         spacing = 10,
-                        id=f'card_komponen_uji{i}',
+                        id=f'card_subkomponen_uji{i}',
+                        on_press = self.on_subkomponen_uji_row_press,
                         size_hint_y=None,
                         height=dp(int(60 * 800 / window_size_y)),
                         )
-                self.ids[f'card_komponen_uji{i}'] = card
-                layout_list.add_widget(card)
-                
-                bt_check = MDIconButton(
-                        size_hint_x= 0.1, 
-                        icon="check-bold", 
-                        md_bg_color="#2CA02C",
-                        on_press = self.on_komponen_uji_bt_press,
-                        id=f'bt_komponen_uji{i}',
-                        )                     
-                self.ids[f'bt_komponen_uji{i}'] = bt_check
-                card.add_widget(bt_check)
-                
-        except Exception as e:
-            toast_msg = f'Gagal Memperbaharui Tabel Komponen Uji'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
-
-    def exec_reload_subkomponen_uji(self, kode_komponen_uji, default=True):
-        global mydb, db_subkomponen_uji, dt_no_pol
-        global flags_subkomponen_uji, db_last_data, dt_jns_kend
-        global window_size_x, window_size_y
-
-        try:
-            tb_subkomponen_uji = mydb.cursor()
-            tb_subkomponen_uji.execute(f"SELECT kode_subkomponen_uji, string, value, nama FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = '{kode_komponen_uji}' ORDER BY urut")
-            result_tb_subkomponen_uji = tb_subkomponen_uji.fetchall()
-            mydb.commit()
-            db_subkomponen_uji = np.array(result_tb_subkomponen_uji).T
-            if(default):
-                flags_subkomponen_uji = np.ones(db_subkomponen_uji[0,:].size, dtype='bool')
-            else:
-                flags_subkomponen_uji = np.zeros(db_subkomponen_uji[0,:].size, dtype='bool')
-        except Exception as e:
-            toast_msg = f'Gagal Mengambil Data dari Database Tabel Subkomponen Uji'
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
-
-        try:
-            layout_list = self.ids.layout_list_subkomponen_uji
-            layout_list.clear_widgets(children=None)
-        except Exception as e:
-            toast_msg = f'Gagal Menghapus Widget'
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
-        
-        try:           
-            layout_list = self.ids.layout_list_subkomponen_uji
-            for i in range(db_subkomponen_uji[0,:].size):
-                card = MDCard(
-                    MDLabel(text=f"{db_subkomponen_uji[1, i]}", size_hint_x= 0.4),
+                    self.ids[f'card_subkomponen_uji{i}'] = card
+                    layout_list.add_widget(card)
                     
-                    ripple_behavior = False,
-                    padding = [20, 0],
-                    spacing = 10,
-                    id=f'card_subkomponen_uji{i}',
-                    on_press = self.on_subkomponen_uji_row_press,
-                    size_hint_y=None,
-                    height=dp(int(60 * 800 / window_size_y)),
-                    )
-                self.ids[f'card_subkomponen_uji{i}'] = card
-                layout_list.add_widget(card)
-                
-                tx_value = MDTextField(size_hint_x= 0.2, hint_text="Data",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
-                tx_comment = MDTextField(disabled = True, size_hint_x= 0.2, hint_text="Komentar",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
-                if(default):
-                    bt_check = MDIconButton(size_hint_x= 0.1, icon="check-bold", md_bg_color="#2CA02C",)
-                else:
-                    bt_check = MDIconButton(size_hint_x= 0.1, icon="cancel", md_bg_color="#FF2A2A",)                            
-                self.ids[f'tx_value{i}'] = tx_value
-                self.ids[f'tx_comment{i}'] = tx_comment
-                self.ids[f'bt_subkomponen_uji{i}'] = bt_check
-                card.add_widget(tx_value)
-                card.add_widget(tx_comment)
-                card.add_widget(bt_check)
+                    tx_value = MDTextField(size_hint_x= 0.2, hint_text="Data",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
+                    tx_comment = MDTextField(disabled = True, size_hint_x= 0.2, hint_text="Komentar",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
+                    if(default):
+                        bt_check = MDIconButton(size_hint_x= 0.1, icon="check-bold", md_bg_color="#2CA02C",)
+                    else:
+                        bt_check = MDIconButton(size_hint_x= 0.1, icon="cancel", md_bg_color="#FF2A2A",)
+                    self.ids[f'tx_value{i}'] = tx_value
+                    self.ids[f'tx_comment{i}'] = tx_comment
+                    self.ids[f'bt_subkomponen_uji{i}'] = bt_check
+                    card.add_widget(tx_value)
+                    card.add_widget(tx_comment)
+                    card.add_widget(bt_check)
 
-        except Exception as e:
-            toast_msg = f'Gagal Memperbaharui Data Tabel Subkomponen Uji'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+            except Exception as e:
+                toast_msg = f'Gagal Memperbaharui Data Tabel Subkomponen Uji'
+                toast(toast_msg)
+                Logger.error(f"{self.name}: {toast_msg}, {e}")
 
-        try:
-            for i in range(db_subkomponen_uji[0, :].size):
-                column_name = db_subkomponen_uji[2, i]
-                
-                if column_name:
-                    tb_image_kendaraan = mydb.cursor()
-                    query = f"SELECT `{column_name}` FROM {TB_DATA_IMAGE} WHERE nopol = %s ORDER BY id DESC LIMIT 1"
-                    tb_image_kendaraan.execute(query, (dt_no_pol,))
-                    result_tb_image_kendaraan = tb_image_kendaraan.fetchone()
+            try:
+                for i in range(db_subkomponen_uji[0, :].size):
+                    column_name = db_subkomponen_uji[2, i]
                     
-                    if result_tb_image_kendaraan:
-                        last_data = result_tb_image_kendaraan[0]
-                        self.ids[f'tx_value{i}'].text = str(last_data) if last_data is not None else ""
-        except Exception as e:
-            toast_msg = 'Gagal mengambil data terakhir'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+                    if column_name:
+                        tb_image_kendaraan = mydb.cursor()
+                        query = f"SELECT `{column_name}` FROM {TB_DATA_IMAGE} WHERE nopol = %s ORDER BY id DESC LIMIT 1"
+                        tb_image_kendaraan.execute(query, (dt_no_pol,))
+                        result_tb_image_kendaraan = tb_image_kendaraan.fetchone()
+                        
+                        if result_tb_image_kendaraan:
+                            last_data = result_tb_image_kendaraan[0]
+                            self.ids[f'tx_value{i}'].text = str(last_data) if last_data is not None else ""
+            except Exception as e:
+                toast_msg = 'Gagal mengambil data terakhir'
+                toast(toast_msg)
+                Logger.error(f"{self.name}: {toast_msg}, {e}")
 
-    def reload_menu_komentar_uji(self, selected_kode_subkomponen_uji=""):
-        global window_size_x, window_size_y
+    # def reload_menu_komentar_uji(self, selected_kode_subkomponen_uji=""):
+    #     global window_size_x, window_size_y
 
-        try:
-            Logger.info(f"reload menu komentar uji {selected_kode_subkomponen_uji}")
-            tb_komentar_uji = mydb.cursor()
-            tb_komentar_uji.execute(f"SELECT id, id_komponen_uji, id_subkomponen_uji, komentar FROM {TB_KOMENTAR_UJI} WHERE id_subkomponen_uji = '{selected_kode_subkomponen_uji}'")
-            result_tb_komentar_uji = tb_komentar_uji.fetchall()
-            mydb.commit()
-            db_komentar_uji = np.array(result_tb_komentar_uji).T
+    #     try:
+    #         Logger.info(f"reload menu komentar uji {selected_kode_subkomponen_uji}")
+    #         tb_komentar_uji = mydb.cursor()
+    #         tb_komentar_uji.execute(f"SELECT id, id_komponen_uji, id_subkomponen_uji, komentar FROM {TB_KOMENTAR_UJI} WHERE id_subkomponen_uji = '{selected_kode_subkomponen_uji}'")
+    #         result_tb_komentar_uji = tb_komentar_uji.fetchall()
+    #         mydb.commit()
+    #         db_komentar_uji = np.array(result_tb_komentar_uji).T
 
-            if(db_komentar_uji.size == 0 ):
-                self.ids.bt_dropdown_caller.disabled = True
-                toast('Tidak Ada Rekomendasi Komentar, Silahkan Isi Komentar Sendiri')
+    #         if(db_komentar_uji.size == 0 ):
+    #             self.ids.bt_dropdown_caller.disabled = True
+    #             toast('Tidak Ada Rekomendasi Komentar, Silahkan Isi Komentar Sendiri')
 
-            self.menu_komentar_uji_items = [
-                {
-                    "text": f"{db_komentar_uji[3,i]}",                   
-                    "viewclass": "ListItem",
-                    "height": dp(int(60 * 800 / window_size_y)),
-                    "on_release": lambda x=f"{db_komentar_uji[3,i]}": self.menu_komentar_callback(x),
-                } for i in range(db_komentar_uji[0,:].size)
-            ]
+    #         self.menu_komentar_uji_items = [
+    #             {
+    #                 "text": f"{db_komentar_uji[3,i]}",                   
+    #                 "viewclass": "ListItem",
+    #                 "height": dp(int(60 * 800 / window_size_y)),
+    #                 "on_release": lambda x=f"{db_komentar_uji[3,i]}": self.menu_komentar_callback(x),
+    #             } for i in range(db_komentar_uji[0,:].size)
+    #         ]
 
-            self.menu_komentar_uji = MDDropdownMenu(
-                caller=self.ids.bt_dropdown_caller,
-                items=self.menu_komentar_uji_items,
-                width_mult=4,
-            )
+    #         self.menu_komentar_uji = MDDropdownMenu(
+    #             caller=self.ids.bt_dropdown_caller,
+    #             items=self.menu_komentar_uji_items,
+    #             width_mult=4,
+    #         )
 
-        except Exception as e:
-            toast_msg = f'Gagal Menampilkan Rekomendasi Komentar'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+    #     except Exception as e:
+    #         toast_msg = f'Gagal Menampilkan Rekomendasi Komentar'
+    #         toast(toast_msg)
+    #         Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
     def open_screen_menu(self):
         self.screen_manager.current = 'screen_menu'
@@ -2689,15 +2706,15 @@ class ScreenInspectVisual(MDScreen):
         self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Inspeksi Visual 1: LULUS"
         self.exec_reload_komponen_uji()
 
-    def menu_komentar_callback(self, text_item):
-        global selected_row_subkomponen_uji
+    # def menu_komentar_callback(self, text_item):
+    #     global selected_row_subkomponen_uji
 
-        try:
-            self.ids[f'tx_comment{selected_row_subkomponen_uji}'].text = text_item
-        except Exception as e:
-            toast_msg = f'Gagal Mengeksekusi Perintah dari Menu Komentar'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+    #     try:
+    #         self.ids[f'tx_comment{selected_row_subkomponen_uji}'].text = text_item
+    #     except Exception as e:
+    #         toast_msg = f'Gagal Mengeksekusi Perintah dari Menu Komentar'
+    #         toast(toast_msg)
+    #         Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
     def on_komponen_uji_row_press(self, instance):
         global dt_no_antri, dt_no_pol, dt_no_uji, dt_visual_flag, dt_nama
@@ -2705,7 +2722,7 @@ class ScreenInspectVisual(MDScreen):
         global db_komponen_uji, selected_row_komponen_uji
 
         try:
-            self.ids.bt_dropdown_caller.disabled = True
+            # self.ids.bt_dropdown_caller.disabled = True
             row = int(str(instance.id).replace("card_komponen_uji",""))
             selected_row_komponen_uji = row
             self.exec_reload_subkomponen_uji(db_komponen_uji[1, row])
@@ -2721,7 +2738,7 @@ class ScreenInspectVisual(MDScreen):
         global db_komponen_uji, selected_row_komponen_uji, flags_komponen_uji
 
         try:
-            self.ids.bt_dropdown_caller.disabled = True
+            # self.ids.bt_dropdown_caller.disabled = True
             row = int(str(instance.id).replace("bt_komponen_uji",""))
             selected_row_komponen_uji = row
             if(flags_komponen_uji[row]):
@@ -2747,7 +2764,7 @@ class ScreenInspectVisual(MDScreen):
         global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
 
         try:
-            self.ids.bt_dropdown_caller.disabled = True
+            # self.ids.bt_dropdown_caller.disabled = True
             row = int(str(instance.id).replace("card_subkomponen_uji",""))
             selected_row_subkomponen_uji = row
             selected_kode_subkomponen_uji = db_subkomponen_uji[0, row]
@@ -2789,7 +2806,7 @@ class ScreenInspectVisual(MDScreen):
 
         try:
             tb_komponen_uji = mydb.cursor()
-            tb_komponen_uji.execute(f"SELECT kode_kelompok_uji, kode_komponen_uji, nama, keterangan FROM {TB_KOMPONEN_UJI} WHERE kode_komponen_uji = 'K03' OR kode_komponen_uji = 'K04' OR kode_komponen_uji = 'K05' OR kode_komponen_uji = 'K06' OR kode_komponen_uji = 'K07' OR kode_komponen_uji = 'K08' OR kode_komponen_uji = 'K09' OR kode_komponen_uji = 'K14' OR kode_komponen_uji = 'K16' OR kode_komponen_uji = 'K17' ")
+            tb_komponen_uji.execute(f"SELECT kode_kelompok_uji, kode_komponen_uji, nama, keterangan FROM {TB_KOMPONEN_UJI} WHERE kode_komponen_uji = 'K03' OR kode_komponen_uji = 'K04' OR kode_komponen_uji = 'K05' OR kode_komponen_uji = 'K06' OR kode_komponen_uji = 'K07' OR kode_komponen_uji = 'K08' OR kode_komponen_uji = 'K09'  OR kode_komponen_uji = 'K17' ")
             result_tb_komponen_uji = tb_komponen_uji.fetchall()
             mydb.commit()
             db_komponen_uji = np.array(result_tb_komponen_uji).T
@@ -2897,40 +2914,40 @@ class ScreenInspectVisual(MDScreen):
             toast(toast_msg)
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
-    def reload_menu_komentar_uji(self, selected_kode_subkomponen_uji=""):
-        global window_size_x, window_size_y
+    # def reload_menu_komentar_uji(self, selected_kode_subkomponen_uji=""):
+    #     global window_size_x, window_size_y
 
-        try:
-            Logger.info(f"reload menu komentar uji {selected_kode_subkomponen_uji}")
-            tb_komentar_uji = mydb.cursor()
-            tb_komentar_uji.execute(f"SELECT id, id_komponen_uji, id_subkomponen_uji, komentar FROM {TB_KOMENTAR_UJI} WHERE id_subkomponen_uji = '{selected_kode_subkomponen_uji}'")
-            result_tb_komentar_uji = tb_komentar_uji.fetchall()
-            mydb.commit()
-            db_komentar_uji = np.array(result_tb_komentar_uji).T
+    #     try:
+    #         Logger.info(f"reload menu komentar uji {selected_kode_subkomponen_uji}")
+    #         tb_komentar_uji = mydb.cursor()
+    #         tb_komentar_uji.execute(f"SELECT id, id_komponen_uji, id_subkomponen_uji, komentar FROM {TB_KOMENTAR_UJI} WHERE id_subkomponen_uji = '{selected_kode_subkomponen_uji}'")
+    #         result_tb_komentar_uji = tb_komentar_uji.fetchall()
+    #         mydb.commit()
+    #         db_komentar_uji = np.array(result_tb_komentar_uji).T
 
-            if(db_komentar_uji.size == 0 ):
-                self.ids.bt_dropdown_caller.disabled = True
-                toast('Tidak Ada Rekomendasi Komentar, Silahkan Isi Komentar Sendiri')
+    #         if(db_komentar_uji.size == 0 ):
+    #             self.ids.bt_dropdown_caller.disabled = True
+    #             toast('Tidak Ada Rekomendasi Komentar, Silahkan Isi Komentar Sendiri')
 
-            self.menu_komentar_uji_items = [
-                {
-                    "text": f"{db_komentar_uji[3,i]}",                   
-                    "viewclass": "ListItem",
-                    "height": dp(int(60 * 800 / window_size_y)),
-                    "on_release": lambda x=f"{db_komentar_uji[3,i]}": self.menu_komentar_callback(x),
-                } for i in range(db_komentar_uji[0,:].size)
-            ]
+    #         self.menu_komentar_uji_items = [
+    #             {
+    #                 "text": f"{db_komentar_uji[3,i]}",                   
+    #                 "viewclass": "ListItem",
+    #                 "height": dp(int(60 * 800 / window_size_y)),
+    #                 "on_release": lambda x=f"{db_komentar_uji[3,i]}": self.menu_komentar_callback(x),
+    #             } for i in range(db_komentar_uji[0,:].size)
+    #         ]
 
-            self.menu_komentar_uji = MDDropdownMenu(
-                caller=self.ids.bt_dropdown_caller,
-                items=self.menu_komentar_uji_items,
-                width_mult=4,
-            )
+    #         self.menu_komentar_uji = MDDropdownMenu(
+    #             caller=self.ids.bt_dropdown_caller,
+    #             items=self.menu_komentar_uji_items,
+    #             width_mult=4,
+    #         )
 
-        except Exception as e:
-            toast_msg = f'Gagal Menampilkan Rekomendasi Komentar'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+    #     except Exception as e:
+    #         toast_msg = f'Gagal Menampilkan Rekomendasi Komentar'
+    #         toast(toast_msg)
+    #         Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
     def open_screen_menu(self):
         self.screen_manager.current = 'screen_menu'
@@ -2956,10 +2973,13 @@ class ScreenInspectVisual(MDScreen):
             if self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon == "cancel":
                 sql_update_uji = f"UPDATE {TB_UJI} SET lulus_uji = '0' WHERE id_image = %s AND kode_kelompok_uji = %s"
                 mycursor.execute(sql_update_uji, (id_image, kode_kelompok_uji))
+            else:
+                sql_update_uji = f"UPDATE {TB_UJI} SET lulus_uji = '1' WHERE id_image = %s AND kode_kelompok_uji = %s"
+                mycursor.execute(sql_update_uji, (id_image, kode_kelompok_uji))
             mydb.commit()
 
         except Exception as e:
-            toast(f'Gagal memperbaharui data utama: {e}')
+            toast(f'Gagal memperbaharui status komponen uji: {e}')
             Logger.error(f"{self.name}: Gagal di BAGIAN 1 exec_save: {e}")
             return
 
@@ -3027,15 +3047,15 @@ class ScreenInspectVisual2(MDScreen):
         self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Inspeksi Visual 2: LULUS"
         self.exec_reload_komponen_uji()
 
-    def menu_komentar_callback(self, text_item):
-        global selected_row_subkomponen_uji
+    # def menu_komentar_callback(self, text_item):
+    #     global selected_row_subkomponen_uji
 
-        try:
-            self.ids[f'tx_comment{selected_row_subkomponen_uji}'].text = text_item
-        except Exception as e:
-            toast_msg = f'Gagal Mengeksekusi Perintah dari Menu Komentar'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+    #     try:
+    #         self.ids[f'tx_comment{selected_row_subkomponen_uji}'].text = text_item
+    #     except Exception as e:
+    #         toast_msg = f'Gagal Mengeksekusi Perintah dari Menu Komentar'
+    #         toast(toast_msg)
+    #         Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
     def on_komponen_uji_row_press(self, instance):
         global dt_no_antri, dt_no_pol, dt_no_uji, dt_visual_flag, dt_nama
@@ -3043,7 +3063,7 @@ class ScreenInspectVisual2(MDScreen):
         global db_komponen_uji, selected_row_komponen_uji
 
         try:
-            self.ids.bt_dropdown_caller.disabled = True
+            # self.ids.bt_dropdown_caller.disabled = True
             row = int(str(instance.id).replace("card_komponen_uji",""))
             selected_row_komponen_uji = row
             self.exec_reload_subkomponen_uji(db_komponen_uji[1, row])
@@ -3059,7 +3079,7 @@ class ScreenInspectVisual2(MDScreen):
         global db_komponen_uji, selected_row_komponen_uji, flags_komponen_uji
 
         try:
-            self.ids.bt_dropdown_caller.disabled = True
+            # self.ids.bt_dropdown_caller.disabled = True
             row = int(str(instance.id).replace("bt_komponen_uji",""))
             selected_row_komponen_uji = row
             if(flags_komponen_uji[row]):
@@ -3085,7 +3105,7 @@ class ScreenInspectVisual2(MDScreen):
         global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
 
         try:
-            self.ids.bt_dropdown_caller.disabled = True
+            # self.ids.bt_dropdown_caller.disabled = True
             row = int(str(instance.id).replace("card_subkomponen_uji",""))
             selected_row_subkomponen_uji = row
             selected_kode_subkomponen_uji = db_subkomponen_uji[0, row]
@@ -3235,40 +3255,40 @@ class ScreenInspectVisual2(MDScreen):
             toast(toast_msg)
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
-    def reload_menu_komentar_uji(self, selected_kode_subkomponen_uji=""):
-        global window_size_x, window_size_y
+    # def reload_menu_komentar_uji(self, selected_kode_subkomponen_uji=""):
+    #     global window_size_x, window_size_y
 
-        try:
-            Logger.info(f"reload menu komentar uji {selected_kode_subkomponen_uji}")
-            tb_komentar_uji = mydb.cursor()
-            tb_komentar_uji.execute(f"SELECT id, id_komponen_uji, id_subkomponen_uji, komentar FROM {TB_KOMENTAR_UJI} WHERE id_subkomponen_uji = '{selected_kode_subkomponen_uji}'")
-            result_tb_komentar_uji = tb_komentar_uji.fetchall()
-            mydb.commit()
-            db_komentar_uji = np.array(result_tb_komentar_uji).T
+    #     try:
+    #         Logger.info(f"reload menu komentar uji {selected_kode_subkomponen_uji}")
+    #         tb_komentar_uji = mydb.cursor()
+    #         tb_komentar_uji.execute(f"SELECT id, id_komponen_uji, id_subkomponen_uji, komentar FROM {TB_KOMENTAR_UJI} WHERE id_subkomponen_uji = '{selected_kode_subkomponen_uji}'")
+    #         result_tb_komentar_uji = tb_komentar_uji.fetchall()
+    #         mydb.commit()
+    #         db_komentar_uji = np.array(result_tb_komentar_uji).T
 
-            if(db_komentar_uji.size == 0 ):
-                self.ids.bt_dropdown_caller.disabled = True
-                toast('Tidak Ada Rekomendasi Komentar, Silahkan Isi Komentar Sendiri')
+    #         if(db_komentar_uji.size == 0 ):
+    #             self.ids.bt_dropdown_caller.disabled = True
+    #             toast('Tidak Ada Rekomendasi Komentar, Silahkan Isi Komentar Sendiri')
 
-            self.menu_komentar_uji_items = [
-                {
-                    "text": f"{db_komentar_uji[3,i]}",                   
-                    "viewclass": "ListItem",
-                    "height": dp(int(60 * 800 / window_size_y)),
-                    "on_release": lambda x=f"{db_komentar_uji[3,i]}": self.menu_komentar_callback(x),
-                } for i in range(db_komentar_uji[0,:].size)
-            ]
+    #         self.menu_komentar_uji_items = [
+    #             {
+    #                 "text": f"{db_komentar_uji[3,i]}",                   
+    #                 "viewclass": "ListItem",
+    #                 "height": dp(int(60 * 800 / window_size_y)),
+    #                 "on_release": lambda x=f"{db_komentar_uji[3,i]}": self.menu_komentar_callback(x),
+    #             } for i in range(db_komentar_uji[0,:].size)
+    #         ]
 
-            self.menu_komentar_uji = MDDropdownMenu(
-                caller=self.ids.bt_dropdown_caller,
-                items=self.menu_komentar_uji_items,
-                width_mult=4,
-            )
+    #         self.menu_komentar_uji = MDDropdownMenu(
+    #             caller=self.ids.bt_dropdown_caller,
+    #             items=self.menu_komentar_uji_items,
+    #             width_mult=4,
+    #         )
 
-        except Exception as e:
-            toast_msg = f'Gagal Menampilkan Rekomendasi Komentar'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+    #     except Exception as e:
+    #         toast_msg = f'Gagal Menampilkan Rekomendasi Komentar'
+    #         toast(toast_msg)
+    #         Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
     def open_screen_menu(self):
         self.screen_manager.current = 'screen_menu'
@@ -3294,10 +3314,13 @@ class ScreenInspectVisual2(MDScreen):
             if self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon == "cancel":
                 sql_update_uji = f"UPDATE {TB_UJI} SET lulus_uji = '0' WHERE id_image = %s AND kode_kelompok_uji = %s"
                 mycursor.execute(sql_update_uji, (id_image, kode_kelompok_uji))
+            else:
+                sql_update_uji = f"UPDATE {TB_UJI} SET lulus_uji = '1' WHERE id_image = %s AND kode_kelompok_uji = %s"
+                mycursor.execute(sql_update_uji, (id_image, kode_kelompok_uji))
             mydb.commit()
 
         except Exception as e:
-            toast(f'Gagal memperbaharui data utama: {e}')
+            toast(f'Gagal memperbaharui status komponen uji: {e}')
             Logger.error(f"{self.name}: Gagal di BAGIAN 1 exec_save: {e}")
             return
 
@@ -3365,15 +3388,15 @@ class ScreenInspectPit(MDScreen):
         self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Inspeksi Kolong: LULUS"
         self.exec_reload_komponen_uji()
 
-    def menu_komentar_callback(self, text_item):
-        global selected_row_subkomponen_uji
+    # def menu_komentar_callback(self, text_item):
+    #     global selected_row_subkomponen_uji
 
-        try:
-            self.ids[f'tx_comment{selected_row_subkomponen_uji}'].text = text_item
-        except Exception as e:
-            toast_msg = f'Gagal Mengeksekusi Perintah dari Menu Komentar'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+    #     try:
+    #         self.ids[f'tx_comment{selected_row_subkomponen_uji}'].text = text_item
+    #     except Exception as e:
+    #         toast_msg = f'Gagal Mengeksekusi Perintah dari Menu Komentar'
+    #         toast(toast_msg)
+    #         Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
     def on_komponen_uji_row_press(self, instance):
         global dt_no_antri, dt_no_pol, dt_no_uji, dt_visual_flag, dt_nama
@@ -3381,7 +3404,7 @@ class ScreenInspectPit(MDScreen):
         global db_komponen_uji, selected_row_komponen_uji
 
         try:
-            self.ids.bt_dropdown_caller.disabled = True
+            # self.ids.bt_dropdown_caller.disabled = True
             row = int(str(instance.id).replace("card_komponen_uji",""))
             selected_row_komponen_uji = row
             self.exec_reload_subkomponen_uji(db_komponen_uji[1, row])
@@ -3397,7 +3420,7 @@ class ScreenInspectPit(MDScreen):
         global db_komponen_uji, selected_row_komponen_uji, flags_komponen_uji
 
         try:
-            self.ids.bt_dropdown_caller.disabled = True
+            # self.ids.bt_dropdown_caller.disabled = True
             row = int(str(instance.id).replace("bt_komponen_uji",""))
             selected_row_komponen_uji = row
             if(flags_komponen_uji[row]):
@@ -3423,7 +3446,7 @@ class ScreenInspectPit(MDScreen):
         global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
 
         try:
-            self.ids.bt_dropdown_caller.disabled = False
+            # self.ids.bt_dropdown_caller.disabled = False
             row = int(str(instance.id).replace("card_subkomponen_uji",""))
             selected_row_subkomponen_uji = row
             selected_kode_subkomponen_uji = db_subkomponen_uji[0, row]
@@ -3572,40 +3595,40 @@ class ScreenInspectPit(MDScreen):
             toast(toast_msg)
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
-    def reload_menu_komentar_uji(self, selected_kode_subkomponen_uji=""):
-        global window_size_x, window_size_y
+    # def reload_menu_komentar_uji(self, selected_kode_subkomponen_uji=""):
+    #     global window_size_x, window_size_y
 
-        try:
-            Logger.info(f"reload menu komentar uji {selected_kode_subkomponen_uji}")
-            tb_komentar_uji = mydb.cursor()
-            tb_komentar_uji.execute(f"SELECT id, id_komponen_uji, id_subkomponen_uji, komentar FROM {TB_KOMENTAR_UJI} WHERE id_subkomponen_uji = '{selected_kode_subkomponen_uji}'")
-            result_tb_komentar_uji = tb_komentar_uji.fetchall()
-            mydb.commit()
-            db_komentar_uji = np.array(result_tb_komentar_uji).T
+    #     try:
+    #         Logger.info(f"reload menu komentar uji {selected_kode_subkomponen_uji}")
+    #         tb_komentar_uji = mydb.cursor()
+    #         tb_komentar_uji.execute(f"SELECT id, id_komponen_uji, id_subkomponen_uji, komentar FROM {TB_KOMENTAR_UJI} WHERE id_subkomponen_uji = '{selected_kode_subkomponen_uji}'")
+    #         result_tb_komentar_uji = tb_komentar_uji.fetchall()
+    #         mydb.commit()
+    #         db_komentar_uji = np.array(result_tb_komentar_uji).T
 
-            if(db_komentar_uji.size == 0 ):
-                self.ids.bt_dropdown_caller.disabled = True
-                toast('Tidak Ada Rekomendasi Komentar, Silahkan Isi Komentar Sendiri')
+    #         if(db_komentar_uji.size == 0 ):
+    #             self.ids.bt_dropdown_caller.disabled = True
+    #             toast('Tidak Ada Rekomendasi Komentar, Silahkan Isi Komentar Sendiri')
 
-            self.menu_komentar_uji_items = [
-                {
-                    "text": f"{db_komentar_uji[3,i]}",                   
-                    "viewclass": "ListItem",
-                    "height": dp(int(60 * 800 / window_size_y)),
-                    "on_release": lambda x=f"{db_komentar_uji[3,i]}": self.menu_komentar_callback(x),
-                } for i in range(db_komentar_uji[0,:].size)
-            ]
+    #         self.menu_komentar_uji_items = [
+    #             {
+    #                 "text": f"{db_komentar_uji[3,i]}",                   
+    #                 "viewclass": "ListItem",
+    #                 "height": dp(int(60 * 800 / window_size_y)),
+    #                 "on_release": lambda x=f"{db_komentar_uji[3,i]}": self.menu_komentar_callback(x),
+    #             } for i in range(db_komentar_uji[0,:].size)
+    #         ]
 
-            self.menu_komentar_uji = MDDropdownMenu(
-                caller=self.ids.bt_dropdown_caller,
-                items=self.menu_komentar_uji_items,
-                width_mult=4,
-            )
+    #         self.menu_komentar_uji = MDDropdownMenu(
+    #             caller=self.ids.bt_dropdown_caller,
+    #             items=self.menu_komentar_uji_items,
+    #             width_mult=4,
+    #         )
 
-        except Exception as e:
-            toast_msg = f'Gagal Menampilkan Rekomendasi Komentar'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+    #     except Exception as e:
+    #         toast_msg = f'Gagal Menampilkan Rekomendasi Komentar'
+    #         toast(toast_msg)
+    #         Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
     def open_screen_menu(self):
         self.screen_manager.current = 'screen_menu'
@@ -3634,10 +3657,13 @@ class ScreenInspectPit(MDScreen):
             if self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon == "cancel":
                 sql_update_uji = f"UPDATE {TB_UJI} SET lulus_uji = '0' WHERE id_image = %s AND kode_kelompok_uji = %s"
                 mycursor.execute(sql_update_uji, (id_image, kode_kelompok_uji))
+            else:
+                sql_update_uji = f"UPDATE {TB_UJI} SET lulus_uji = '1' WHERE id_image = %s AND kode_kelompok_uji = %s"
+                mycursor.execute(sql_update_uji, (id_image, kode_kelompok_uji))
             mydb.commit()
 
         except Exception as e:
-            toast(f'Gagal memperbaharui data utama: {e}')
+            toast(f'Gagal memperbaharui status komponen uji: {e}')
             Logger.error(f"{self.name}: Gagal di BAGIAN 1 exec_save: {e}")
             return
 
