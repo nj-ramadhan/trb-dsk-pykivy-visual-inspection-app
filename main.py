@@ -1482,7 +1482,7 @@ class ScreenMenu(MDScreen):
                 mycursor.execute(f"DELETE FROM {TB_UJI_DETAIL} WHERE id_uji IN ({id_placeholders})", uji_ids_to_delete)
                 mycursor.execute(f"DELETE FROM {TB_UJI} WHERE id_image = %s", (id_image,))
 
-            relevant_groups = ('V1', 'V2')
+            relevant_groups = ('V1', 'V2', 'P2', 'P3', 'P4')
 
             now = datetime.datetime.now()
 
@@ -1519,7 +1519,7 @@ class ScreenMenu(MDScreen):
                     mycursor.execute(sql_insert_detail, params_detail)
 
             mydb.commit()
-            toast("Status inspeksi berhasil diinisialisasi untuk V1 dan V2.")
+            toast("Status inspeksi berhasil diinisialisasi")
             Logger.info(f"{self.name}: Inisialisasi status inspeksi untuk nopol {dt_no_pol} berhasil.")
 
         except Exception as e:
