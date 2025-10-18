@@ -1,3 +1,6 @@
+from kivy.config import Config
+Config.set('kivy', 'keyboard_mode', 'systemanddock')
+
 import datetime
 from encodings.punycode import T
 from pickle import FALSE
@@ -19,9 +22,6 @@ else:
 
 logger_name = f'app.log'
 logger_dir = os.path.join(application_path, "logs")
-
-from kivy.config import Config
-Config.set('kivy', 'keyboard_mode', 'system')
 
 from kivy.logger import Logger
 from kivy.clock import Clock
