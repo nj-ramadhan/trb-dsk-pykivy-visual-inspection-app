@@ -73,11 +73,11 @@ LB_UNIT = config['app']['LB_UNIT']
 LB_UNIT_ADDRESS = config['app']['LB_UNIT_ADDRESS']
 
 ## SQL Setting
-DB_HOST = "194.31.53.37"
-DB_USER = "Pndujikir2022!"
-DB_PASSWORD = "@Kirpnd2022!"
+DB_HOST = "156.67.217.60"
+DB_USER = "pkbsorong2024!"
+DB_PASSWORD = "@Sorongpkb2024"
+DB_NAME = "dishub"
 
-DB_NAME = "pkbpandeglang"
 TB_DATA = "tb_cekident"
 TB_USER = "users"
 TB_MERK = "merk"
@@ -1853,6 +1853,7 @@ class ScreenMenu(MDScreen):
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
     def exec_save(self):
+        global dt_nip_user, dt_id_user, dt_no_antri, dt_sts_uji
         try:
             mycursor = mydb.cursor(dictionary=True)
             check_today_sql = f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = %s AND DATE(dcreate) = CURDATE()"
@@ -1882,8 +1883,11 @@ class ScreenMenu(MDScreen):
                 """
                 mycursor.execute(sql_update_pendaftaran, (dt_nip_user, dt_nip_user, dt_no_antri))
                 Logger.info(f"NIP {dt_nip_user} berhasil disimpan di tabel {target_table} untuk antrian {dt_no_antri}")
-            sql = f"UPDATE {TB_DATA} SET check_flag = '1' WHERE noantrian = '{dt_no_antri}' "
-            mycursor.execute(sql)
+            
+            check_post_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+
+            sql = f"UPDATE {TB_DATA} SET check_flag = '1' , check_user = %s, check_post = %s WHERE noantrian = '{dt_no_antri}' "
+            mycursor.execute(sql, (dt_id_user, check_post_time, dt_no_antri))
             mydb.commit()
             toast_msg = f'Berhasil Menyimpan dan Menyelesaikan Inspeksi'
             toast(toast_msg)
