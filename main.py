@@ -96,7 +96,7 @@ TB_UJI_DETAIL = "uji_detail"
 
 ## System Setting
 RTSP_USER = "admin"
-RTSP_PASS = "TRBIntegrated25"
+RTSP_PASS = "sorong2024"
 
 RTSP_IP_DISPLAY_CAM1 = config['setting']['RTSP_IP_DISPLAY_CAM1']
 RTSP_IP_DISPLAY_CAM2 = config['setting']['RTSP_IP_DISPLAY_CAM2']
@@ -107,9 +107,9 @@ RTSP_IP_PIT_CAM2 = config['setting']['RTSP_IP_PIT_CAM2']
 RTSP_IP_PIT_CAM3 = config['setting']['RTSP_IP_PIT_CAM3']
 RTSP_IP_PIT_CAM4 = config['setting']['RTSP_IP_PIT_CAM4']
 
-FTP_HOST = "194.31.53.37"
+FTP_HOST = "156.67.217.60"
 FTP_USER = "root"
-FTP_PASS = "@D15HUBp2022!"
+FTP_PASS = "@D15HUBs2022!"
 
 MODBUS_IP_PLC = config['setting']['MODBUS_IP_PLC']
 MODBUS_CLIENT = ModbusTcpClient(MODBUS_IP_PLC)
