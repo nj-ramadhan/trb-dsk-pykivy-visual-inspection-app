@@ -46,7 +46,6 @@ import cv2, numpy as np
 import configparser, hashlib, mysql.connector, paramiko
 from pymodbus.client import ModbusTcpClient
 from fpdf import FPDF
-from escpos.printer import Serial
 
 colors = {  "Red"   : {"A200": "#FF2A2A","A500": "#FF8080","A700": "#FFD5D5",},
             "Gray"  : {"200": "#CCCCCC","500": "#ECECEC","700": "#F9F9F9",},
