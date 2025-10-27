@@ -21,7 +21,7 @@ logger_name = f'app.log'
 logger_dir = os.path.join(application_path, "logs")
 
 from kivy.config import Config
-Config.set('kivy', 'keyboard_mode', 'system')
+Config.set('kivy', 'keyboard_mode', 'systemanddock')
 
 from kivy.logger import Logger
 from kivy.clock import Clock
@@ -567,7 +567,7 @@ class ScreenMain(MDScreen):
                         MDLabel(text=f"{db_antrian[8, i]}", size_hint_x= 0.05),
                         MDLabel(text='-' if db_antrian[9, i] == None else f"{db_bahan_bakar[np.where(db_bahan_bakar == db_antrian[9, i])[0][0],1]}" , size_hint_x= 0.08),
                         MDLabel(text='-' if db_antrian[10, i] == None else f"{db_warna[np.where(db_warna == db_antrian[10, i])[0][0],1]}" , size_hint_x= 0.11),
-                        MDLabel(text='Lulus' if (int(db_antrian[11, i]) == 2) else 'Tidak Lulus' if (int(db_antrian[11, i]) == 1) else 'Belum Uji', size_hint_x= 0.08),
+                        MDLabel(text='Lulus' if (int(db_antrian[11, i]) == 1) else 'Tidak Lulus' if (int(db_antrian[11, i]) == 0) else 'Belum Uji', size_hint_x= 0.08),
 
                         ripple_behavior = True,
                         on_press = self.on_antrian_row_press,
