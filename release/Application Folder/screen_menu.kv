@@ -1,30 +1,30 @@
 #:kivy 2.1.0
 
 <ScreenMenu>:
-    MDBoxLayout:
-        orientation: "vertical"
+	MDBoxLayout:
+		orientation: "vertical"
 
 		# header layout
-        MDBoxLayout:
-            id: header_layout
-            orientation: "horizontal"
-            padding: 20
+		MDBoxLayout:
+			id: header_layout
+			orientation: "horizontal"
+			padding: 20
 			spacing: 20
 			size_hint_y: 0.2
 			md_bg_color: "#111111"
-                    
-            Image:
-                id: logo
-                source:'assets/images/logo-trb.png'
-                size_hint_x: 0.15
-                allow_stretch: True 
+
+			Image:
+				id: logo
+				source:'assets/images/logo-trb.png'
+				size_hint_x: 0.15
+				allow_stretch: True
 
 			MDBoxLayout:
 				orientation: "vertical"
 				size_hint_x: 0.7
 
 				MDLabel:
-					id: lb_title            
+					id: lb_title
 					text: "VEHICLE INSPECTION INTEGRATION MANAGEMENT SYSTEM"
 					halign: "left"
 					valign: "middle"
@@ -33,7 +33,7 @@
 					text_color: "#FFFFFF"
 
 				MDLabel:
-					id: lb_subtitle            
+					id: lb_subtitle
 					text: "AXLE LOAD & BRAKE METER"
 					halign: "left"
 					valign: "middle"
@@ -118,14 +118,14 @@
 					MDLabel:
 						id: lb_temp_nama
 						font_style: 'H6'
-						size_hint_x: 0.2				
+						size_hint_x: 0.2
 					MDLabel:
 						text: "Alamat"
 						font_style: 'Subtitle1'
 						size_hint_x: 0.1
 					MDLabel:
 						id: lb_temp_alamat
-						font_style: 'H6'	
+						font_style: 'H6'
 						size_hint_x: 0.2
 					MDLabel:
 						text: "Status Uji"
@@ -133,12 +133,12 @@
 						size_hint_x: 0.1
 					MDLabel:
 						id: lb_temp_status_uji
-						font_style: 'H6'	
+						font_style: 'H6'
 						size_hint_x: 0.1
 
 				MDGridLayout:
 					cols: 8
-					md_bg_color: "#DDDDDD"						
+					md_bg_color: "#DDDDDD"
 					MDLabel:
 						text: "No. Uji"
 						font_style: 'Subtitle1'
@@ -157,7 +157,7 @@
 						size_hint_x: 0.2
 					MDLabel:
 						text: " "
-						font_style: 'Subtitle1'	
+						font_style: 'Subtitle1'
 						size_hint_x: 0.1
 					MDLabel:
 						id: lb_temp_tgl_uji_habis
@@ -165,55 +165,39 @@
 						size_hint_x: 0.2
 					MDLabel:
 						text: " "
-						font_style: 'Subtitle1'	
+						font_style: 'Subtitle1'
 						size_hint_x: 0.1
 					MDLabel:
 						id: lb_temp_tgl_uji_habis
 						font_style: 'H6'
 						size_hint_x: 0.1
-					#MDLabel:
-					#	text: "Tanggal Terakhir Uji"
-					#	font_style: 'Subtitle1'	
-					#	size_hint_x: 0.1
-					#MDLabel:
-					#	id: lb_temp_tgl_uji_terakhir
-					#	font_style: 'H6'
-					#	size_hint_x: 0.2
-					#MDLabel:
-					#	text: "Tanggal Habis Uji"
-					#	font_style: 'Subtitle1'	
-					#	size_hint_x: 0.1
-					#MDLabel:
-					#	id: lb_temp_tgl_uji_habis
-					#	font_style: 'H6'
-					#	size_hint_x: 0.1
 
 				MDGridLayout:
 					cols: 8
 					md_bg_color: "#DDDDDD"
 					MDLabel:
 						text: "Merk"
-						font_style: 'Subtitle1'	
+						font_style: 'Subtitle1'
 						size_hint_x: 0.1
 					MDLabel:
 						id: lb_temp_merk
-						font_style: 'H6'	
+						font_style: 'H6'
 						size_hint_x: 0.1
 					MDLabel:
 						text: "Type"
-						font_style: 'Subtitle1'	
+						font_style: 'Subtitle1'
 						size_hint_x: 0.1
 					MDLabel:
 						id: lb_temp_type
-						font_style: 'H6'	
+						font_style: 'H6'
 						size_hint_x: 0.2
 					MDLabel:
 						text: "Jenis Kendaraan"
-						font_style: 'Subtitle1'	
+						font_style: 'Subtitle1'
 						size_hint_x: 0.1
 					MDLabel:
 						id: lb_temp_jenis_kendaraan
-						font_style: 'H6'	
+						font_style: 'H6'
 						size_hint_x: 0.2
 					MDLabel:
 						text: "Warna"
@@ -229,7 +213,7 @@
 					md_bg_color: "#DDDDDD"
 					MDLabel:
 						text: "Bahan Bakar"
-						font_style: 'Subtitle1'	
+						font_style: 'Subtitle1'
 						size_hint_x: 0.1
 					MDLabel:
 						id: lb_temp_bahan_bakar
@@ -237,20 +221,20 @@
 						size_hint_x: 0.1
 					MDLabel:
 						text: "No. Mesin"
-						font_style: 'Subtitle1'	
+						font_style: 'Subtitle1'
 						size_hint_x: 0.1
 					MDLabel:
 						id: lb_temp_mesin
-						font_style: 'H6'	
+						font_style: 'H6'
 						size_hint_x: 0.2
 					MDLabel:
 						text: "No. Rangka"
-						font_style: 'Subtitle1'	
+						font_style: 'Subtitle1'
 						size_hint_x: 0.1
 					MDLabel:
 						id: lb_temp_chasis
-						font_style: 'H6'	
-						size_hint_x: 0.2					
+						font_style: 'H6'
+						size_hint_x: 0.2
 					MDLabel:
 						text: "JBB"
 						font_style: 'Subtitle1'
@@ -264,27 +248,27 @@
 				orientation: "vertical"
 				padding: 350, 10
 				size_hint_y: 0.7
-				
+
 				MDBoxLayout:
 					orientation: "horizontal"
 					size_hint_y: 0.5
 					spacing: 20
 
-					# MDCard:
-					# 	orientation: "vertical"
-					# 	ripple_behavior: True
-					# 	on_press: root.exec_barrier_open()
-					# 	on_release: root.exec_barrier_stop()
-					# 	md_bg_color: "#EEEEEE"
-					# 	padding: 10
-					# 	Image:
-					# 		source:'assets/images/icon-barrier-open.png'
-					# 		size_hint_y: 0.9
-					# 		allow_stretch: True 
-					# 	MDLabel:
-					# 		size_hint_y: 0.1
-					# 		halign: "center"
-					# 		text: "Buka Gate"	
+					MDCard:
+						orientation: "vertical"
+						ripple_behavior: True
+						on_press: root.exec_barrier_open()
+						on_release: root.exec_barrier_stop()
+						md_bg_color: "#EEEEEE"
+						padding: 10
+						Image:
+							source:'assets/images/icon-barrier-open.png'
+							size_hint_y: 0.9
+							allow_stretch: True
+						MDLabel:
+							size_hint_y: 0.1
+							halign: "center"
+							text: "Buka Gate"
 
 					MDCard:
 						orientation: "vertical"
@@ -295,7 +279,7 @@
 						Image:
 							source:'assets/images/icon-inspect-id.png'
 							size_hint_y: 0.9
-							allow_stretch: True 
+							allow_stretch: True
 						MDLabel:
 							size_hint_y: 0.1
 							halign: "center"
@@ -310,7 +294,7 @@
 						Image:
 							source:'assets/images/icon-inspect-id.png'
 							size_hint_y: 0.9
-							allow_stretch: True 
+							allow_stretch: True
 						MDLabel:
 							size_hint_y: 0.1
 							halign: "center"
@@ -325,7 +309,7 @@
 						Image:
 							source:'assets/images/icon-capture.png'
 							size_hint_y: 0.9
-							allow_stretch: True 
+							allow_stretch: True
 						MDLabel:
 							size_hint_y: 0.1
 							halign: "center"
@@ -345,7 +329,7 @@
 						Image:
 							source:'assets/images/icon-inspect-visual.png'
 							size_hint_y: 0.9
-							allow_stretch: True 
+							allow_stretch: True
 						MDLabel:
 							size_hint_y: 0.1
 							halign: "center"
@@ -360,7 +344,7 @@
 						Image:
 							source:'assets/images/icon-inspect-visual.png'
 							size_hint_y: 0.9
-							allow_stretch: True 
+							allow_stretch: True
 						MDLabel:
 							size_hint_y: 0.1
 							halign: "center"
@@ -375,31 +359,31 @@
 						Image:
 							source:'assets/images/icon-inspect-pit.png'
 							size_hint_y: 0.9
-							allow_stretch: True 
+							allow_stretch: True
 						MDLabel:
 							size_hint_y: 0.1
 							halign: "center"
 							text: "Inspeksi Pit Kendaraan"
 
-					# MDCard:
-					# 	orientation: "vertical"
-					# 	ripple_behavior: True
-					# 	on_press: root.exec_barrier_close()
-					# 	on_release: root.exec_barrier_stop()
-					# 	md_bg_color: "#EEEEEE"
-					# 	padding: 10
-					# 	Image:
-					# 		source:'assets/images/icon-barrier-close.png'
-					# 		size_hint_y: 0.9
-					# 		allow_stretch: True 
-					# 	MDLabel:
-					# 		size_hint_y: 0.1
-					# 		halign: "center"
-					# 		text: "Tutup Gate"
+					MDCard:
+						orientation: "vertical"
+						ripple_behavior: True
+						on_press: root.exec_barrier_close()
+						on_release: root.exec_barrier_stop()
+						md_bg_color: "#EEEEEE"
+						padding: 10
+						Image:
+							source:'assets/images/icon-barrier-close.png'
+							size_hint_y: 0.9
+							allow_stretch: True
+						MDLabel:
+							size_hint_y: 0.1
+							halign: "center"
+							text: "Tutup Gate"
 
 		# button layout
-        MDBoxLayout:
-            orientation: "horizontal"
+		MDBoxLayout:
+			orientation: "horizontal"
 			size_hint_y: 0.1
 			padding: 20, 20
 			spacing: 50
@@ -414,17 +398,6 @@
 				size_hint_x: 1
 				disabled: True
 				on_press: root.exec_verify_data()
-
-			# MDRectangleFlatIconButton:
-			# 	id: bt_verify_payment
-			# 	icon: "cash"
-			# 	text: "VERIFIKASI PEMBAYARAN"
-			# 	md_bg_color: "#2CA02C"
-			# 	theme_text_color: "Custom"
-			# 	text_color: "#EEEEEE"
-			# 	size_hint_x: 1
-			# 	disabled: True
-			# 	on_press: root.exec_verify_payment()
 
 			MDRectangleFlatIconButton:
 				id: bt_save
@@ -447,8 +420,8 @@
 				on_press: root.exec_cancel()
 
 		# footer layout
-        MDBoxLayout:
-            orientation: "horizontal"
+		MDBoxLayout:
+			orientation: "horizontal"
 			size_hint_y: 0.1
 
 			MDBoxLayout:
@@ -457,18 +430,18 @@
 				spacing: 20
 				md_bg_color: "#4471C4"
 				size_hint_x: 0.4
-				
+
 				AsyncImage:
 					id: img_pemkab
 					source:'assets/images/logo-sorong.png'
 					size_hint_x: 0.1
-					allow_stretch: True  
+					allow_stretch: True
 
 				AsyncImage:
 					id: img_dishub
 					source:'assets/images/logo-dishub.png'
 					size_hint_x: 0.1
-					allow_stretch: True  
+					allow_stretch: True
 
 				MDBoxLayout:
 					orientation: "vertical"
@@ -480,7 +453,7 @@
 						halign: "left"
 						valign: "middle"
 						theme_text_color: "Custom"
-						text_color: "#EEEEEE"						
+						text_color: "#EEEEEE"
 						font_style: 'Subtitle1'
 
 					MDLabel:
@@ -493,7 +466,7 @@
 						font_style: 'Subtitle1'
 
 					MDLabel:
-						id: lb_unit			
+						id: lb_unit
 						text: "UNIT PELAKSANA UJI BERKALA KENDARAAN BERMOTOR"
 						halign: "left"
 						valign: "middle"
@@ -518,7 +491,7 @@
 				md_bg_color: "#FFC000"
 				size_hint_x: 0.6
 
-				MDLabel:			
+				MDLabel:
 					text: "INFORMASI"
 					halign: "left"
 					valign: "middle"
