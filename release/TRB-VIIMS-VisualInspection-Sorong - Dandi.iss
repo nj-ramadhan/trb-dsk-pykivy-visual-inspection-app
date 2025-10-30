@@ -2,10 +2,10 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "VIIMS - Visual Inspection Application - Sorong"
-#define MyAppVersion "2.2.250921"
+#define MyAppVersion "2.3.251027"
 #define MyAppPublisher "PT. Tiga Ratu Berkarya"
-#define MyAppExeName "TRB-VIIMS-Visual_Inspection-Sorong.exe"
-#define MyAppAssocName "VIIMS - Visual Inspection Application Files - Pandeglang"
+#define MyAppExeName "TRB-VIIMS-VisualInspectionApp-Sorong.exe"
+#define MyAppAssocName "VIIMS - Visual Inspection Application Files - Sorong"
 #define MyAppAssocExt ".msi"
 #define MyAppAssocKey StringChange(MyAppAssocName, " ", "") + MyAppAssocExt
 
@@ -30,7 +30,7 @@ ChangesAssociations=yes
 DisableProgramGroupPage=yes
 ; Uncomment the following line to run in non administrative install mode (install for current user only.)
 ;PrivilegesRequired=lowest
-OutputBaseFilename=TRB-VIIMS-VisualInspectionApp-Pandeglang-Installer
+OutputBaseFilename=TRB-VIIMS-VisualInspectionApp-Sorong-Installer
 SetupIconFile=C:\Users\Dandi Cahyadi\Documents\KERJAAN\VIIMS\trb-dsk-pykivy-visual-inspection-app\release\Application Folder\assets\images\logo-visual-app.ico
 Compression=lzma
 SolidCompression=yes
