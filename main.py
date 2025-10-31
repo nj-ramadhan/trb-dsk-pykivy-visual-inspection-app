@@ -679,7 +679,7 @@ class ScreenMain(MDScreen):
         if (dt_user != ''):
             self.check_temp_data()
             # if (int(dt_visual_flag) == 0):
-            if dt_visual_flag is None or int(dt_visual_flag) == 0: #dc
+            if dt_visual_flag is None or int(dt_visual_flag) == 2: #dc
                 self.screen_manager.current = 'screen_menu'
             else:
                 toast_msg = f'No. Antrian {dt_no_antri} Sudah Tes'
@@ -1282,7 +1282,7 @@ class ScreenAddQueue(MDScreen):
             
             mycursor = None
             try:
-                mycursor = mydb.cursor(buffered=True)
+                mydb.cursor(buffered=True, dictionary=True)
                 
                 if dt_sts_uji in ("B", "U"):
                     target_table = TB_DAFTAR_BERKALA
@@ -1854,7 +1854,7 @@ class ScreenMenu(MDScreen):
     def exec_save(self):
         global dt_nip_user, dt_id_user, dt_no_antri, dt_sts_uji
         try:
-            mycursor = mydb.cursor(dictionary=True)
+            mycursor = mydb.cursor(buffered=True, dictionary=True)
             check_today_sql = f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = %s AND DATE(dcreate) = CURDATE()"
             mycursor.execute(check_today_sql, (dt_no_pol,))
             todays_image_record = mycursor.fetchone()
@@ -1885,7 +1885,7 @@ class ScreenMenu(MDScreen):
             
             check_post_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
-            sql = f"UPDATE {TB_DATA} SET check_flag = '1' , check_user = %s, check_post = %s WHERE noantrian = '{dt_no_antri}' "
+            sql = f"UPDATE {TB_DATA} SET check_flag = '1', check_user = %s, check_post = %s WHERE noantrian = %s"
             mycursor.execute(sql, (dt_id_user, check_post_time, dt_no_antri))
             mydb.commit()
             toast_msg = f'Berhasil Menyimpan dan Menyelesaikan Inspeksi'
