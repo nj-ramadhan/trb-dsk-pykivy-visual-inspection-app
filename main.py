@@ -1,5 +1,5 @@
 from kivy.config import Config
-Config.set('kivy', 'keyboard_mode', 'systemanddock')
+Config.set('kivy', 'keyboard_mode', 'system')
 
 import datetime
 from encodings.punycode import T
@@ -73,9 +73,9 @@ LB_UNIT = config['app']['LB_UNIT']
 LB_UNIT_ADDRESS = config['app']['LB_UNIT_ADDRESS']
 
 ## SQL Setting
-DB_HOST = "194.31.53.37"
-DB_USER = "Pndujikir2022!"
-DB_PASSWORD = "@Kirpnd2022!"
+DB_HOST = "187.77.112.162"
+DB_USER = "Pndujikir2026!"
+DB_PASSWORD = "@PndKir2026!"
 
 DB_NAME = "pkbpandeglang"
 TB_DATA = "tb_cekident"
@@ -107,9 +107,9 @@ RTSP_IP_PIT_CAM2 = config['setting']['RTSP_IP_PIT_CAM2']
 RTSP_IP_PIT_CAM3 = config['setting']['RTSP_IP_PIT_CAM3']
 RTSP_IP_PIT_CAM4 = config['setting']['RTSP_IP_PIT_CAM4']
 
-FTP_HOST = "194.31.53.37"
+FTP_HOST = "76.13.16.159"
 FTP_USER = "root"
-FTP_PASS = "@D15HUBp2022!"
+FTP_PASS = "@PLandak2026"
 
 MODBUS_IP_PLC = config['setting']['MODBUS_IP_PLC']
 MODBUS_CLIENT = ModbusTcpClient(MODBUS_IP_PLC)
@@ -199,43 +199,84 @@ class ScreenLogin(MDScreen):
             toast_msg = f'error Login: {e}'
             Logger.error(f"{self.name}: {toast_msg}, {e}")  
 
-    def exec_login(self):
-        global mydb, db_users
-        global dt_id_user, dt_user, dt_foto_user, dt_nip_user
+    # def exec_login(self):
+    #     global mydb, db_users
+    #     global dt_id_user, dt_user, dt_foto_user, dt_nip_user
 
+    #     screen_main = self.screen_manager.get_screen('screen_main')
+
+    #     try:
+    #         screen_main.exec_reload_database()
+    #         input_username = self.ids.tx_username.text
+    #         input_password = self.ids.tx_password.text        
+    #         # Adding salt at the last of the password
+    #         dataBase_password = input_password
+    #         # Encoding the password
+    #         hashed_password = hashlib.md5(dataBase_password.encode())
+
+    #         mycursor = mydb.cursor()
+    #         mycursor.execute(f"SELECT id_user, nama, username, password, image, nip FROM {TB_USER} WHERE username = '{input_username}' and password = '{hashed_password.hexdigest()}'")
+    #         myresult = mycursor.fetchone()
+    #         db_users = np.array(myresult).T
+            
+    #         if myresult is None:
+    #             toast('Gagal Masuk, Nama Pengguna atau Password Salah')
+    #         else:
+    #             toast_msg = f'Berhasil Masuk, Selamat Datang {myresult[1]}'
+    #             toast(toast_msg)
+    #             dt_id_user = myresult[0]
+    #             dt_user = myresult[1]
+    #             dt_foto_user = myresult[4]
+    #             dt_nip_user = myresult[5]
+    #             self.ids.tx_username.text = ""
+    #             self.ids.tx_password.text = "" 
+    #             self.screen_manager.current = 'screen_main'
+
+    #     except Exception as e:
+    #         toast_msg = f'Gagal masuk, silahkan isi nama user dan password yang sesuai'
+    #         toast(toast_msg)  
+    #         Logger.error(f"{self.name}: {toast_msg}, {e}") 
+
+    def exec_login(self):
+        global mydb, dt_id_user, dt_user, dt_foto_user, dt_nrp_user
+        import bcrypt
         screen_main = self.screen_manager.get_screen('screen_main')
 
         try:
             screen_main.exec_reload_database()
-            input_username = self.ids.tx_username.text
+            input_email = self.ids.tx_username.text # Sekarang login pakai email sesuai aplikasi lain
             input_password = self.ids.tx_password.text        
-            # Adding salt at the last of the password
-            dataBase_password = input_password
-            # Encoding the password
-            hashed_password = hashlib.md5(dataBase_password.encode())
-
-            mycursor = mydb.cursor()
-            mycursor.execute(f"SELECT id_user, nama, username, password, image, nip FROM {TB_USER} WHERE username = '{input_username}' and password = '{hashed_password.hexdigest()}'")
-            myresult = mycursor.fetchone()
-            db_users = np.array(myresult).T
             
-            if myresult is None:
-                toast('Gagal Masuk, Nama Pengguna atau Password Salah')
+            mycursor = mydb.cursor()
+            # Query ke web_users, ambil field nrp
+            query = "SELECT id, name, password, nrp FROM web_users WHERE email = %s AND tipe_user = '1'"
+            
+            mycursor.execute(query, (input_email,))
+            myresult = mycursor.fetchone()
+            
+            if myresult:
+                db_id, db_name, db_hashed_password, db_nrp = myresult
+
+                # Verifikasi menggunakan Bcrypt
+                if bcrypt.checkpw(input_password.encode('utf-8'), db_hashed_password.encode('utf-8')):
+                    toast(f"Berhasil Masuk, Selamat Datang {db_name}")
+                    
+                    dt_id_user = db_id
+                    dt_user = db_name
+                    dt_nrp_user = db_nrp # NRP disimpan di sini
+                    dt_foto_user = "" # web_users biasanya tidak ada foto fisik di kolom
+                    
+                    self.ids.tx_username.text = ""
+                    self.ids.tx_password.text = "" 
+                    self.screen_manager.current = 'screen_main'
+                else:
+                    toast("Maaf, Email atau Password salah")
             else:
-                toast_msg = f'Berhasil Masuk, Selamat Datang {myresult[1]}'
-                toast(toast_msg)
-                dt_id_user = myresult[0]
-                dt_user = myresult[1]
-                dt_foto_user = myresult[4]
-                dt_nip_user = myresult[5]
-                self.ids.tx_username.text = ""
-                self.ids.tx_password.text = "" 
-                self.screen_manager.current = 'screen_main'
+                toast("Akun tidak ditemukan atau tipe user salah")
 
         except Exception as e:
-            toast_msg = f'Gagal masuk, silahkan isi nama user dan password yang sesuai'
-            toast(toast_msg)  
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+            Logger.error(f"Login Error: {e}")
+            toast(f"Gagal masuk: {e}")
 
     def exec_navigate_home(self):
         try:
@@ -342,7 +383,7 @@ class ScreenMain(MDScreen):
             screen_add_queue = self.screen_manager.get_screen('screen_add_queue')
             
             screen_inspect_id = self.screen_manager.get_screen('screen_inspect_id')
-            screen_inspect_dimension = self.screen_manager.get_screen('screen_inspect_dimension')
+            # screen_inspect_dimension = self.screen_manager.get_screen('screen_inspect_dimension') //dimensiondc
             screen_inspect_visual = self.screen_manager.get_screen('screen_inspect_visual')
             screen_inspect_visual2 = self.screen_manager.get_screen('screen_inspect_visual2')
             screen_inspect_pit = self.screen_manager.get_screen('screen_inspect_pit')
@@ -366,8 +407,8 @@ class ScreenMain(MDScreen):
 
             screen_inspect_id.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
             screen_inspect_id.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
-            screen_inspect_dimension.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
-            screen_inspect_dimension.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
+            # screen_inspect_dimension.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
+            # screen_inspect_dimension.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime())) // dimensiondc
             screen_inspect_visual.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
             screen_inspect_visual.ids.lb_date.text = str(time.strftime("%d/%m/%Y", time.localtime()))
             screen_inspect_visual2.ids.lb_time.text = str(time.strftime("%H:%M:%S", time.localtime()))
@@ -435,21 +476,20 @@ class ScreenMain(MDScreen):
             screen_add_queue.ids.lb_operator.text = f'Login Sebagai: \n{dt_user}' if dt_user != '' else 'Silahkan Login'
 
             screen_inspect_id.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
-            screen_inspect_dimension.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
+            # screen_inspect_dimension.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'//dimensiondc
             screen_inspect_visual.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
             screen_inspect_visual2.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
             screen_inspect_pit.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
             screen_realtime_cctv.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
             screen_realtime_pit.ids.lb_operator.text = f'Login Sebagai: {dt_user}' if dt_user != '' else 'Silahkan Login'
 
-            if dt_user != '':
-                self.ids.img_user.source = f'https://{FTP_HOST}/system/storage/app/foto_user/{dt_foto_user}'
-                screen_home.ids.img_user.source = f'https://{FTP_HOST}/system/storage/app/foto_user/{dt_foto_user}'
-                screen_login.ids.img_user.source = f'https://{FTP_HOST}/system/storage/app/foto_user/{dt_foto_user}'
+            if dt_user != '' and dt_foto_user and dt_foto_user.strip() != "":
+                img_path = f'https://{FTP_HOST}/system/storage/app/foto_user/{dt_foto_user}'
             else:
-                self.ids.img_user.source = 'assets/images/icon-login.png'
-                screen_home.ids.img_user.source = 'assets/images/icon-login.png'
-                screen_login.ids.img_user.source = 'assets/images/icon-login.png'
+                # Gunakan gambar lokal jika data foto di database kosong
+                img_path = 'assets/images/icon-login.png'
+
+            self.ids.img_user.source = img_path
 
         except Exception as e:
             toast_msg = f'Gagal Memperbaharui Tampilan'
@@ -481,11 +521,18 @@ class ScreenMain(MDScreen):
     def exec_reload_database(self):
         global mydb
         try:
-            mydb = mysql.connector.connect(host = DB_HOST,user = DB_USER,password = DB_PASSWORD,database = DB_NAME)
+            if 'mydb' in globals() and mydb is not None:
+                # Reconnect=True akan menyambung otomatis jika WiFi sempat berkedip
+                mydb.ping(reconnect=True, attempts=3, delay=2)
+                if mydb.is_connected():
+                    return
+
+            mydb = mysql.connector.connect(
+                host=DB_HOST, user=DB_USER, password=DB_PASSWORD,
+                database=DB_NAME, buffered=True, autocommit=True
+            )
         except Exception as e:
-            toast_msg = f'Gagal Menginisiasi Database'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+            Logger.error(f"Database Error: {e}") 
 
     def exec_reload_table(self):
         global mydb, db_antrian
@@ -530,13 +577,23 @@ class ScreenMain(MDScreen):
 
                 cursor.execute(f"SELECT noantrian, nopol, nouji, statusuji, merk, type, idjeniskendaraan, jbb, berat_kosong, bahan_bakar, warna, check_flag FROM {TB_DATA} WHERE check_flag = 2")
                 result_tb_antrian = cursor.fetchall()
-                db_antrian = np.array(result_tb_antrian).T
-
-                db_pendaftaran = np.array(result_tb_antrian)
-                dt_dash_belum_uji = db_pendaftaran[:,0].size
+                if not result_tb_antrian:
+                    # Jika antrean kosong, set variabel ke default agar tidak error
+                    db_antrian = np.array([[]]) 
+                    dt_dash_belum_uji = 0
+                else:
+                    # Jika ada data, baru proses dengan NumPy
+                    db_pendaftaran = np.array(result_tb_antrian)
+                    db_antrian = db_pendaftaran.T # Transpose untuk memudahkan indexing
+                    dt_dash_belum_uji = db_pendaftaran.shape[0] # Ambil jumlah baris
+                
+                # Hitung total antrean harian (semua flag)
+                cursor.execute(f"SELECT COUNT(*) FROM {TB_DATA}")
+                total_result = cursor.fetchone()
+                dt_dash_antri = total_result[0] if total_result else 0
                 dt_dash_sudah_uji = dt_dash_antri - dt_dash_belum_uji
-            
-            cursor.close()
+                
+                cursor.close()
 
         except Exception as e:
             toast_msg = f'Gagal mengambil data antrian harian'
@@ -545,11 +602,23 @@ class ScreenMain(MDScreen):
 
         try:            
             layout_list = self.ids.layout_list
-            layout_list.clear_widgets(children=None)
+            layout_list.clear_widgets()
+
+            # Cek apakah db_antrian memiliki isi sebelum looping
+            if db_antrian.size > 0 and db_antrian.shape[1] > 0:
+                for i in range(db_antrian.shape[1]):
+                    layout_list.add_widget(
+                        MDCard(
+                            # ... isi label Anda (db_antrian[0, i], dst) ...
+                            # Pastikan indexing tetap konsisten
+                        )
+                    )
+            else:
+                # Tampilkan pesan jika antrean kosong (opsional)
+                layout_list.add_widget(MDLabel(text="Tidak ada antrean belum uji", halign="center"))
+                
         except Exception as e:
-            toast_msg = f'Gagal menghapus widget tabel'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}")   
+            Logger.error(f"{self.name}: Gagal reload tabel UI, {e}") 
         
         try:           
             layout_list = self.ids.layout_list
@@ -679,8 +748,7 @@ class ScreenMain(MDScreen):
 
         if (dt_user != ''):
             self.check_temp_data()
-            # if (int(dt_visual_flag) == 0):
-            if dt_visual_flag is None or int(dt_visual_flag) == 0: #dc
+            if dt_visual_flag is None or int(dt_visual_flag) == 2: #dc
                 self.screen_manager.current = 'screen_menu'
             else:
                 toast_msg = f'No. Antrian {dt_no_antri} Sudah Tes'
@@ -1577,130 +1645,170 @@ class ScreenMenu(MDScreen):
             if mycursor:
                 mycursor.close()
 
-    def exec_verify_payment(self):
-        global dt_no_antri, dt_sts_uji, dt_verified_payment
-        global mydb, db_users, db_merk, db_bahan_bakar, db_warna
-        global dt_id_user, dt_user, dt_foto_user
-        global dt_dash_antri, dt_sts_uji
-        global dt_temp_no_uji, dt_temp_no_uji_new, dt_temp_no_wilayah, dt_temp_no_kendaraan, dt_temp_no_plat, dt_temp_no_pol
-        global dt_temp_nama, dt_temp_no_hp, dt_temp_alamat, dt_temp_id_izin, dt_temp_wilayah, dt_temp_provinsi, dt_temp_kabupaten_kota, dt_temp_kecamatan
-        global dt_temp_id_merk, dt_temp_id_subjenis, dt_temp_type, dt_temp_tahun_buat, dt_temp_silinder, dt_temp_warna, dt_temp_chasis, dt_temp_mesin, dt_temp_warna_plat
-        global dt_temp_bhn_bkr, dt_temp_jbb, dt_temp_daya_motor, dt_temp_tgl_uji_terakhir, dt_temp_tgl_uji_habis, dt_temp_status_uji, dt_temp_status_penerbitan, dt_temp_jenis_kendaraan, dt_temp_kode_jenis_kendaraan, dt_temp_kode_wilayah
+    # def exec_verify_payment(self):
+    #     global dt_no_antri, dt_sts_uji, dt_verified_payment
+    #     global mydb, db_users, db_merk, db_bahan_bakar, db_warna
+    #     global dt_id_user, dt_user, dt_foto_user
+    #     global dt_dash_antri, dt_sts_uji
+    #     global dt_temp_no_uji, dt_temp_no_uji_new, dt_temp_no_wilayah, dt_temp_no_kendaraan, dt_temp_no_plat, dt_temp_no_pol
+    #     global dt_temp_nama, dt_temp_no_hp, dt_temp_alamat, dt_temp_id_izin, dt_temp_wilayah, dt_temp_provinsi, dt_temp_kabupaten_kota, dt_temp_kecamatan
+    #     global dt_temp_id_merk, dt_temp_id_subjenis, dt_temp_type, dt_temp_tahun_buat, dt_temp_silinder, dt_temp_warna, dt_temp_chasis, dt_temp_mesin, dt_temp_warna_plat
+    #     global dt_temp_bhn_bkr, dt_temp_jbb, dt_temp_daya_motor, dt_temp_tgl_uji_terakhir, dt_temp_tgl_uji_habis, dt_temp_status_uji, dt_temp_status_penerbitan, dt_temp_jenis_kendaraan, dt_temp_kode_jenis_kendaraan, dt_temp_kode_wilayah
 
-        dt_tgl_baru_uji = str(time.strftime("%Y/%m/%d %H:%M:%S", time.localtime()))
+    #     dt_tgl_baru_uji = str(time.strftime("%Y/%m/%d %H:%M:%S", time.localtime()))
 
-        try:
-            dt_tgl_baru_uji_obj = datetime.datetime.now()
-            mycursor = mydb.cursor()
-            target_table_spp = TB_DAFTAR_BERKALA if dt_sts_uji in ("B", "U") else TB_DAFTAR_BARU
-            sql_spp = f"UPDATE {target_table_spp} SET STS_SPP = '1', TGL_SPP = %s WHERE NOANTRIAN = %s"
-            mycursor.execute(sql_spp, (dt_tgl_baru_uji_obj, dt_no_antri))
-            mydb.commit()
-            dt_verified_payment = 1
-            toast('Verifikasi Selesai, Kendaraan siap untuk diinspeksi')
-        except Exception as e:
-            toast(f'Gagal Memverifikasi Pembayaran. Silakan coba lagi {e}')
-            Logger.error(f"{self.name}: Gagal verifikasi SPP, {e}")
-            return
+    #     try:
+    #         dt_tgl_baru_uji_obj = datetime.datetime.now()
+    #         mycursor = mydb.cursor()
+    #         target_table_spp = TB_DAFTAR_BERKALA if dt_sts_uji in ("B", "U") else TB_DAFTAR_BARU
+    #         sql_spp = f"UPDATE {target_table_spp} SET STS_SPP = '1', TGL_SPP = %s WHERE NOANTRIAN = %s"
+    #         mycursor.execute(sql_spp, (dt_tgl_baru_uji_obj, dt_no_antri))
+    #         mydb.commit()
+    #         dt_verified_payment = 1
+    #         toast('Verifikasi Selesai, Kendaraan siap untuk diinspeksi')
+    #     except Exception as e:
+    #         toast(f'Gagal Memverifikasi Pembayaran. Silakan coba lagi {e}')
+    #         Logger.error(f"{self.name}: Gagal verifikasi SPP, {e}")
+    #         return
 
-        try:
-            today_str = dt_tgl_baru_uji_obj.strftime("%Y-%m-%d")
-            make_dir_path = f'/var/www/system/storage/app/capture/{today_str}/{dt_sts_uji}-{dt_no_antri}'
-            self.sftp_make_dir(make_dir_path)
-        except Exception as e:
-            toast(f'Gagal Membuat Folder Remote: {e}')
-            Logger.error(f"{self.name}: Gagal SFTP mkdir, {e}")
+    #     try:
+    #         today_str = dt_tgl_baru_uji_obj.strftime("%Y-%m-%d")
+    #         make_dir_path = f'/var/www/pandeglang/system/storage/app/capture/{today_str}/{dt_sts_uji}-{dt_no_antri}'
+    #         self.sftp_make_dir(make_dir_path)
+    #     except Exception as e:
+    #         toast(f'Gagal Membuat Folder Remote: {e}')
+    #         Logger.error(f"{self.name}: Gagal SFTP mkdir, {e}")
 
-        try:
-            mycursor = mydb.cursor(buffered=True, dictionary=True)
+    #     try:
+    #         mycursor = mydb.cursor(buffered=True, dictionary=True)
             
-            session_updates = {
-                'noantrian': dt_no_antri,
-                'nouji': dt_no_uji,
-                'NEW_NOUJI': dt_no_uji,
-                'nopol': dt_no_pol,
-                'statusuji': dt_sts_uji,
-                'SUBJENIS_ID': dt_temp_id_subjenis,
-                'idjeniskendaraan': dt_temp_jenis_kendaraan,
-                'kd_jeniskendaraan': dt_temp_kode_jenis_kendaraan,
-                'dcreate': dt_tgl_baru_uji_obj,
-                'tgl_habis_uji': None,
-                'trfstat': None,
-                'hasil_uji': None,
-                'NIP_ID1': None, 
-                'NIP_ID2': None, 
-                'NIP_ID3': None, 
-                'NIP_ID4': None, 
-                'NIP_ID5': None,
-                'VERIFIKATOR': None,
-                'kadis' : None,
-                "direktur": None,
-                'id_penguji': None,
-                'tgl_capture': dt_tgl_baru_uji,
-            }
+    #         session_updates = {
+    #             'noantrian': dt_no_antri,
+    #             'nouji': dt_no_uji,
+    #             'NEW_NOUJI': dt_no_uji,
+    #             'nopol': dt_no_pol,
+    #             'statusuji': dt_sts_uji,
+    #             'SUBJENIS_ID': dt_temp_id_subjenis,
+    #             'idjeniskendaraan': dt_temp_jenis_kendaraan,
+    #             'kd_jeniskendaraan': dt_temp_kode_jenis_kendaraan,
+    #             'dcreate': dt_tgl_baru_uji_obj,
+    #             'tgl_habis_uji': None,
+    #             'trfstat': None,
+    #             'hasil_uji': None,
+    #             'NIP_ID1': None, 
+    #             'NIP_ID2': None, 
+    #             'NIP_ID3': None, 
+    #             'NIP_ID4': None, 
+    #             'NIP_ID5': None,
+    #             'VERIFIKATOR': None,
+    #             'kadis' : None,
+    #             "direktur": None,
+    #             'id_penguji': None,
+    #             'tgl_capture': dt_tgl_baru_uji,
+    #         }
 
-            check_today_sql = f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = %s AND DATE(dcreate) = CURDATE()"
-            mycursor.execute(check_today_sql, (dt_no_pol,))
-            todays_record = mycursor.fetchone()
+    #         check_today_sql = f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = %s AND DATE(dcreate) = CURDATE()"
+    #         mycursor.execute(check_today_sql, (dt_no_pol,))
+    #         todays_record = mycursor.fetchone()
 
-            if todays_record:
-                toast("Data hari ini sudah ada. Memperbarui sesi...")
-                record_id = todays_record['id']
+    #         if todays_record:
+    #             toast("Data hari ini sudah ada. Memperbarui sesi...")
+    #             record_id = todays_record['id']
                 
-                set_clause = ", ".join([f"`{key}` = %s" for key in session_updates.keys()])
-                sql_update_today = f"UPDATE {TB_DATA_IMAGE} SET {set_clause} WHERE id = %s"
+    #             set_clause = ", ".join([f"`{key}` = %s" for key in session_updates.keys()])
+    #             sql_update_today = f"UPDATE {TB_DATA_IMAGE} SET {set_clause} WHERE id = %s"
                 
-                update_values = list(session_updates.values()) + [record_id]
-                mycursor.execute(sql_update_today, tuple(update_values))
-            else:
-                query_hist = f"SELECT * FROM {TB_DATA_IMAGE} WHERE nopol = %s ORDER BY id DESC LIMIT 1"
-                mycursor.execute(query_hist, (dt_no_pol,))
-                last_record = mycursor.fetchone()
+    #             update_values = list(session_updates.values()) + [record_id]
+    #             mycursor.execute(sql_update_today, tuple(update_values))
+    #         else:
+    #             query_hist = f"SELECT * FROM {TB_DATA_IMAGE} WHERE nopol = %s ORDER BY id DESC LIMIT 1"
+    #             mycursor.execute(query_hist, (dt_no_pol,))
+    #             last_record = mycursor.fetchone()
 
-                if not last_record:
-                    query_fallback = f"SELECT * FROM temp_image_kendaraanbr WHERE nopol = %s ORDER BY id DESC LIMIT 1"
-                    mycursor.execute(query_fallback, (dt_no_pol,))
-                    last_record = mycursor.fetchone()
+    #             if not last_record:
+    #                 query_fallback = f"SELECT * FROM temp_image_kendaraanbr WHERE nopol = %s ORDER BY id DESC LIMIT 1"
+    #                 mycursor.execute(query_fallback, (dt_no_pol,))
+    #                 last_record = mycursor.fetchone()
 
-                if last_record:
-                    toast("Data lama ditemukan. Melakukan kloning...")
-                    new_data = last_record.copy()
-                    new_data.pop('id', None) 
-                    new_data.pop('tgl_daftar', None) 
-                    new_data.pop('KOTA_ASAL', None)
-                    new_data.update(session_updates)
+    #             if last_record:
+    #                 toast("Data lama ditemukan. Melakukan kloning...")
+    #                 new_data = last_record.copy()
+    #                 new_data.pop('id', None) 
+    #                 new_data.pop('tgl_daftar', None) 
+    #                 new_data.pop('KOTA_ASAL', None)
+    #                 new_data.update(session_updates)
 
-                    columns = ", ".join([f"`{k}`" for k in new_data.keys()])
-                    placeholders = ", ".join(["%s"] * len(new_data))
-                    sql_insert_clone = f"INSERT INTO {TB_DATA_IMAGE} ({columns}) VALUES ({placeholders})"
-                    mycursor.execute(sql_insert_clone, tuple(new_data.values()))
-                else:
-                    toast_msg = "Data belum terdaftar dan belum dapat diproses"
-                    toast(toast_msg)
-                    Logger.warning(f"{self.name}: NOPOL {dt_no_pol} tidak ditemukan. Proses verifikasi dibatalkan.")
-                    return
+    #                 columns = ", ".join([f"`{k}`" for k in new_data.keys()])
+    #                 placeholders = ", ".join(["%s"] * len(new_data))
+    #                 sql_insert_clone = f"INSERT INTO {TB_DATA_IMAGE} ({columns}) VALUES ({placeholders})"
+    #                 mycursor.execute(sql_insert_clone, tuple(new_data.values()))
+    #             else:
+    #                 toast_msg = "Data belum terdaftar dan belum dapat diproses"
+    #                 toast(toast_msg)
+    #                 Logger.warning(f"{self.name}: NOPOL {dt_no_pol} tidak ditemukan. Proses verifikasi dibatalkan.")
+    #                 return
 
+    #         mydb.commit()
+    #         self.exec_initialize_inspection_status()
+
+    #     except Exception as e:
+    #         toast(f'Gagal proses data image: {e}')
+    #         Logger.error(f"{self.name}: Gagal di BAGIAN 3, {e}", exc_info=True)
+
+
+    def exec_verify_payment(self):
+        global dt_no_antri, dt_sts_uji, dt_verified_payment, mydb
+
+        try:
+            dt_tgl_obj = datetime.datetime.now()
+            mycursor = mydb.cursor()
+            
+            # 1. Tentukan tabel pendaftaran berdasarkan status uji
+            target_table = TB_DAFTAR_BERKALA if dt_sts_uji in ("B", "U") else TB_DAFTAR_BARU
+            
+            # 2. Update STS_SPP (Hanya ke tabel pendaftaran, tidak ke image_kendaraan)
+            sql_spp = f"UPDATE {target_table} SET STS_SPP = '1', TGL_SPP = %s WHERE NOANTRIAN = %s"
+            mycursor.execute(sql_spp, (dt_tgl_obj, dt_no_antri))
             mydb.commit()
-            self.exec_initialize_inspection_status()
+            
+            dt_verified_payment = 1
+            toast('Verifikasi Selesai, Folder SFTP dibuat...')
+
+            # 3. Tetap buat folder SFTP untuk menampung file fisik foto
+            today_str = dt_tgl_obj.strftime("%Y-%m-%d")
+            make_dir_path = f'/var/www/pandeglang/system/storage/app/capture/{today_str}/{dt_sts_uji}-{dt_no_antri}'
+            self.sftp_make_dir(make_dir_path)
 
         except Exception as e:
-            toast(f'Gagal proses data image: {e}')
-            Logger.error(f"{self.name}: Gagal di BAGIAN 3, {e}", exc_info=True)
+            Logger.error(f"Verify Payment Error: {e}")
 
     def sftp_make_dir(self, remote_path):
+        import paramiko
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect(FTP_HOST, username = FTP_USER, password = FTP_PASS)
-        sftp = ssh.open_sftp()
+        
         try:
-            sftp.chdir(remote_path)  # Test if remote_path exists
-            toast(f'Direktori {remote_path} Sudah Ada')
-        except IOError:
-            sftp.mkdir(remote_path)  # Create remote_path
-            sftp.chdir(remote_path)
-            toast(f'Berhasil Membuat Direktori {remote_path}')
-        sftp.close()
-        ssh.close()
+            # Tambahkan 3 jenis timeout ini untuk jaringan yang tidak stabil
+            ssh.connect(
+                hostname=FTP_HOST, 
+                username=FTP_USER, 
+                password=FTP_PASS, 
+                port=22,              # Pastikan portnya benar
+                timeout=30,           # Tunggu koneksi TCP (Socket)
+                banner_timeout=60,    # Tunggu balasan "Halo" dari server SSH
+                auth_timeout=30       # Tunggu proses verifikasi password
+            )
+            
+            sftp = ssh.open_sftp()
+            # ... proses mkdir Anda ...
+            sftp.close()
+            ssh.close()
+            return True
+            
+        except Exception as e:
+            # Ini yang memunculkan pesan WinError 10060 tadi
+            Logger.error(f"screen_menu: Gagal SFTP mkdir, {e}")
+            return False
 
     def exec_barrier_open(self):
         global flag_conn_stat, flag_gate
@@ -1777,20 +1885,20 @@ class ScreenMenu(MDScreen):
             toast(toast_msg)
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
-    def exec_inspect_dimension(self):
-        global dt_verified_data, dt_verified_payment
+    # def exec_inspect_dimension(self):
+    #     global dt_verified_data, dt_verified_payment
 
-        try:
-            if dt_verified_data and dt_verified_payment:
-                self.screen_manager.current = 'screen_inspect_dimension'
-            else:
-                toast_msg = f'Silahkan Verifikasi Data Terlebih Dahulu'
-                toast(toast_msg)                 
+    #     try:
+    #         if dt_verified_data and dt_verified_payment:
+    #             self.screen_manager.current = 'screen_inspect_dimension'
+    #         else:
+    #             toast_msg = f'Silahkan Verifikasi Data Terlebih Dahulu'
+    #             toast(toast_msg)                 
 
-        except Exception as e:
-            toast_msg = f'Gagal Berpindah ke Halaman Inspeksi Dimensi'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+    #     except Exception as e:
+    #         toast_msg = f'Gagal Berpindah ke Halaman Inspeksi Dimensi'
+    #         toast(toast_msg)
+    #         Logger.error(f"{self.name}: {toast_msg}, {e}") //dimensiondc
 
     def exec_capture(self):
         global dt_verified_data, dt_verified_payment
@@ -1852,46 +1960,134 @@ class ScreenMenu(MDScreen):
             toast(toast_msg)
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
+    # def exec_save(self):
+    #     try:
+    #         mycursor = mydb.cursor(dictionary=True)
+    #         check_today_sql = f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = %s AND DATE(dcreate) = CURDATE()"
+    #         mycursor.execute(check_today_sql, (dt_no_pol,))
+    #         todays_image_record = mycursor.fetchone()
+
+    #         if todays_image_record:
+    #             image_id_today = todays_image_record['id']
+    #             sql_update_nip = f"UPDATE {TB_DATA_IMAGE} SET NIP_ID1 = %s, NIP_ID2 = %s WHERE id = %s"
+    #             mycursor.execute(sql_update_nip, (dt_nip_user, dt_nip_user, image_id_today))
+    #             Logger.info(f"NIP {dt_nip_user} berhasil disimpan untuk image_id {image_id_today}")
+    #         else:
+    #             Logger.warning(f"Tidak ditemukan record di image_kendaraan untuk NOPOL {dt_no_pol} hari ini. NIP tidak tersimpan.")
+    #         target_table = None
+    #         if dt_sts_uji in ("B", "U"):
+    #             target_table = TB_DAFTAR_BERKALA
+    #         elif dt_sts_uji in ("BR", "ND", "MD"):
+    #             target_table = TB_DAFTAR_BARU
+    #         else:
+    #             toast(f"Status Uji '{dt_sts_uji}' tidak valid, NIP di tabel pendaftaran tidak diupdate.")
+    #             Logger.warning(f"Status Uji '{dt_sts_uji}' tidak valid saat mencoba update NIP di tabel pendaftaran.")
+    #         if target_table:
+    #             sql_update_pendaftaran = f"""
+    #                 UPDATE {target_table}
+    #                 SET NIP_ID1 = %s, NIP_ID2 = %s
+    #                 WHERE NOANTRIAN = %s
+    #             """
+    #             mycursor.execute(sql_update_pendaftaran, (dt_nip_user, dt_nip_user, dt_no_antri))
+    #             Logger.info(f"NIP {dt_nip_user} berhasil disimpan di tabel {target_table} untuk antrian {dt_no_antri}")
+    #         sql = f"UPDATE {TB_DATA} SET check_flag = '1' WHERE noantrian = '{dt_no_antri}' "
+    #         mycursor.execute(sql)
+    #         mydb.commit()
+    #         toast_msg = f'Berhasil Menyimpan dan Menyelesaikan Inspeksi'
+    #         toast(toast_msg)
+    #     except Exception as e:
+    #         toast_msg = f'Gagal Menyelesaikan Inspeksi'
+    #         toast(toast_msg)
+    #         Logger.error(f"{self.name}: {toast_msg}, {e}") 
+    #     self.screen_manager.current = 'screen_main'
+
+    # def exec_save(self):
+    #     global dt_nrp_user # Pastikan variabel nrp dipanggil
+    #     try:
+    #         mycursor = mydb.cursor(dictionary=True)
+            
+    #         # --- BAGIAN 1: UPDATE IMAGE_KENDARAAN (Tabel Utama Foto) ---
+    #         check_today_sql = f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = %s AND DATE(dcreate) = CURDATE()"
+    #         mycursor.execute(check_today_sql, (dt_no_pol,))
+    #         todays_image_record = mycursor.fetchone()
+
+    #         if todays_image_record:
+    #             image_id_today = todays_image_record['id']
+    #             sql_update_image = f"""
+    #                 UPDATE {TB_DATA_IMAGE} 
+    #                 SET NIP_ID1 = %s, NIP_ID2 = %s, 
+    #                     useridv1 = %s, useridv2 = %s, useridfoto = %s 
+    #                 WHERE id = %s
+    #             """
+    #             mycursor.execute(sql_update_image, (dt_nrp_user, dt_nrp_user, dt_nrp_user, dt_nrp_user, dt_id_user, image_id_today))
+            
+    #         # --- BAGIAN 2: UPDATE PENDAFTARAN (Berkala / Baru) ---
+    #         target_table = TB_DAFTAR_BERKALA if dt_sts_uji in ("B", "U") else TB_DAFTAR_BARU
+    #         if target_table:
+    #             sql_update_pendaftaran = f"""
+    #                 UPDATE {target_table} 
+    #                 SET NIP_ID1 = %s, NIP_ID2 = %s,
+    #                     useridv1 = %s, useridv2 = %s, useridfoto = %s
+    #                 WHERE NOANTRIAN = %s
+    #             """
+    #             mycursor.execute(sql_update_pendaftaran, (dt_nrp_user, dt_nrp_user, dt_nrp_user, dt_nrp_user, dt_id_user, dt_no_antri))
+
+    #         # --- BAGIAN 3: FINALISASI ANTRIAN ---
+    #         sql_final = f"UPDATE {TB_DATA} SET check_flag = '1' WHERE noantrian = %s"
+    #         mycursor.execute(sql_final, (dt_no_antri,))
+            
+    #         mydb.commit()
+    #         toast('Inspeksi Selesai: Data Petugas Berhasil Dicatat')
+    #         self.screen_manager.current = 'screen_main'
+
+    #     except Exception as e:
+    #         toast(f'Gagal Menyelesaikan Inspeksi: {e}')
+    #         Logger.error(f"Save Final Error: {e}")
+
+    # Contoh modifikasi agar lebih pasti masuk ke tabel temp yang Anda mau
     def exec_save(self):
+        global dt_nrp_user, dt_id_user, dt_no_pol, dt_no_antri, dt_sts_uji
+        import datetime
+        
         try:
             mycursor = mydb.cursor(dictionary=True)
-            check_today_sql = f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = %s AND DATE(dcreate) = CURDATE()"
-            mycursor.execute(check_today_sql, (dt_no_pol,))
-            todays_image_record = mycursor.fetchone()
+            now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            
+            # --- 1. UPDATE TABEL temp_image_kendaraanbr ---
+            # (Asumsi tabel ini punya kolom tgl_capture)
+            sql_temp_image = """
+                UPDATE temp_image_kendaraanbr 
+                SET tgl_capture = %s, 
+                    NIP_ID1 = %s, NIP_ID2 = %s, 
+                    useridv1 = %s, useridv2 = %s, useridfoto = %s 
+                WHERE nopol = %s
+            """
+            mycursor.execute(sql_temp_image, (now, dt_nrp_user, dt_nrp_user, dt_nrp_user, dt_nrp_user, dt_id_user, dt_no_pol))
 
-            if todays_image_record:
-                image_id_today = todays_image_record['id']
-                sql_update_nip = f"UPDATE {TB_DATA_IMAGE} SET NIP_ID1 = %s, NIP_ID2 = %s WHERE id = %s"
-                mycursor.execute(sql_update_nip, (dt_nip_user, dt_nip_user, image_id_today))
-                Logger.info(f"NIP {dt_nip_user} berhasil disimpan untuk image_id {image_id_today}")
-            else:
-                Logger.warning(f"Tidak ditemukan record di image_kendaraan untuk NOPOL {dt_no_pol} hari ini. NIP tidak tersimpan.")
-            target_table = None
-            if dt_sts_uji in ("B", "U"):
-                target_table = TB_DAFTAR_BERKALA
-            elif dt_sts_uji in ("BR", "ND", "MD"):
-                target_table = TB_DAFTAR_BARU
-            else:
-                toast(f"Status Uji '{dt_sts_uji}' tidak valid, NIP di tabel pendaftaran tidak diupdate.")
-                Logger.warning(f"Status Uji '{dt_sts_uji}' tidak valid saat mencoba update NIP di tabel pendaftaran.")
-            if target_table:
-                sql_update_pendaftaran = f"""
-                    UPDATE {target_table}
-                    SET NIP_ID1 = %s, NIP_ID2 = %s
-                    WHERE NOANTRIAN = %s
-                """
-                mycursor.execute(sql_update_pendaftaran, (dt_nip_user, dt_nip_user, dt_no_antri))
-                Logger.info(f"NIP {dt_nip_user} berhasil disimpan di tabel {target_table} untuk antrian {dt_no_antri}")
-            sql = f"UPDATE {TB_DATA} SET check_flag = '1' WHERE noantrian = '{dt_no_antri}' "
-            mycursor.execute(sql)
+            # --- 2. UPDATE TABEL PENDAFTARAN ---
+            target_table = TB_DAFTAR_BERKALA if dt_sts_uji in ("B", "U") else TB_DAFTAR_BARU
+            
+            # DI SINI MASALAHNYA: Jika kolom tgl_capture gak ada, hapus dari query ini
+            sql_pendaftaran = f"""
+                UPDATE {target_table} 
+                SET NIP_ID1 = %s, NIP_ID2 = %s, 
+                    useridv1 = %s, useridv2 = %s, useridfoto = %s 
+                WHERE NOANTRIAN = %s
+            """
+            # Hapus variabel 'now' dari parameter execute di bawah
+            mycursor.execute(sql_pendaftaran, (dt_nrp_user, dt_nrp_user, dt_nrp_user, dt_nrp_user, dt_id_user, dt_no_antri))
+
+            # --- 3. FINALISASI ANTRIAN ---
+            sql_final = f"UPDATE {TB_DATA} SET check_flag = '1' WHERE noantrian = %s"
+            mycursor.execute(sql_final, (dt_no_antri,))
+            
             mydb.commit()
-            toast_msg = f'Berhasil Menyimpan dan Menyelesaikan Inspeksi'
-            toast(toast_msg)
+            toast('Inspeksi Selesai!')
+            self.screen_manager.current = 'screen_main'
+
         except Exception as e:
-            toast_msg = f'Gagal Menyelesaikan Inspeksi'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
-        self.screen_manager.current = 'screen_main'
+            toast(f'Gagal Simpan: {e}')
+            Logger.error(f"ScreenMenu: Save Final Error - {e}")
 
     def exec_cancel(self):
         self.screen_manager.current = 'screen_main'
@@ -2016,18 +2212,27 @@ class ScreenInspectId(MDScreen):
         global flags_komponen_uji
         global window_size_x, window_size_y
 
+        db_komponen_uji = np.array([]) 
+        flags_komponen_uji = np.array([], dtype='bool')
+
         try:
+            screen_main = self.manager.get_screen('screen_main')
+            screen_main.exec_reload_database()
+
             tb_komponen_uji = mydb.cursor()
             tb_komponen_uji.execute(f"SELECT kode_kelompok_uji, kode_komponen_uji, nama, keterangan FROM {TB_KOMPONEN_UJI} WHERE kode_komponen_uji = 'K01' ")
             result_tb_komponen_uji = tb_komponen_uji.fetchall()
             mydb.commit()
+
             db_komponen_uji = np.array(result_tb_komponen_uji).T
             flags_komponen_uji = np.ones(db_komponen_uji[0,:].size, dtype='bool')
             
         except Exception as e:
-            toast_msg = f'Ggaal Mengambil Data dari Tabel Komponen Uji'
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
-
+            toast_msg = f'Gagal Mengambil Data: {e}'
+            toast(toast_msg)
+            Logger.error(f"{self.name}: {toast_msg}")
+            return 
+        
         try:
             layout_list = self.ids.layout_list_komponen_uji
             layout_list.clear_widgets(children=None)
@@ -2266,424 +2471,424 @@ class ScreenInspectId(MDScreen):
     def exec_cancel(self):
         self.open_screen_menu()
 
-class ScreenInspectDimension(MDScreen):        
-    def __init__(self, **kwargs):
-        super(ScreenInspectDimension, self).__init__(**kwargs)
-        Clock.schedule_once(self.delayed_init, 1)
+# class ScreenInspectDimension(MDScreen):        
+#     def __init__(self, **kwargs):
+#         super(ScreenInspectDimension, self).__init__(**kwargs)
+#         Clock.schedule_once(self.delayed_init, 1)
     
-    def delayed_init(self, dt):
-        self.ids.lb_title.text = APP_TITLE
-        self.ids.lb_subtitle.text = APP_SUBTITLE        
-        self.ids.img_pemkab.source = f'assets/images/{IMG_LOGO_PEMKAB}'
-        self.ids.img_dishub.source = f'assets/images/{IMG_LOGO_DISHUB}'
-        self.ids.lb_pemkab.text = LB_PEMKAB
-        self.ids.lb_dishub.text = LB_DISHUB
-        self.ids.lb_unit.text = LB_UNIT
-        self.ids.lb_unit_address.text = LB_UNIT_ADDRESS
+#     def delayed_init(self, dt):
+#         self.ids.lb_title.text = APP_TITLE
+#         self.ids.lb_subtitle.text = APP_SUBTITLE        
+#         self.ids.img_pemkab.source = f'assets/images/{IMG_LOGO_PEMKAB}'
+#         self.ids.img_dishub.source = f'assets/images/{IMG_LOGO_DISHUB}'
+#         self.ids.lb_pemkab.text = LB_PEMKAB
+#         self.ids.lb_dishub.text = LB_DISHUB
+#         self.ids.lb_unit.text = LB_UNIT
+#         self.ids.lb_unit_address.text = LB_UNIT_ADDRESS
 
-    def on_enter(self):
-        global dt_no_antri, dt_no_pol, dt_no_uji, dt_jns_kend, mydb
+#     def on_enter(self):
+#         global dt_no_antri, dt_no_pol, dt_no_uji, dt_jns_kend, mydb
 
-        self.stsbak = None  
-        try:
-            mycursor = mydb.cursor()
-            query = f"SELECT stsbak FROM {TB_DATA_KENDARAAN} WHERE namajenis = %s"
-            mycursor.execute(query, (dt_jns_kend,))
-            result = mycursor.fetchone()
+#         self.stsbak = None  
+#         try:
+#             mycursor = mydb.cursor()
+#             query = f"SELECT stsbak FROM {TB_DATA_KENDARAAN} WHERE namajenis = %s"
+#             mycursor.execute(query, (dt_jns_kend,))
+#             result = mycursor.fetchone()
             
-            if result:
-                self.stsbak = str(result[0])
-                Logger.info(f"{self.name}: Ditemukan stsbak = {self.stsbak} untuk kendaraan {dt_no_pol}")
-            else:
-                Logger.warning(f"{self.name}: Tidak ditemukan stsbak untuk idjeniskendaraan: {dt_jns_kend}")
+#             if result:
+#                 self.stsbak = str(result[0])
+#                 Logger.info(f"{self.name}: Ditemukan stsbak = {self.stsbak} untuk kendaraan {dt_no_pol}")
+#             else:
+#                 Logger.warning(f"{self.name}: Tidak ditemukan stsbak untuk idjeniskendaraan: {dt_jns_kend}")
 
-        except Exception as e:
-            Logger.error(f"{self.name}: Gagal mengambil nilai stsbak: {e}")
+#         except Exception as e:
+#             Logger.error(f"{self.name}: Gagal mengambil nilai stsbak: {e}")
         
-        self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Inspeksi Dimensi: LULUS"
-        self.exec_reload_komponen_uji()
+#         self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Inspeksi Dimensi: LULUS"
+#         self.exec_reload_komponen_uji()
 
-    # def menu_komentar_callback(self, text_item):
-    #     global selected_row_subkomponen_uji
+#     # def menu_komentar_callback(self, text_item):
+#     #     global selected_row_subkomponen_uji
 
-    #     try:
-    #         self.ids[f'tx_comment{selected_row_subkomponen_uji}'].text = text_item
-    #     except Exception as e:
-    #         toast_msg = f'Gagal Mengeksekusi Perintah dari Menu Komentar'
-    #         toast(toast_msg)
-    #         Logger.error(f"{self.name}: {toast_msg}, {e}") 
+#     #     try:
+#     #         self.ids[f'tx_comment{selected_row_subkomponen_uji}'].text = text_item
+#     #     except Exception as e:
+#     #         toast_msg = f'Gagal Mengeksekusi Perintah dari Menu Komentar'
+#     #         toast(toast_msg)
+#     #         Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
-    def on_komponen_uji_row_press(self, instance):
-        global dt_no_antri, dt_no_pol, dt_no_uji, dt_visual_flag, dt_nama
-        global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
-        global db_komponen_uji, selected_row_komponen_uji
+#     def on_komponen_uji_row_press(self, instance):
+#         global dt_no_antri, dt_no_pol, dt_no_uji, dt_visual_flag, dt_nama
+#         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
+#         global db_komponen_uji, selected_row_komponen_uji
 
-        try:
-            # self.ids.bt_dropdown_caller.disabled = FALSE
-            row = int(str(instance.id).replace("card_komponen_uji",""))
-            selected_row_komponen_uji = row
-            self.exec_reload_subkomponen_uji(db_komponen_uji[1, row])
+#         try:
+#             # self.ids.bt_dropdown_caller.disabled = FALSE
+#             row = int(str(instance.id).replace("card_komponen_uji",""))
+#             selected_row_komponen_uji = row
+#             self.exec_reload_subkomponen_uji(db_komponen_uji[1, row])
 
-        except Exception as e:
-            toast_msg = f'Gagal Mengeksekusi Perintah dari Baris Tabel Komponen Uji'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+#         except Exception as e:
+#             toast_msg = f'Gagal Mengeksekusi Perintah dari Baris Tabel Komponen Uji'
+#             toast(toast_msg)
+#             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
-    def on_komponen_uji_bt_press(self, instance):
-        global dt_no_antri, dt_no_pol, dt_no_uji, dt_visual_flag, dt_nama
-        global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
-        global db_komponen_uji, selected_row_komponen_uji, flags_komponen_uji
+#     def on_komponen_uji_bt_press(self, instance):
+#         global dt_no_antri, dt_no_pol, dt_no_uji, dt_visual_flag, dt_nama
+#         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
+#         global db_komponen_uji, selected_row_komponen_uji, flags_komponen_uji
 
-        try:
-            # self.ids.bt_dropdown_caller.disabled = True
-            row = int(str(instance.id).replace("bt_komponen_uji",""))
-            selected_row_komponen_uji = row
-            if(flags_komponen_uji[row]):
-                flags_komponen_uji[row] = False
-                self.exec_reload_subkomponen_uji(db_komponen_uji[1, row], flags_komponen_uji[row])
-                self.ids[f'bt_komponen_uji{row}'].icon = "cancel"
-                self.ids[f'bt_komponen_uji{row}'].md_bg_color = "#FF2A2A"
-            else:
-                flags_komponen_uji[row] = True
-                self.exec_reload_subkomponen_uji(db_komponen_uji[1, row], flags_komponen_uji[row])
-                self.ids[f'bt_komponen_uji{row}'].icon = "check-bold"
-                self.ids[f'bt_komponen_uji{row}'].md_bg_color = "#2CA02C"
+#         try:
+#             # self.ids.bt_dropdown_caller.disabled = True
+#             row = int(str(instance.id).replace("bt_komponen_uji",""))
+#             selected_row_komponen_uji = row
+#             if(flags_komponen_uji[row]):
+#                 flags_komponen_uji[row] = False
+#                 self.exec_reload_subkomponen_uji(db_komponen_uji[1, row], flags_komponen_uji[row])
+#                 self.ids[f'bt_komponen_uji{row}'].icon = "cancel"
+#                 self.ids[f'bt_komponen_uji{row}'].md_bg_color = "#FF2A2A"
+#             else:
+#                 flags_komponen_uji[row] = True
+#                 self.exec_reload_subkomponen_uji(db_komponen_uji[1, row], flags_komponen_uji[row])
+#                 self.ids[f'bt_komponen_uji{row}'].icon = "check-bold"
+#                 self.ids[f'bt_komponen_uji{row}'].md_bg_color = "#2CA02C"
 
-        except Exception as e:
-            toast_msg = f'Gagal Mengeksekusi Perintah dari Tombol Icon Tabel Komponen Uji'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}")
+#         except Exception as e:
+#             toast_msg = f'Gagal Mengeksekusi Perintah dari Tombol Icon Tabel Komponen Uji'
+#             toast(toast_msg)
+#             Logger.error(f"{self.name}: {toast_msg}, {e}")
 
-    def on_subkomponen_uji_row_press(self, instance):
-        global dt_no_antri, dt_no_pol, dt_no_uji, dt_visual_flag, dt_nama
-        global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
-        global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji, selected_row_komponen_uji
-        global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
+#     def on_subkomponen_uji_row_press(self, instance):
+#         global dt_no_antri, dt_no_pol, dt_no_uji, dt_visual_flag, dt_nama
+#         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
+#         global db_komponen_uji, flags_subkomponen_uji, db_subkomponen_uji, selected_row_komponen_uji
+#         global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
 
-        try:
-            # self.ids.bt_dropdown_caller.disabled = True
-            row = int(str(instance.id).replace("card_subkomponen_uji",""))
-            selected_row_subkomponen_uji = row
-            selected_kode_subkomponen_uji = db_subkomponen_uji[0, row]
-            selected_nama_komponen_uji = db_komponen_uji[2, selected_row_komponen_uji]
+#         try:
+#             # self.ids.bt_dropdown_caller.disabled = True
+#             row = int(str(instance.id).replace("card_subkomponen_uji",""))
+#             selected_row_subkomponen_uji = row
+#             selected_kode_subkomponen_uji = db_subkomponen_uji[0, row]
+#             selected_nama_komponen_uji = db_komponen_uji[2, selected_row_komponen_uji]
 
-            komentar_otomatis = db_subkomponen_uji[3, row]
+#             komentar_otomatis = db_subkomponen_uji[3, row]
 
-            if(flags_subkomponen_uji[row]):
-                flags_subkomponen_uji[row] = False
-                self.ids[f'bt_subkomponen_uji{row}'].icon = "cancel"
-                self.ids[f'bt_subkomponen_uji{row}'].md_bg_color = "#FF2A2A"
-                self.ids[f'tx_comment{row}'].text = str(komentar_otomatis)
-            else:
-                flags_subkomponen_uji[row] = True
-                self.ids[f'bt_subkomponen_uji{row}'].icon = "check-bold"
-                self.ids[f'bt_subkomponen_uji{row}'].md_bg_color = "#2CA02C"
-                self.ids[f'tx_comment{row}'].text = ""
+#             if(flags_subkomponen_uji[row]):
+#                 flags_subkomponen_uji[row] = False
+#                 self.ids[f'bt_subkomponen_uji{row}'].icon = "cancel"
+#                 self.ids[f'bt_subkomponen_uji{row}'].md_bg_color = "#FF2A2A"
+#                 self.ids[f'tx_comment{row}'].text = str(komentar_otomatis)
+#             else:
+#                 flags_subkomponen_uji[row] = True
+#                 self.ids[f'bt_subkomponen_uji{row}'].icon = "check-bold"
+#                 self.ids[f'bt_subkomponen_uji{row}'].md_bg_color = "#2CA02C"
+#                 self.ids[f'tx_comment{row}'].text = ""
 
-            if(np.all(flags_subkomponen_uji == True)):
-                self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon = "check-bold"
-                self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].md_bg_color = "#2CA02C"
-                self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Inspeksi DImensi: LULUS"
-            else:
-                self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon = "cancel"
-                self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].md_bg_color = "#FF2A2A"
-                self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Inspeksi DImensi: TIDAK LULUS pada komponen uji {selected_nama_komponen_uji}"
+#             if(np.all(flags_subkomponen_uji == True)):
+#                 self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon = "check-bold"
+#                 self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].md_bg_color = "#2CA02C"
+#                 self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Inspeksi DImensi: LULUS"
+#             else:
+#                 self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon = "cancel"
+#                 self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].md_bg_color = "#FF2A2A"
+#                 self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Inspeksi DImensi: TIDAK LULUS pada komponen uji {selected_nama_komponen_uji}"
             
-            # self.reload_menu_komentar_uji(selected_kode_subkomponen_uji)
+#             # self.reload_menu_komentar_uji(selected_kode_subkomponen_uji)
 
-        except Exception as e:
-            toast_msg = f'Gagal Mengeksekusi Perintah dari Baris Tabel Subkomponen Uji'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+#         except Exception as e:
+#             toast_msg = f'Gagal Mengeksekusi Perintah dari Baris Tabel Subkomponen Uji'
+#             toast(toast_msg)
+#             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
-    def exec_reload_komponen_uji(self):
-            global mydb, db_komponen_uji
-            global flags_komponen_uji
-            global window_size_x, window_size_y
+#     def exec_reload_komponen_uji(self):
+#             global mydb, db_komponen_uji
+#             global flags_komponen_uji
+#             global window_size_x, window_size_y
 
-            try:
-                komponen_codes = ['K02', 'K18', 'K19', 'K16', 'K20', 'K21'] 
+#             try:
+#                 komponen_codes = ['K02', 'K18', 'K19', 'K16', 'K20', 'K21'] 
                 
-                if hasattr(self, 'stsbak') and self.stsbak in ('1', '2'):
-                    komponen_codes.append('K15')
+#                 if hasattr(self, 'stsbak') and self.stsbak in ('1', '2'):
+#                     komponen_codes.append('K15')
 
-                placeholders = ', '.join(['%s'] * len(komponen_codes))
+#                 placeholders = ', '.join(['%s'] * len(komponen_codes))
                 
-                tb_komponen_uji = mydb.cursor()
-                query = f"SELECT kode_kelompok_uji, kode_komponen_uji, nama, keterangan FROM {TB_KOMPONEN_UJI} WHERE kode_komponen_uji IN ({placeholders})"
-                tb_komponen_uji.execute(query, tuple(komponen_codes))
+#                 tb_komponen_uji = mydb.cursor()
+#                 query = f"SELECT kode_kelompok_uji, kode_komponen_uji, nama, keterangan FROM {TB_KOMPONEN_UJI} WHERE kode_komponen_uji IN ({placeholders})"
+#                 tb_komponen_uji.execute(query, tuple(komponen_codes))
                 
-                result_tb_komponen_uji = tb_komponen_uji.fetchall()
-                mydb.commit()
-                db_komponen_uji = np.array(result_tb_komponen_uji).T
-                flags_komponen_uji = np.ones(db_komponen_uji[0,:].size, dtype='bool')
+#                 result_tb_komponen_uji = tb_komponen_uji.fetchall()
+#                 mydb.commit()
+#                 db_komponen_uji = np.array(result_tb_komponen_uji).T
+#                 flags_komponen_uji = np.ones(db_komponen_uji[0,:].size, dtype='bool')
 
-            except Exception as e:
-                toast_msg = f'Gagal Mengambil Data dari Database Tabel Komponen Uji'
-                toast(toast_msg)
-                Logger.error(f"{self.name}: {toast_msg}, {e}")
+#             except Exception as e:
+#                 toast_msg = f'Gagal Mengambil Data dari Database Tabel Komponen Uji'
+#                 toast(toast_msg)
+#                 Logger.error(f"{self.name}: {toast_msg}, {e}")
 
-            try:
-                layout_list = self.ids.layout_list_komponen_uji
-                layout_list.clear_widgets(children=None)
-            except Exception as e:
-                toast_msg = f'Gagal Menghapus Widget'
-                toast(toast_msg)
-                Logger.error(f"{self.name}: {toast_msg}, {e}")
+#             try:
+#                 layout_list = self.ids.layout_list_komponen_uji
+#                 layout_list.clear_widgets(children=None)
+#             except Exception as e:
+#                 toast_msg = f'Gagal Menghapus Widget'
+#                 toast(toast_msg)
+#                 Logger.error(f"{self.name}: {toast_msg}, {e}")
             
-            try:
-                layout_list = self.ids.layout_list_komponen_uji
-                for i in range(db_komponen_uji[0,:].size):
-                    card = MDCard(
-                            MDLabel(text=f"{db_komponen_uji[2, i]}", size_hint_x= 0.7),
-                            ripple_behavior = True,
-                            on_press = self.on_komponen_uji_row_press,
-                            padding = [20, 0],
-                            spacing = 10,
-                            id=f'card_komponen_uji{i}',
-                            size_hint_y=None,
-                            height=dp(int(60 * 800 / window_size_y)),
-                            )
-                    self.ids[f'card_komponen_uji{i}'] = card
-                    layout_list.add_widget(card)
+#             try:
+#                 layout_list = self.ids.layout_list_komponen_uji
+#                 for i in range(db_komponen_uji[0,:].size):
+#                     card = MDCard(
+#                             MDLabel(text=f"{db_komponen_uji[2, i]}", size_hint_x= 0.7),
+#                             ripple_behavior = True,
+#                             on_press = self.on_komponen_uji_row_press,
+#                             padding = [20, 0],
+#                             spacing = 10,
+#                             id=f'card_komponen_uji{i}',
+#                             size_hint_y=None,
+#                             height=dp(int(60 * 800 / window_size_y)),
+#                             )
+#                     self.ids[f'card_komponen_uji{i}'] = card
+#                     layout_list.add_widget(card)
                     
-                    bt_check = MDIconButton(
-                            size_hint_x= 0.1, 
-                            icon="check-bold", 
-                            md_bg_color="#2CA02C",
-                            on_press = self.on_komponen_uji_bt_press,
-                            id=f'bt_komponen_uji{i}',
-                            )
-                    self.ids[f'bt_komponen_uji{i}'] = bt_check
-                    card.add_widget(bt_check)
+#                     bt_check = MDIconButton(
+#                             size_hint_x= 0.1, 
+#                             icon="check-bold", 
+#                             md_bg_color="#2CA02C",
+#                             on_press = self.on_komponen_uji_bt_press,
+#                             id=f'bt_komponen_uji{i}',
+#                             )
+#                     self.ids[f'bt_komponen_uji{i}'] = bt_check
+#                     card.add_widget(bt_check)
                     
-            except Exception as e:
-                toast_msg = f'Gagal Memperbaharui Tabel Komponen Uji'
-                toast(toast_msg)
-                Logger.error(f"{self.name}: {toast_msg}, {e}") 
+#             except Exception as e:
+#                 toast_msg = f'Gagal Memperbaharui Tabel Komponen Uji'
+#                 toast(toast_msg)
+#                 Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
-    def exec_reload_subkomponen_uji(self, kode_komponen_uji, default=True):
-            global mydb, db_subkomponen_uji, dt_no_pol
-            global flags_subkomponen_uji, db_last_data, dt_jns_kend
-            global window_size_x, window_size_y
+#     def exec_reload_subkomponen_uji(self, kode_komponen_uji, default=True):
+#             global mydb, db_subkomponen_uji, dt_no_pol
+#             global flags_subkomponen_uji, db_last_data, dt_jns_kend
+#             global window_size_x, window_size_y
 
-            try:
-                tb_subkomponen_uji = mydb.cursor()
-                query = ""
-                params = ()
+#             try:
+#                 tb_subkomponen_uji = mydb.cursor()
+#                 query = ""
+#                 params = ()
                 
-                if kode_komponen_uji == 'K15':
-                    if hasattr(self, 'stsbak') and self.stsbak == '2':
-                        sub_komponen_list = ('Panjang Tangki', 'Lebar Tangki', 'Tinggi Tangki', 'Volume Tangki', 'Jenis Muatan', 'Berat Jenis Muatan')
-                        placeholders = ', '.join(['%s'] * len(sub_komponen_list))
-                        query = f"SELECT kode_subkomponen_uji, string, value, nama FROM {TB_SUBKOMPONEN_UJI} WHERE string IN ({placeholders}) ORDER BY urut"
-                        params = sub_komponen_list
-                    elif hasattr(self, 'stsbak') and self.stsbak == '1':
-                        sub_komponen_list = ('Jenis Bak','Bahan Bak', 'Panjang Bak', 'Lebar Bak', 'Tinggi Bak', 'Volume Bak')
-                        placeholders = ', '.join(['%s'] * len(sub_komponen_list))
-                        query = f"SELECT kode_subkomponen_uji, string, value, nama FROM {TB_SUBKOMPONEN_UJI} WHERE string IN ({placeholders}) ORDER BY urut"
-                        params = sub_komponen_list
-                    else:
-                        Logger.warning(f"{self.name}: Mencoba memuat subkomponen K15 dengan stsbak tidak valid: {self.stsbak}")
-                        result_tb_subkomponen_uji = [] 
+#                 if kode_komponen_uji == 'K15':
+#                     if hasattr(self, 'stsbak') and self.stsbak == '2':
+#                         sub_komponen_list = ('Panjang Tangki', 'Lebar Tangki', 'Tinggi Tangki', 'Volume Tangki', 'Jenis Muatan', 'Berat Jenis Muatan')
+#                         placeholders = ', '.join(['%s'] * len(sub_komponen_list))
+#                         query = f"SELECT kode_subkomponen_uji, string, value, nama FROM {TB_SUBKOMPONEN_UJI} WHERE string IN ({placeholders}) ORDER BY urut"
+#                         params = sub_komponen_list
+#                     elif hasattr(self, 'stsbak') and self.stsbak == '1':
+#                         sub_komponen_list = ('Jenis Bak','Bahan Bak', 'Panjang Bak', 'Lebar Bak', 'Tinggi Bak', 'Volume Bak')
+#                         placeholders = ', '.join(['%s'] * len(sub_komponen_list))
+#                         query = f"SELECT kode_subkomponen_uji, string, value, nama FROM {TB_SUBKOMPONEN_UJI} WHERE string IN ({placeholders}) ORDER BY urut"
+#                         params = sub_komponen_list
+#                     else:
+#                         Logger.warning(f"{self.name}: Mencoba memuat subkomponen K15 dengan stsbak tidak valid: {self.stsbak}")
+#                         result_tb_subkomponen_uji = [] 
                 
-                if not query: 
-                    query = f"SELECT kode_subkomponen_uji, string, value, nama FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = %s ORDER BY urut"
-                    params = (kode_komponen_uji,)
+#                 if not query: 
+#                     query = f"SELECT kode_subkomponen_uji, string, value, nama FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = %s ORDER BY urut"
+#                     params = (kode_komponen_uji,)
 
-                if query and params:
-                    tb_subkomponen_uji.execute(query, params)
-                    result_tb_subkomponen_uji = tb_subkomponen_uji.fetchall()
+#                 if query and params:
+#                     tb_subkomponen_uji.execute(query, params)
+#                     result_tb_subkomponen_uji = tb_subkomponen_uji.fetchall()
                 
-                mydb.commit()
-                db_subkomponen_uji = np.array(result_tb_subkomponen_uji).T
-                if(default):
-                    flags_subkomponen_uji = np.ones(db_subkomponen_uji[0,:].size, dtype='bool')
-                else:
-                    flags_subkomponen_uji = np.zeros(db_subkomponen_uji[0,:].size, dtype='bool')
-            except Exception as e:
-                toast_msg = f'Gagal Mengambil Data dari Database Tabel Subkomponen Uji'
-                Logger.error(f"{self.name}: {toast_msg}, {e}")
+#                 mydb.commit()
+#                 db_subkomponen_uji = np.array(result_tb_subkomponen_uji).T
+#                 if(default):
+#                     flags_subkomponen_uji = np.ones(db_subkomponen_uji[0,:].size, dtype='bool')
+#                 else:
+#                     flags_subkomponen_uji = np.zeros(db_subkomponen_uji[0,:].size, dtype='bool')
+#             except Exception as e:
+#                 toast_msg = f'Gagal Mengambil Data dari Database Tabel Subkomponen Uji'
+#                 Logger.error(f"{self.name}: {toast_msg}, {e}")
 
-            try:
-                layout_list = self.ids.layout_list_subkomponen_uji
-                layout_list.clear_widgets(children=None)
-            except Exception as e:
-                toast_msg = f'Gagal Menghapus Widget'
-                Logger.error(f"{self.name}: {toast_msg}, {e}")
+#             try:
+#                 layout_list = self.ids.layout_list_subkomponen_uji
+#                 layout_list.clear_widgets(children=None)
+#             except Exception as e:
+#                 toast_msg = f'Gagal Menghapus Widget'
+#                 Logger.error(f"{self.name}: {toast_msg}, {e}")
             
-            try:
-                layout_list = self.ids.layout_list_subkomponen_uji
-                for i in range(db_subkomponen_uji[0,:].size):
-                    card = MDCard(
-                        MDLabel(text=f"{db_subkomponen_uji[1, i]}", size_hint_x= 0.4),
+#             try:
+#                 layout_list = self.ids.layout_list_subkomponen_uji
+#                 for i in range(db_subkomponen_uji[0,:].size):
+#                     card = MDCard(
+#                         MDLabel(text=f"{db_subkomponen_uji[1, i]}", size_hint_x= 0.4),
                         
-                        ripple_behavior = False,
-                        padding = [20, 0],
-                        spacing = 10,
-                        id=f'card_subkomponen_uji{i}',
-                        on_press = self.on_subkomponen_uji_row_press,
-                        size_hint_y=None,
-                        height=dp(int(60 * 800 / window_size_y)),
-                        )
-                    self.ids[f'card_subkomponen_uji{i}'] = card
-                    layout_list.add_widget(card)
+#                         ripple_behavior = False,
+#                         padding = [20, 0],
+#                         spacing = 10,
+#                         id=f'card_subkomponen_uji{i}',
+#                         on_press = self.on_subkomponen_uji_row_press,
+#                         size_hint_y=None,
+#                         height=dp(int(60 * 800 / window_size_y)),
+#                         )
+#                     self.ids[f'card_subkomponen_uji{i}'] = card
+#                     layout_list.add_widget(card)
                     
-                    tx_value = MDTextField(size_hint_x= 0.2, hint_text="Data",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
-                    tx_comment = MDTextField(disabled = True, size_hint_x= 0.2, hint_text="Komentar",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
-                    if(default):
-                        bt_check = MDIconButton(size_hint_x= 0.1, icon="check-bold", md_bg_color="#2CA02C",)
-                    else:
-                        bt_check = MDIconButton(size_hint_x= 0.1, icon="cancel", md_bg_color="#FF2A2A",)
-                    self.ids[f'tx_value{i}'] = tx_value
-                    self.ids[f'tx_comment{i}'] = tx_comment
-                    self.ids[f'bt_subkomponen_uji{i}'] = bt_check
-                    card.add_widget(tx_value)
-                    card.add_widget(tx_comment)
-                    card.add_widget(bt_check)
+#                     tx_value = MDTextField(size_hint_x= 0.2, hint_text="Data",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
+#                     tx_comment = MDTextField(disabled = True, size_hint_x= 0.2, hint_text="Komentar",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
+#                     if(default):
+#                         bt_check = MDIconButton(size_hint_x= 0.1, icon="check-bold", md_bg_color="#2CA02C",)
+#                     else:
+#                         bt_check = MDIconButton(size_hint_x= 0.1, icon="cancel", md_bg_color="#FF2A2A",)
+#                     self.ids[f'tx_value{i}'] = tx_value
+#                     self.ids[f'tx_comment{i}'] = tx_comment
+#                     self.ids[f'bt_subkomponen_uji{i}'] = bt_check
+#                     card.add_widget(tx_value)
+#                     card.add_widget(tx_comment)
+#                     card.add_widget(bt_check)
 
-            except Exception as e:
-                toast_msg = f'Gagal Memperbaharui Data Tabel Subkomponen Uji'
-                toast(toast_msg)
-                Logger.error(f"{self.name}: {toast_msg}, {e}")
+#             except Exception as e:
+#                 toast_msg = f'Gagal Memperbaharui Data Tabel Subkomponen Uji'
+#                 toast(toast_msg)
+#                 Logger.error(f"{self.name}: {toast_msg}, {e}")
 
-            try:
-                for i in range(db_subkomponen_uji[0, :].size):
-                    column_name = db_subkomponen_uji[2, i]
+#             try:
+#                 for i in range(db_subkomponen_uji[0, :].size):
+#                     column_name = db_subkomponen_uji[2, i]
                     
-                    if column_name:
-                        tb_image_kendaraan = mydb.cursor()
-                        query = f"SELECT `{column_name}` FROM {TB_DATA_IMAGE} WHERE nopol = %s ORDER BY id DESC LIMIT 1"
-                        tb_image_kendaraan.execute(query, (dt_no_pol,))
-                        result_tb_image_kendaraan = tb_image_kendaraan.fetchone()
+#                     if column_name:
+#                         tb_image_kendaraan = mydb.cursor()
+#                         query = f"SELECT `{column_name}` FROM {TB_DATA_IMAGE} WHERE nopol = %s ORDER BY id DESC LIMIT 1"
+#                         tb_image_kendaraan.execute(query, (dt_no_pol,))
+#                         result_tb_image_kendaraan = tb_image_kendaraan.fetchone()
                         
-                        if result_tb_image_kendaraan:
-                            last_data = result_tb_image_kendaraan[0]
-                            self.ids[f'tx_value{i}'].text = str(last_data) if last_data is not None else ""
-            except Exception as e:
-                toast_msg = 'Gagal mengambil data terakhir'
-                toast(toast_msg)
-                Logger.error(f"{self.name}: {toast_msg}, {e}")
+#                         if result_tb_image_kendaraan:
+#                             last_data = result_tb_image_kendaraan[0]
+#                             self.ids[f'tx_value{i}'].text = str(last_data) if last_data is not None else ""
+#             except Exception as e:
+#                 toast_msg = 'Gagal mengambil data terakhir'
+#                 toast(toast_msg)
+#                 Logger.error(f"{self.name}: {toast_msg}, {e}")
 
-    # def reload_menu_komentar_uji(self, selected_kode_subkomponen_uji=""):
-    #     global window_size_x, window_size_y
+#     # def reload_menu_komentar_uji(self, selected_kode_subkomponen_uji=""):
+#     #     global window_size_x, window_size_y
 
-    #     try:
-    #         Logger.info(f"reload menu komentar uji {selected_kode_subkomponen_uji}")
-    #         tb_komentar_uji = mydb.cursor()
-    #         tb_komentar_uji.execute(f"SELECT id, id_komponen_uji, id_subkomponen_uji, komentar FROM {TB_KOMENTAR_UJI} WHERE id_subkomponen_uji = '{selected_kode_subkomponen_uji}'")
-    #         result_tb_komentar_uji = tb_komentar_uji.fetchall()
-    #         mydb.commit()
-    #         db_komentar_uji = np.array(result_tb_komentar_uji).T
+#     #     try:
+#     #         Logger.info(f"reload menu komentar uji {selected_kode_subkomponen_uji}")
+#     #         tb_komentar_uji = mydb.cursor()
+#     #         tb_komentar_uji.execute(f"SELECT id, id_komponen_uji, id_subkomponen_uji, komentar FROM {TB_KOMENTAR_UJI} WHERE id_subkomponen_uji = '{selected_kode_subkomponen_uji}'")
+#     #         result_tb_komentar_uji = tb_komentar_uji.fetchall()
+#     #         mydb.commit()
+#     #         db_komentar_uji = np.array(result_tb_komentar_uji).T
 
-    #         if(db_komentar_uji.size == 0 ):
-    #             self.ids.bt_dropdown_caller.disabled = True
-    #             toast('Tidak Ada Rekomendasi Komentar, Silahkan Isi Komentar Sendiri')
+#     #         if(db_komentar_uji.size == 0 ):
+#     #             self.ids.bt_dropdown_caller.disabled = True
+#     #             toast('Tidak Ada Rekomendasi Komentar, Silahkan Isi Komentar Sendiri')
 
-    #         self.menu_komentar_uji_items = [
-    #             {
-    #                 "text": f"{db_komentar_uji[3,i]}",                   
-    #                 "viewclass": "ListItem",
-    #                 "height": dp(int(60 * 800 / window_size_y)),
-    #                 "on_release": lambda x=f"{db_komentar_uji[3,i]}": self.menu_komentar_callback(x),
-    #             } for i in range(db_komentar_uji[0,:].size)
-    #         ]
+#     #         self.menu_komentar_uji_items = [
+#     #             {
+#     #                 "text": f"{db_komentar_uji[3,i]}",                   
+#     #                 "viewclass": "ListItem",
+#     #                 "height": dp(int(60 * 800 / window_size_y)),
+#     #                 "on_release": lambda x=f"{db_komentar_uji[3,i]}": self.menu_komentar_callback(x),
+#     #             } for i in range(db_komentar_uji[0,:].size)
+#     #         ]
 
-    #         self.menu_komentar_uji = MDDropdownMenu(
-    #             caller=self.ids.bt_dropdown_caller,
-    #             items=self.menu_komentar_uji_items,
-    #             width_mult=4,
-    #         )
+#     #         self.menu_komentar_uji = MDDropdownMenu(
+#     #             caller=self.ids.bt_dropdown_caller,
+#     #             items=self.menu_komentar_uji_items,
+#     #             width_mult=4,
+#     #         )
 
-    #     except Exception as e:
-    #         toast_msg = f'Gagal Menampilkan Rekomendasi Komentar'
-    #         toast(toast_msg)
-    #         Logger.error(f"{self.name}: {toast_msg}, {e}") 
+#     #     except Exception as e:
+#     #         toast_msg = f'Gagal Menampilkan Rekomendasi Komentar'
+#     #         toast(toast_msg)
+#     #         Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
-    def open_screen_menu(self):
-        self.screen_manager.current = 'screen_menu'
+#     def open_screen_menu(self):
+#         self.screen_manager.current = 'screen_menu'
 
-    def exec_save(self):
-        global db_komponen_uji, db_subkomponen_uji
-        global mydb, dt_no_pol, selected_row_komponen_uji
+#     def exec_save(self):
+#         global db_komponen_uji, db_subkomponen_uji
+#         global mydb, dt_no_pol, selected_row_komponen_uji
 
-        if selected_row_komponen_uji is None or not hasattr(self, 'ids') or not self.ids.get(f'bt_komponen_uji{selected_row_komponen_uji}'):
-            toast("Silakan pilih salah satu komponen uji terlebih dahulu.")
-            return
+#         if selected_row_komponen_uji is None or not hasattr(self, 'ids') or not self.ids.get(f'bt_komponen_uji{selected_row_komponen_uji}'):
+#             toast("Silakan pilih salah satu komponen uji terlebih dahulu.")
+#             return
 
-        try:
-            mycursor = mydb.cursor()
-            mycursor.execute(f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = %s ORDER BY id DESC LIMIT 1", (dt_no_pol,))
-            result_image = mycursor.fetchone()
-            if not result_image:
-                raise Exception("ID data gambar tidak ditemukan.")
-            id_image = result_image[0]
+#         try:
+#             mycursor = mydb.cursor()
+#             mycursor.execute(f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = %s ORDER BY id DESC LIMIT 1", (dt_no_pol,))
+#             result_image = mycursor.fetchone()
+#             if not result_image:
+#                 raise Exception("ID data gambar tidak ditemukan.")
+#             id_image = result_image[0]
 
-            kode_kelompok_uji = db_komponen_uji[0, selected_row_komponen_uji]
+#             kode_kelompok_uji = db_komponen_uji[0, selected_row_komponen_uji]
 
-            if self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon == "cancel":
-                sql_update_uji = f"UPDATE {TB_UJI} SET lulus_uji = '0' WHERE id_image = %s AND kode_kelompok_uji = %s"
-                mycursor.execute(sql_update_uji, (id_image, kode_kelompok_uji))
+#             if self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon == "cancel":
+#                 sql_update_uji = f"UPDATE {TB_UJI} SET lulus_uji = '0' WHERE id_image = %s AND kode_kelompok_uji = %s"
+#                 mycursor.execute(sql_update_uji, (id_image, kode_kelompok_uji))
             
-            if self.__class__.__name__ == 'ScreenInspectDimension':
-                            for i in range(db_subkomponen_uji[0,:].size):
-                                column_name = db_subkomponen_uji[2, i]
+#             if self.__class__.__name__ == 'ScreenInspectDimension':
+#                             for i in range(db_subkomponen_uji[0,:].size):
+#                                 column_name = db_subkomponen_uji[2, i]
                     
-                                if column_name:
-                                    new_data = self.ids[f'tx_value{i}'].text
-                                    sql_update_dimensi = f"UPDATE {TB_DATA_IMAGE} SET `{column_name}` = %s WHERE id = %s"
-                                    mycursor.execute(sql_update_dimensi, (new_data, id_image))
+#                                 if column_name:
+#                                     new_data = self.ids[f'tx_value{i}'].text
+#                                     sql_update_dimensi = f"UPDATE {TB_DATA_IMAGE} SET `{column_name}` = %s WHERE id = %s"
+#                                     mycursor.execute(sql_update_dimensi, (new_data, id_image))
 
-            mydb.commit()
+#             mydb.commit()
 
-        except Exception as e:
-            toast(f'Gagal memperbaharui data utama: {e}')
-            Logger.error(f"{self.name}: Gagal di BAGIAN 1 exec_save: {e}")
-            return
+#         except Exception as e:
+#             toast(f'Gagal memperbaharui data utama: {e}')
+#             Logger.error(f"{self.name}: Gagal di BAGIAN 1 exec_save: {e}")
+#             return
 
-        try:
-            mycursor = mydb.cursor()
-            kode_kelompok_uji_from_db = db_komponen_uji[0, selected_row_komponen_uji]
-            mycursor.execute(f"SELECT id_uji FROM {TB_UJI} WHERE nopol = %s AND kode_kelompok_uji = %s ORDER BY id_uji DESC LIMIT 1", (dt_no_pol, kode_kelompok_uji_from_db))
-            result_tb_uji = mycursor.fetchone()
-            if not result_tb_uji:
-                raise Exception("id_uji tidak ditemukan.")
-            id_uji = result_tb_uji[0]
+#         try:
+#             mycursor = mydb.cursor()
+#             kode_kelompok_uji_from_db = db_komponen_uji[0, selected_row_komponen_uji]
+#             mycursor.execute(f"SELECT id_uji FROM {TB_UJI} WHERE nopol = %s AND kode_kelompok_uji = %s ORDER BY id_uji DESC LIMIT 1", (dt_no_pol, kode_kelompok_uji_from_db))
+#             result_tb_uji = mycursor.fetchone()
+#             if not result_tb_uji:
+#                 raise Exception("id_uji tidak ditemukan.")
+#             id_uji = result_tb_uji[0]
             
-            dt_selected_kode_komponen_uji = db_komponen_uji[1, selected_row_komponen_uji]
+#             dt_selected_kode_komponen_uji = db_komponen_uji[1, selected_row_komponen_uji]
 
-            for i in range(db_subkomponen_uji[0,:].size):
-                kode_subkomponen_uji = db_subkomponen_uji[0,i]
-                comment_subkomponen_uji = self.ids[f'tx_comment{i}'].text
+#             for i in range(db_subkomponen_uji[0,:].size):
+#                 kode_subkomponen_uji = db_subkomponen_uji[0,i]
+#                 comment_subkomponen_uji = self.ids[f'tx_comment{i}'].text
                 
-                if self.ids[f'bt_subkomponen_uji{i}'].icon == "check-bold":
-                    hasil_inspeksi = '1' 
-                else:
-                    hasil_inspeksi = '0' 
+#                 if self.ids[f'bt_subkomponen_uji{i}'].icon == "check-bold":
+#                     hasil_inspeksi = '1' 
+#                 else:
+#                     hasil_inspeksi = '0' 
 
-                check_sql = f"SELECT id_uji_detail FROM {TB_UJI_DETAIL} WHERE id_uji = %s AND kode_subkomponen_uji = %s"
-                mycursor.execute(check_sql, (id_uji, kode_subkomponen_uji))
-                existing_record = mycursor.fetchone()
+#                 check_sql = f"SELECT id_uji_detail FROM {TB_UJI_DETAIL} WHERE id_uji = %s AND kode_subkomponen_uji = %s"
+#                 mycursor.execute(check_sql, (id_uji, kode_subkomponen_uji))
+#                 existing_record = mycursor.fetchone()
 
-                if existing_record:
-                    sql = f"UPDATE {TB_UJI_DETAIL} SET hasil = %s, keterangan = %s WHERE id_uji_detail = %s"
-                    values = (hasil_inspeksi, comment_subkomponen_uji, existing_record[0])
-                else:
-                    sql = f"INSERT INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES (%s, %s, %s, %s, %s)"
-                    values = (id_uji, hasil_inspeksi, dt_selected_kode_komponen_uji, kode_subkomponen_uji, comment_subkomponen_uji)
+#                 if existing_record:
+#                     sql = f"UPDATE {TB_UJI_DETAIL} SET hasil = %s, keterangan = %s WHERE id_uji_detail = %s"
+#                     values = (hasil_inspeksi, comment_subkomponen_uji, existing_record[0])
+#                 else:
+#                     sql = f"INSERT INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES (%s, %s, %s, %s, %s)"
+#                     values = (id_uji, hasil_inspeksi, dt_selected_kode_komponen_uji, kode_subkomponen_uji, comment_subkomponen_uji)
                 
-                mycursor.execute(sql, values)
-                mydb.commit()
+#                 mycursor.execute(sql, values)
+#                 mydb.commit()
 
-            toast('Berhasil menyimpan data inspeksi')
-            self.open_screen_menu()
+#             toast('Berhasil menyimpan data inspeksi')
+#             self.open_screen_menu()
             
-        except Exception as e:
-            toast(f'Gagal menyimpan detail uji: {e}')
-            Logger.error(f"{self.name}: Gagal di BAGIAN 2 exec_save: {e}")
+#         except Exception as e:
+#             toast(f'Gagal menyimpan detail uji: {e}')
+#             Logger.error(f"{self.name}: Gagal di BAGIAN 2 exec_save: {e}")
 
-    def exec_cancel(self):
-        self.open_screen_menu()
+#     def exec_cancel(self):
+#         self.open_screen_menu() //dimensiondc
 
 class ScreenInspectVisual(MDScreen):        
     def __init__(self, **kwargs):
@@ -2806,7 +3011,7 @@ class ScreenInspectVisual(MDScreen):
 
         try:
             tb_komponen_uji = mydb.cursor()
-            tb_komponen_uji.execute(f"SELECT kode_kelompok_uji, kode_komponen_uji, nama, keterangan FROM {TB_KOMPONEN_UJI} WHERE kode_komponen_uji = 'K03' OR kode_komponen_uji = 'K04' OR kode_komponen_uji = 'K05' OR kode_komponen_uji = 'K06' OR kode_komponen_uji = 'K07' OR kode_komponen_uji = 'K08' OR kode_komponen_uji = 'K09'  OR kode_komponen_uji = 'K17' ")
+            tb_komponen_uji.execute(f"SELECT kode_kelompok_uji, kode_komponen_uji, nama, keterangan FROM {TB_KOMPONEN_UJI} WHERE kode_komponen_uji = 'K03' OR kode_komponen_uji = 'K04' OR kode_komponen_uji = 'K06' OR kode_komponen_uji = 'K07' OR kode_komponen_uji = 'K08' ")
             result_tb_komponen_uji = tb_komponen_uji.fetchall()
             mydb.commit()
             db_komponen_uji = np.array(result_tb_komponen_uji).T
@@ -3146,7 +3351,7 @@ class ScreenInspectVisual2(MDScreen):
 
         try:
             tb_komponen_uji = mydb.cursor()
-            tb_komponen_uji.execute(f"SELECT kode_kelompok_uji, kode_komponen_uji, nama, keterangan FROM {TB_KOMPONEN_UJI} WHERE kode_komponen_uji = 'K10' OR kode_komponen_uji = 'K11' OR kode_komponen_uji = 'K12' OR kode_komponen_uji = 'K13' ")
+            tb_komponen_uji.execute(f"SELECT kode_kelompok_uji, kode_komponen_uji, nama, keterangan FROM {TB_KOMPONEN_UJI} WHERE kode_komponen_uji = 'K10' OR kode_komponen_uji = 'K11'")
             result_tb_komponen_uji = tb_komponen_uji.fetchall()
             mydb.commit()
             db_komponen_uji = np.array(result_tb_komponen_uji).T
@@ -3666,46 +3871,81 @@ class ScreenInspectPit(MDScreen):
             toast(f'Gagal memperbaharui status komponen uji: {e}')
             Logger.error(f"{self.name}: Gagal di BAGIAN 1 exec_save: {e}")
             return
-
         try:
+            now = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+            image_filename = f'{dt_no_pol}-{dt_selected_camera + 5}.jpg'
             mycursor = mydb.cursor()
-            kode_kelompok_uji_from_db = db_komponen_uji[0, selected_row_komponen_uji]
-            mycursor.execute(f"SELECT id_uji FROM {TB_UJI} WHERE nopol = %s AND kode_kelompok_uji = %s ORDER BY id_uji DESC LIMIT 1", (dt_no_pol, kode_kelompok_uji_from_db))
-            result_tb_uji = mycursor.fetchone()
-            if not result_tb_uji:
-                raise Exception("id_uji tidak ditemukan.")
-            id_uji = result_tb_uji[0]
+
+            # --- BAGIAN UPDATE TEMP_IMAGE_KENDARAANBR ---
+            target_temp_table = "temp_image_kendaraanbr" 
+            mycursor.execute(f"SELECT id FROM {target_temp_table} WHERE nopol = %s", (dt_no_pol,))
+            result = mycursor.fetchone()
+
+            idx = dt_selected_camera + 5 # Kamera PIT mulai dari index 5
+            gambar_col = f"gambar{idx}"
+            tgl_col = f"tgl_capture{idx}"
+
+            if result:
+                sql = f"""
+                    UPDATE {target_temp_table} 
+                    SET `{tgl_col}` = %s, `{gambar_col}` = %s, 
+                        useridv1 = %s, useridv2 = %s, useridfoto = %s 
+                    WHERE nopol = %s
+                """
+                mycursor.execute(sql, (now, image_filename, dt_nrp_user, dt_nrp_user, dt_id_user, dt_no_pol))
+            else:
+                sql = f"""
+                    INSERT INTO {target_temp_table} 
+                    (nopol, `{tgl_col}`, `{gambar_col}`, useridv1, useridv2, useridfoto) 
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """
+                mycursor.execute(sql, (dt_no_pol, now, image_filename, dt_nrp_user, dt_nrp_user, dt_id_user))
             
-            dt_selected_kode_komponen_uji = db_komponen_uji[1, selected_row_komponen_uji]
+            mydb.commit()
+            toast(f"Foto Kolong {idx} & Data Petugas Tersimpan")
 
-            for i in range(db_subkomponen_uji[0,:].size):
-                kode_subkomponen_uji = db_subkomponen_uji[0,i]
-                comment_subkomponen_uji = self.ids[f'tx_comment{i}'].text
-                
-                if self.ids[f'bt_subkomponen_uji{i}'].icon == "check-bold":
-                    hasil_inspeksi = '1' 
-                else:
-                    hasil_inspeksi = '0' 
-
-                check_sql = f"SELECT id_uji_detail FROM {TB_UJI_DETAIL} WHERE id_uji = %s AND kode_subkomponen_uji = %s"
-                mycursor.execute(check_sql, (id_uji, kode_subkomponen_uji))
-                existing_record = mycursor.fetchone()
-
-                if existing_record:
-                    sql = f"UPDATE {TB_UJI_DETAIL} SET hasil = %s, keterangan = %s WHERE id_uji_detail = %s"
-                    values = (hasil_inspeksi, comment_subkomponen_uji, existing_record[0])
-                else:
-                    sql = f"INSERT INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES (%s, %s, %s, %s, %s)"
-                    values = (id_uji, hasil_inspeksi, dt_selected_kode_komponen_uji, kode_subkomponen_uji, comment_subkomponen_uji)
-                
-                mycursor.execute(sql, values)
-                mydb.commit()
-
-            toast('Berhasil menyimpan data inspeksi')
-            self.open_screen_menu()       
         except Exception as e:
-            toast(f'Gagal menyimpan detail uji: {e}')
-            Logger.error(f"{self.name}: Gagal di BAGIAN 2 exec_save: {e}")
+            Logger.error(f"PIT Save Error: {e}")
+
+        # try:
+        #     mycursor = mydb.cursor()
+        #     kode_kelompok_uji_from_db = db_komponen_uji[0, selected_row_komponen_uji]
+        #     mycursor.execute(f"SELECT id_uji FROM {TB_UJI} WHERE nopol = %s AND kode_kelompok_uji = %s ORDER BY id_uji DESC LIMIT 1", (dt_no_pol, kode_kelompok_uji_from_db))
+        #     result_tb_uji = mycursor.fetchone()
+        #     if not result_tb_uji:
+        #         raise Exception("id_uji tidak ditemukan.")
+        #     id_uji = result_tb_uji[0]
+            
+        #     dt_selected_kode_komponen_uji = db_komponen_uji[1, selected_row_komponen_uji]
+
+        #     for i in range(db_subkomponen_uji[0,:].size):
+        #         kode_subkomponen_uji = db_subkomponen_uji[0,i]
+        #         comment_subkomponen_uji = self.ids[f'tx_comment{i}'].text
+                
+        #         if self.ids[f'bt_subkomponen_uji{i}'].icon == "check-bold":
+        #             hasil_inspeksi = '1' 
+        #         else:
+        #             hasil_inspeksi = '0' 
+
+        #         check_sql = f"SELECT id_uji_detail FROM {TB_UJI_DETAIL} WHERE id_uji = %s AND kode_subkomponen_uji = %s"
+        #         mycursor.execute(check_sql, (id_uji, kode_subkomponen_uji))
+        #         existing_record = mycursor.fetchone()
+
+        #         if existing_record:
+        #             sql = f"UPDATE {TB_UJI_DETAIL} SET hasil = %s, keterangan = %s WHERE id_uji_detail = %s"
+        #             values = (hasil_inspeksi, comment_subkomponen_uji, existing_record[0])
+        #         else:
+        #             sql = f"INSERT INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES (%s, %s, %s, %s, %s)"
+        #             values = (id_uji, hasil_inspeksi, dt_selected_kode_komponen_uji, kode_subkomponen_uji, comment_subkomponen_uji)
+                
+        #         mycursor.execute(sql, values)
+        #         mydb.commit()
+
+        #     toast('Berhasil menyimpan data inspeksi')
+        #     self.open_screen_menu()       
+        # except Exception as e:
+        #     toast(f'Gagal menyimpan detail uji: {e}')
+        #     Logger.error(f"{self.name}: Gagal di BAGIAN 2 exec_save: {e}")
             
     def exec_cancel(self):
         self.open_screen_menu()
@@ -3916,44 +4156,84 @@ class ScreenRealtimeCctv(MDScreen):
             toast_msg = 'Gagal Menyimpan Gambar ke Server'
             toast(toast_msg)
             Logger.error(f"{self.name}: {toast_msg}, Error: {e}")
+
         try:
             now = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
             image_filename = f'{dt_no_pol}-{dt_selected_camera + 1}.jpg'
+            mycursor = mydb.cursor()
 
-            tb_image_kendaraan = mydb.cursor()
-            tb_image_kendaraan.execute(f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = %s ORDER BY id DESC LIMIT 1", (dt_no_pol,))
-            result = tb_image_kendaraan.fetchone()
-            if not result:
-                raise Exception("No record found in database to update")
-            last_id = result[0]
+            # --- BAGIAN UPDATE TEMP_IMAGE_KENDARAANBR ---
+            target_temp_table = "temp_image_kendaraanbr" 
+            mycursor.execute(f"SELECT id FROM {target_temp_table} WHERE nopol = %s", (dt_no_pol,))
+            result = mycursor.fetchone()
 
-            # Build dynamic column names
-            if dt_selected_camera == 0:
-                tgl_col = "tgl_capture"
-                gambar_col = "gambar"
+            idx = dt_selected_camera + 1
+            gambar_col = "gambar" if idx == 1 else f"gambar{idx}"
+            tgl_col = "tgl_capture" if idx == 1 else f"tgl_capture{idx}"
+
+            if result:
+                # Jika sudah ada, UPDATE kolom gambarnya + field USER ID
+                sql = f"""
+                    UPDATE {target_temp_table} 
+                    SET `{tgl_col}` = %s, `{gambar_col}` = %s, 
+                        useridv1 = %s, useridv2 = %s, useridfoto = %s 
+                    WHERE nopol = %s
+                """
+                mycursor.execute(sql, (now, image_filename, dt_nrp_user, dt_nrp_user, dt_id_user, dt_no_pol))
             else:
-                idx = dt_selected_camera + 1
-                tgl_col = f"tgl_capture{idx}"
-                gambar_col = f"gambar{idx}"
-
-            # Verify columns exist in table (optional but safe)
-            tb_image_kendaraan.execute(f"SHOW COLUMNS FROM {TB_DATA_IMAGE} LIKE '{tgl_col}'")
-            if tb_image_kendaraan.fetchone() is None:
-                raise Exception(f"Column '{tgl_col}' does not exist in {TB_DATA_IMAGE}")
-
-            # ✅ Safe UPDATE with parameterized query
-            sql = f"""
-                UPDATE {TB_DATA_IMAGE} 
-                SET `{tgl_col}` = %s, `{gambar_col}` = %s 
-                WHERE nopol = %s AND id = %s
-            """
-            tb_image_kendaraan.execute(sql, (now, image_filename, dt_no_pol, last_id))
-            mydb.commit()
+                # Jika belum ada, INSERT baru + field USER ID
+                sql = f"""
+                    INSERT INTO {target_temp_table} 
+                    (nopol, `{tgl_col}`, `{gambar_col}`, useridv1, useridv2, useridfoto) 
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """
+                mycursor.execute(sql, (dt_no_pol, now, image_filename, dt_nrp_user, dt_nrp_user, dt_id_user))
             
+            mydb.commit()
+            toast(f"Foto {idx} & Data Petugas Tersimpan")
+
         except Exception as e:
-            toast_msg = f'Gagal Menyimpan Data Gambar ke Database Tabel Data Image'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+            toast('Gagal Mencatat Data Gambar')
+            Logger.error(f"CCTV Save Error: {e}")
+
+        # try:
+        #     now = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        #     image_filename = f'{dt_no_pol}-{dt_selected_camera + 1}.jpg'
+
+        #     tb_image_kendaraan = mydb.cursor()
+        #     tb_image_kendaraan.execute(f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = %s ORDER BY id DESC LIMIT 1", (dt_no_pol,))
+        #     result = tb_image_kendaraan.fetchone()
+        #     if not result:
+        #         raise Exception("No record found in database to update")
+        #     last_id = result[0]
+
+        #     # Build dynamic column names
+        #     if dt_selected_camera == 0:
+        #         tgl_col = "tgl_capture"
+        #         gambar_col = "gambar"
+        #     else:
+        #         idx = dt_selected_camera + 1
+        #         tgl_col = f"tgl_capture{idx}"
+        #         gambar_col = f"gambar{idx}"
+
+        #     # Verify columns exist in table (optional but safe)
+        #     tb_image_kendaraan.execute(f"SHOW COLUMNS FROM {TB_DATA_IMAGE} LIKE '{tgl_col}'")
+        #     if tb_image_kendaraan.fetchone() is None:
+        #         raise Exception(f"Column '{tgl_col}' does not exist in {TB_DATA_IMAGE}")
+
+        #     # ✅ Safe UPDATE with parameterized query
+        #     sql = f"""
+        #         UPDATE {TB_DATA_IMAGE} 
+        #         SET `{tgl_col}` = %s, `{gambar_col}` = %s 
+        #         WHERE nopol = %s AND id = %s
+        #     """
+        #     tb_image_kendaraan.execute(sql, (now, image_filename, dt_no_pol, last_id))
+        #     mydb.commit()
+            
+        # except Exception as e:
+        #     toast_msg = f'Gagal Menyimpan Data Gambar ke Database Tabel Data Image'
+        #     toast(toast_msg)
+        #     Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
     def open_screen_menu(self):
         self.screen_manager.current = 'screen_menu'
@@ -3970,6 +4250,7 @@ class ScreenRealtimeCctv(MDScreen):
 class ScreenRealtimePit(MDScreen):        
     def __init__(self, **kwargs):
         super(ScreenRealtimePit, self).__init__(**kwargs)
+        self.image_cctv = None
         Clock.schedule_once(self.delayed_init, 1)
     
     def delayed_init(self, dt):
@@ -4116,92 +4397,170 @@ class ScreenRealtimePit(MDScreen):
             Logger.info(file)
         sftp.close()
         ssh.close()
-        
+
     def exec_save(self):
         global dt_no_antri, dt_sts_uji, dt_no_pol, dt_selected_camera
+        global dt_nrp_user, dt_id_user, mydb
+
+        # 1. PENGAMAN: Jika kamera belum siap, jangan lanjut
+        if not hasattr(self, 'image_cctv') or self.image_cctv is None:
+            toast("Gambar belum muncul, tunggu sebentar...")
+            return
         
         try:
-            # Define base directory: C:\ProgramData\VIIMS
+            # Tentukan indeks (PIT: 5, 6, 7, 8)
+            idx = dt_selected_camera + 5
+            now = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+            
+            # --- BAGIAN A: PENGOLAHAN GAMBAR LOKAL ---
             app_data_root = os.path.join(os.environ['PROGRAMDATA'], 'VIIMS')
-            # Define subdirectory: C:\ProgramData\VIIMS\assets\images
             images_dir = os.path.join(app_data_root, 'assets', 'images')
-            # Create filename
-            filename = f'{dt_no_pol}-{dt_selected_camera + 1}.jpg'
-            local_path = os.path.join(images_dir, filename)
-            # Ensure the full directory path exists
             os.makedirs(images_dir, exist_ok=True)
-            if not os.access(images_dir, os.W_OK):
-                raise Exception(f"No write permission in: {images_dir}")
+            
+            # Nama file konsisten menggunakan indeks 5-8
+            filename = f'{dt_no_pol}-{idx}.jpg'
+            local_path = os.path.join(images_dir, filename)
 
-            # Step 1: Get image dimensions
-            h, w = self.image_cctv.shape[:2]  # e.g., 1080 x 1280 (height, width)
-            # Desired crop size (larger than 600x600 before resize)
+            # Crop dan Resize
+            h, w = self.image_cctv.shape[:2]
             crop_size = 1000
-            # Check if image is big enough to crop 1000x1000
-            if h < crop_size or w < crop_size:
-                Logger.error(f"Gambar terlalu kecil untuk crop {crop_size}x{crop_size}")
-                return            
-            # Step 2: Center Crop image
-            try:
+            if h >= crop_size and w >= crop_size:
                 cropped_img = self.center_crop(self.image_cctv, crop_size, crop_size)
-            except ValueError as e:
-                Logger.error(f"{self.name}: {e}")
-                return
-            # Step 3: Resize cropped 1000x1000 → 600x600
-            resized_img = cv2.resize(cropped_img, (600, 600), interpolation=cv2.INTER_AREA)
-            # Step 4: Save with compression (JPEG quality 75)
-            encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 65]
-            success = cv2.imwrite(local_path, resized_img, encode_param)
-            if not success:
-                raise Exception(f"cv2.imwrite failed. Check image data or disk space.")
+                resized_img = cv2.resize(cropped_img, (600, 600), interpolation=cv2.INTER_AREA)
+            else:
+                resized_img = cv2.resize(self.image_cctv, (600, 600))
 
-            # Upload via SFTP
+            # Simpan Lokal
+            encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 75]
+            cv2.imwrite(local_path, resized_img, encode_param)
+
+            # --- BAGIAN B: UPLOAD KE SERVER (SFTP) ---
             today = time.strftime("%Y-%m-%d", time.localtime())
-            remote_path = f'/var/www/system/storage/app/capture/{today}/{dt_sts_uji}-{dt_no_antri}/{dt_no_pol}-pit-{dt_selected_camera + 1}.jpg'
+            # Folder di server harus sudah dibuat saat verifikasi data
+            remote_path = f'/var/www/system/storage/app/capture/{today}/{dt_sts_uji}-{dt_no_antri}/{filename}'
             self.sftp_upload_file(local_path, remote_path)
 
-            # Success toast
-            toast(f'Berhasil menyimpan gambar ke server')
-
-        except Exception as e:
-            toast_msg = 'Gagal Menyimpan Gambar ke Server'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, Error: {e}")
-
-        try:
-            now = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-            image_filename = f'{dt_no_pol}-{dt_selected_camera + 1}.jpg'
-
-            tb_image_kendaraan = mydb.cursor()
-            tb_image_kendaraan.execute(f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = %s ORDER BY id DESC LIMIT 1", (dt_no_pol,))
-            result = tb_image_kendaraan.fetchone()
-            if not result:
-                raise Exception("No record found in database to update")
-            last_id = result[0]
-
-            # Build dynamic column names
-            idx = dt_selected_camera + 5
+            # --- BAGIAN C: UPDATE DATABASE (DUA TABEL) ---
+            mycursor = mydb.cursor()
+            
+            # Cek kolom yang akan diisi
             tgl_col = f"tgl_capture{idx}"
             gambar_col = f"gambar{idx}"
 
-            # Verify columns exist in table (optional but safe)
-            tb_image_kendaraan.execute(f"SHOW COLUMNS FROM {TB_DATA_IMAGE} LIKE '{tgl_col}'")
-            if tb_image_kendaraan.fetchone() is None:
-                raise Exception(f"Column '{tgl_col}' does not exist in {TB_DATA_IMAGE}")
+            # 1. Update ke tabel TEMP (temp_image_kendaraanbr)
+            sql_temp = f"""
+                UPDATE temp_image_kendaraanbr 
+                SET `{tgl_col}` = %s, `{gambar_col}` = %s, 
+                    useridv1 = %s, useridv2 = %s, useridfoto = %s 
+                WHERE nopol = %s
+            """
+            mycursor.execute(sql_temp, (now, filename, dt_nrp_user, dt_nrp_user, dt_id_user, dt_no_pol))
 
-            # Safe UPDATE with parameterized query
-            sql = f"""
+            # 2. Update ke tabel MASTER (image_kendaraan)
+            sql_master = f"""
                 UPDATE {TB_DATA_IMAGE} 
                 SET `{tgl_col}` = %s, `{gambar_col}` = %s 
-                WHERE nopol = %s AND id = %s
+                WHERE nopol = %s ORDER BY id DESC LIMIT 1
             """
-            tb_image_kendaraan.execute(sql, (now, image_filename, dt_no_pol, last_id))
+            mycursor.execute(sql_master, (now, filename, dt_no_pol))
+
             mydb.commit()
+            mycursor.close()
+            
+            toast(f'Berhasil! Foto PIT {idx} & Data Petugas Tersimpan')
 
         except Exception as e:
-            toast_msg = f'Gagal Menyimpan Data Gambar ke Database Tabel Data Image'
-            toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+            toast(f'Gagal Simpan: {str(e)}')
+            Logger.error(f"{self.name}: Save Error - {e}")    
+
+    # def exec_save(self):
+    #     global dt_no_antri, dt_sts_uji, dt_no_pol, dt_selected_camera
+    #     if self.image_cctv is None:
+    #         toast("Gambar belum muncul, tunggu sebentar...")
+    #         return
+        
+    #     try:
+    #         # Define base directory: C:\ProgramData\VIIMS
+    #         app_data_root = os.path.join(os.environ['PROGRAMDATA'], 'VIIMS')
+    #         # Define subdirectory: C:\ProgramData\VIIMS\assets\images
+    #         images_dir = os.path.join(app_data_root, 'assets', 'images')
+    #         # Create filename
+    #         filename = f'{dt_no_pol}-{dt_selected_camera + 1}.jpg'
+    #         local_path = os.path.join(images_dir, filename)
+    #         # Ensure the full directory path exists
+    #         os.makedirs(images_dir, exist_ok=True)
+    #         if not os.access(images_dir, os.W_OK):
+    #             raise Exception(f"No write permission in: {images_dir}")
+
+    #         # Step 1: Get image dimensions
+    #         h, w = self.image_cctv.shape[:2]  # e.g., 1080 x 1280 (height, width)
+    #         # Desired crop size (larger than 600x600 before resize)
+    #         crop_size = 1000
+    #         # Check if image is big enough to crop 1000x1000
+    #         if h < crop_size or w < crop_size:
+    #             Logger.error(f"Gambar terlalu kecil untuk crop {crop_size}x{crop_size}")
+    #             return            
+    #         # Step 2: Center Crop image
+    #         try:
+    #             cropped_img = self.center_crop(self.image_cctv, crop_size, crop_size)
+    #         except ValueError as e:
+    #             Logger.error(f"{self.name}: {e}")
+    #             return
+    #         # Step 3: Resize cropped 1000x1000 → 600x600
+    #         resized_img = cv2.resize(cropped_img, (600, 600), interpolation=cv2.INTER_AREA)
+    #         # Step 4: Save with compression (JPEG quality 75)
+    #         encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 65]
+    #         success = cv2.imwrite(local_path, resized_img, encode_param)
+    #         if not success:
+    #             raise Exception(f"cv2.imwrite failed. Check image data or disk space.")
+
+    #         # Upload via SFTP
+    #         today = time.strftime("%Y-%m-%d", time.localtime())
+    #         remote_path = f'/var/www/system/storage/app/capture/{today}/{dt_sts_uji}-{dt_no_antri}/{dt_no_pol}-pit-{dt_selected_camera + 1}.jpg'
+    #         self.sftp_upload_file(local_path, remote_path)
+
+    #         # Success toast
+    #         toast(f'Berhasil menyimpan gambar ke server')
+
+    #     except Exception as e:
+    #         toast_msg = 'Gagal Menyimpan Gambar ke Server'
+    #         toast(toast_msg)
+    #         Logger.error(f"{self.name}: {toast_msg}, Error: {e}")
+
+    #     try:
+    #         now = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    #         image_filename = f'{dt_no_pol}-{dt_selected_camera + 1}.jpg'
+
+    #         tb_image_kendaraan = mydb.cursor()
+    #         tb_image_kendaraan.execute(f"SELECT id FROM {TB_DATA_IMAGE} WHERE nopol = %s ORDER BY id DESC LIMIT 1", (dt_no_pol,))
+    #         result = tb_image_kendaraan.fetchone()
+    #         if not result:
+    #             raise Exception("No record found in database to update")
+    #         last_id = result[0]
+
+    #         # Build dynamic column names
+    #         idx = dt_selected_camera + 5
+    #         tgl_col = f"tgl_capture{idx}"
+    #         gambar_col = f"gambar{idx}"
+
+    #         # Verify columns exist in table (optional but safe)
+    #         tb_image_kendaraan.execute(f"SHOW COLUMNS FROM {TB_DATA_IMAGE} LIKE '{tgl_col}'")
+    #         if tb_image_kendaraan.fetchone() is None:
+    #             raise Exception(f"Column '{tgl_col}' does not exist in {TB_DATA_IMAGE}")
+
+    #         # Safe UPDATE with parameterized query
+    #         sql = f"""
+    #             UPDATE {TB_DATA_IMAGE} 
+    #             SET `{tgl_col}` = %s, `{gambar_col}` = %s 
+    #             WHERE nopol = %s AND id = %s
+    #         """
+    #         tb_image_kendaraan.execute(sql, (now, image_filename, dt_no_pol, last_id))
+    #         mydb.commit()
+
+    #     except Exception as e:
+    #         toast_msg = f'Gagal Menyimpan Data Gambar ke Database Tabel Data Image'
+    #         toast(toast_msg)
+    #         Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
     def open_screen_menu(self):
         self.screen_manager.current = 'screen_menu'
