@@ -1,5 +1,9 @@
-from kivy.config import Config
-Config.set('kivy', 'keyboard_mode', 'systemanddock')
+import datetime
+from encodings.punycode import T
+from pickle import FALSE
+from re import L
+import os, sys, time
+import threading
 
 if getattr(sys, 'frozen', False):
     application_path = os.path.dirname(sys.executable)
@@ -15,6 +19,9 @@ else:
 
 logger_name = f'app.log'
 logger_dir = os.path.join(application_path, "logs")
+
+from kivy.config import Config
+Config.set('kivy', 'keyboard_mode', 'systemanddock')
 
 from kivy.logger import Logger
 from kivy.clock import Clock
@@ -39,12 +46,6 @@ import cv2, numpy as np
 import configparser, hashlib, mysql.connector, paramiko
 from pymodbus.client import ModbusTcpClient
 from fpdf import FPDF
-import datetime
-from encodings.punycode import T
-from pickle import FALSE
-from re import L
-import os, sys, time
-import threading
 
 colors = {  "Red"   : {"A200": "#FF2A2A","A500": "#FF8080","A700": "#FFD5D5",},
             "Gray"  : {"200": "#CCCCCC","500": "#ECECEC","700": "#F9F9F9",},
