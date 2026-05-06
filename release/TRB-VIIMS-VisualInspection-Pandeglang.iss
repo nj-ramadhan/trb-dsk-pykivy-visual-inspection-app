@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "VIIMS - Visual Inspection Application - Pandeglang"
-#define MyAppVersion "2.4.251022"
+#define MyAppVersion "2.5.260506"
 #define MyAppPublisher "PT. Tiga Ratu Berkarya"
 #define MyAppExeName "TRB-VIIMS-VisualInspectionApp-Pandeglang.exe"
 #define MyAppAssocName "VIIMS - Visual Inspection Application Files - Pandeglang"
@@ -31,7 +31,7 @@ DisableProgramGroupPage=yes
 ; Uncomment the following line to run in non administrative install mode (install for current user only.)
 ;PrivilegesRequired=lowest
 OutputBaseFilename=TRB-VIIMS-VisualInspectionApp-Pandeglang-Installer
-SetupIconFile=D:\PRJ\TRB - Vehicle Inspection Integration Management System\trb-dsk-pykivy-visual-inspection-app\release\Application Folder\assets\images\logo-visual-app.ico
+SetupIconFile=D:\Project\TRB - Vehicle Inspection Integration Management System\trb-dsk-pykivy-visual-inspection-app\release\Application Folder\assets\images\logo-visual-app.ico
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
@@ -43,8 +43,8 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "D:\PRJ\TRB - Vehicle Inspection Integration Management System\trb-dsk-pykivy-visual-inspection-app\release\Application Folder\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\PRJ\TRB - Vehicle Inspection Integration Management System\trb-dsk-pykivy-visual-inspection-app\release\Application Folder\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "D:\Project\TRB - Vehicle Inspection Integration Management System\trb-dsk-pykivy-visual-inspection-app\release\Application Folder\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "D:\Project\TRB - Vehicle Inspection Integration Management System\trb-dsk-pykivy-visual-inspection-app\release\Application Folder\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Registry]
