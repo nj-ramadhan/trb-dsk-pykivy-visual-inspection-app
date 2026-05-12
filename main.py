@@ -6,7 +6,6 @@ from encodings.punycode import T
 from pickle import FALSE
 from re import L
 import os, sys, time
-import threading
 
 if getattr(sys, 'frozen', False):
     application_path = os.path.dirname(sys.executable)
@@ -43,10 +42,8 @@ from kivy.metrics import dp
 from kivymd.toast import toast
 from kivymd.app import MDApp
 import cv2, numpy as np
-import configparser, hashlib, mysql.connector, paramiko
+import configparser, mysql.connector, paramiko
 from pymodbus.client import ModbusTcpClient
-from fpdf import FPDF
-from escpos.printer import Serial
 
 colors = {  "Red"   : {"A200": "#FF2A2A","A500": "#FF8080","A700": "#FFD5D5",},
             "Gray"  : {"200": "#CCCCCC","500": "#ECECEC","700": "#F9F9F9",},
