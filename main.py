@@ -70,7 +70,8 @@ LB_UNIT = config['app']['LB_UNIT']
 LB_UNIT_ADDRESS = config['app']['LB_UNIT_ADDRESS']
 
 ## SQL Setting
-DB_HOST = "187.77.112.162"
+# DB_HOST = "187.77.112.162"
+DB_HOST = "76.13.16.159"
 DB_USER = "Pndujikir2026!"
 DB_PASSWORD = "@PndKir2026!"
 
@@ -4143,7 +4144,7 @@ class ScreenRealtimeCctv(MDScreen):
 
             # Upload via SFTP
             today = time.strftime("%Y-%m-%d", time.localtime())
-            remote_path = f'/var/www/system/storage/app/capture/{today}/{dt_sts_uji}-{dt_no_antri}/{dt_no_pol}-{dt_selected_camera + 1}.jpg'
+            remote_path = f'/var/www/pandeglang/system/storage/app/capture/{today}/{dt_sts_uji}-{dt_no_antri}/{dt_no_pol}-{dt_selected_camera + 1}.jpg'
             self.sftp_upload_file(local_path, remote_path)
 
             # Success toast
@@ -4434,7 +4435,7 @@ class ScreenRealtimePit(MDScreen):
             # --- BAGIAN B: UPLOAD KE SERVER (SFTP) ---
             today = time.strftime("%Y-%m-%d", time.localtime())
             # Folder di server harus sudah dibuat saat verifikasi data
-            remote_path = f'/var/www/system/storage/app/capture/{today}/{dt_sts_uji}-{dt_no_antri}/{filename}'
+            remote_path = f'/var/www/pandeglang/system/storage/app/capture/{today}/{dt_sts_uji}-{dt_no_antri}/{filename}'
             self.sftp_upload_file(local_path, remote_path)
 
             # --- BAGIAN C: UPDATE DATABASE (DUA TABEL) ---
@@ -4513,7 +4514,7 @@ class ScreenRealtimePit(MDScreen):
 
     #         # Upload via SFTP
     #         today = time.strftime("%Y-%m-%d", time.localtime())
-    #         remote_path = f'/var/www/system/storage/app/capture/{today}/{dt_sts_uji}-{dt_no_antri}/{dt_no_pol}-pit-{dt_selected_camera + 1}.jpg'
+    #         remote_path = f'/var/www/pandeglang/system/storage/app/capture/{today}/{dt_sts_uji}-{dt_no_antri}/{dt_no_pol}-pit-{dt_selected_camera + 1}.jpg'
     #         self.sftp_upload_file(local_path, remote_path)
 
     #         # Success toast
