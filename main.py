@@ -70,8 +70,7 @@ LB_UNIT = config['app']['LB_UNIT']
 LB_UNIT_ADDRESS = config['app']['LB_UNIT_ADDRESS']
 
 ## SQL Setting
-# DB_HOST = "187.77.112.162"
-DB_HOST = "76.13.16.159"
+DB_HOST = "187.77.112.162"
 DB_USER = "Pndujikir2026!"
 DB_PASSWORD = "@PndKir2026!"
 
