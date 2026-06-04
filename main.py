@@ -358,7 +358,7 @@ class ScreenMain(MDScreen):
         self.ids.lb_unit_address.text = LB_UNIT_ADDRESS
 
         Clock.schedule_interval(self.regular_update_display, 1)
-        Clock.schedule_interval(self.regular_update_connection, 10)
+        # Clock.schedule_interval(self.regular_update_connection, 10)
 
     def on_enter(self):
         self.exec_reload_database()
