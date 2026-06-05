@@ -71,8 +71,8 @@ LB_UNIT_ADDRESS = config['app']['LB_UNIT_ADDRESS']
 
 ## SQL Setting
 DB_HOST = "187.77.112.162"
-DB_USER = "Pndujikir2026!"
-DB_PASSWORD = "@PndKir2026!"
+DB_USER = "IntegrasiPnd@"
+DB_PASSWORD = "@PndIntegrated26"
 
 DB_NAME = "pkbpandeglang"
 TB_DATA = "tb_cekident"
