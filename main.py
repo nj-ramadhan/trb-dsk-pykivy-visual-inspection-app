@@ -42,7 +42,7 @@ from kivy.metrics import dp
 from kivymd.toast import toast
 from kivymd.app import MDApp
 import cv2, numpy as np
-import configparser, mysql.connector, paramiko
+import configparser, mysql.connector, paramiko, pymysql
 from pymodbus.client import ModbusTcpClient
 
 colors = {  "Red"   : {"A200": "#FF2A2A","A500": "#FF8080","A700": "#FFD5D5",},
@@ -73,8 +73,8 @@ LB_UNIT_ADDRESS = config['app']['LB_UNIT_ADDRESS']
 DB_HOST = "187.77.112.162"
 DB_USER = "IntegrasiPnd@"
 DB_PASSWORD = "@PndIntegrated26"
-
 DB_NAME = "pkbpandeglang"
+mydb = None
 TB_DATA = "tb_cekident"
 TB_USER = "users"
 TB_MERK = "merk"
@@ -241,6 +241,17 @@ class ScreenLogin(MDScreen):
 
         try:
             screen_main.exec_reload_database()
+            if mydb is None:
+                toast("Gagal terhubung ke database! Periksa jaringan internet Anda.")
+                Logger.error("Login Gagal: Objek mydb tidak aktif.")
+                return
+
+            try:
+                mydb.ping(reconnect=True)
+            except Exception as e:
+                toast("Koneksi database terputus! Mencoba menghubungkan ulang...")
+                Logger.error(f"Login Gagal: Ping database error - {e}")
+                return
             input_email = self.ids.tx_username.text # Sekarang login pakai email sesuai aplikasi lain
             input_password = self.ids.tx_password.text        
             
@@ -519,17 +530,17 @@ class ScreenMain(MDScreen):
         global mydb
         try:
             if 'mydb' in globals() and mydb is not None:
-                # Reconnect=True akan menyambung otomatis jika WiFi sempat berkedip
-                mydb.ping(reconnect=True, attempts=3, delay=2)
-                if mydb.is_connected():
-                    return
+                # Perubahan ping untuk pymysql
+                mydb.ping(reconnect=True)
+                return
 
-            mydb = mysql.connector.connect(
+            # GANTI BARIS INI MENGGUNAKAN PYMYSQL
+            mydb = pymysql.connect(
                 host=DB_HOST, user=DB_USER, password=DB_PASSWORD,
-                database=DB_NAME, buffered=True, autocommit=True
+                database=DB_NAME, autocommit=True
             )
         except Exception as e:
-            Logger.error(f"Database Error: {e}") 
+            Logger.error(f"Database Error: {e}")
 
     def exec_reload_table(self):
         global mydb, db_antrian
@@ -1773,7 +1784,7 @@ class ScreenMenu(MDScreen):
 
             # 3. Tetap buat folder SFTP untuk menampung file fisik foto
             today_str = dt_tgl_obj.strftime("%Y-%m-%d")
-            make_dir_path = f'/var/www/pandeglang/system/storage/app/capture/{today_str}/{dt_sts_uji}-{dt_no_antri}'
+            make_dir_path = f'/var/www/pandeglang/storage/app/capture/{today_str}/{dt_sts_uji}-{dt_no_antri}'
             self.sftp_make_dir(make_dir_path)
 
         except Exception as e:
@@ -4143,7 +4154,7 @@ class ScreenRealtimeCctv(MDScreen):
 
             # Upload via SFTP
             today = time.strftime("%Y-%m-%d", time.localtime())
-            remote_path = f'/var/www/pandeglang/system/storage/app/capture/{today}/{dt_sts_uji}-{dt_no_antri}/{dt_no_pol}-{dt_selected_camera + 1}.jpg'
+            remote_path = f'/var/www/pandeglang/storage/app/capture/{today}/{dt_sts_uji}-{dt_no_antri}/{dt_no_pol}-{dt_selected_camera + 1}.jpg'
             self.sftp_upload_file(local_path, remote_path)
 
             # Success toast
@@ -4433,8 +4444,8 @@ class ScreenRealtimePit(MDScreen):
 
             # --- BAGIAN B: UPLOAD KE SERVER (SFTP) ---
             today = time.strftime("%Y-%m-%d", time.localtime())
-            # Folder di server harus sudah dibuat saat verifikasi data
-            remote_path = f'/var/www/pandeglang/system/storage/app/capture/{today}/{dt_sts_uji}-{dt_no_antri}/{filename}'
+            filename = f'{dt_no_pol}-{idx}.jpg'
+            remote_path = f'/var/www/pandeglang/storage/app/capture/{today}/{dt_sts_uji}-{dt_no_antri}/{filename}'
             self.sftp_upload_file(local_path, remote_path)
 
             # --- BAGIAN C: UPDATE DATABASE (DUA TABEL) ---
