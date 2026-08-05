@@ -2,9 +2,6 @@ from kivy.config import Config
 Config.set('kivy', 'keyboard_mode', 'system')
 
 import datetime
-from encodings.punycode import T
-from pickle import FALSE
-from re import L
 import os, sys, time
 
 if getattr(sys, 'frozen', False):
@@ -19,8 +16,19 @@ else:
         application_path = os.getcwd()
         running_mode = 'Interactive'
 
-logger_name = f'app.log'
-logger_dir = os.path.join(application_path, "logs")
+logger_name = 'app_%y-%m-%d_%_.txt'
+try:
+    # Pakai %PROGRAMDATA% (bukan folder instalasi) karena folder instalasi
+    # (mis. C:\Program Files\...) tidak bisa ditulis oleh user biasa tanpa admin.
+    logger_dir = os.path.join(os.environ.get('PROGRAMDATA', application_path), 'VIIMS', 'logs')
+    os.makedirs(logger_dir, exist_ok=True)
+
+    Config.set('kivy', 'log_dir', logger_dir)
+    Config.set('kivy', 'log_name', logger_name)
+    Config.set('kivy', 'log_level', 'debug')
+    Config.set('kivy', 'log_maxfiles', '20')
+except Exception:
+    pass  # gagal setup log custom, biarkan Kivy pakai lokasi log default-nya
 
 from kivy.logger import Logger
 from kivy.clock import Clock
@@ -45,6 +53,24 @@ import cv2, numpy as np
 import configparser, mysql.connector, paramiko, pymysql
 from pymodbus.client import ModbusTcpClient
 import threading
+import traceback
+
+def _handle_uncaught_exception(exc_type, exc_value, exc_traceback):
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+    tb_text = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+    Logger.error(f"CRASH: Uncaught exception di main thread:\n{tb_text}")
+    sys.__excepthook__(exc_type, exc_value, exc_traceback)
+
+sys.excepthook = _handle_uncaught_exception
+
+def _handle_uncaught_thread_exception(args):
+    tb_text = "".join(traceback.format_exception(args.exc_type, args.exc_value, args.exc_traceback))
+    thread_name = args.thread.name if args.thread else '?'
+    Logger.error(f"CRASH: Uncaught exception di thread '{thread_name}':\n{tb_text}")
+
+threading.excepthook = _handle_uncaught_thread_exception
 
 colors = {  "Red"   : {"A200": "#FF2A2A","A500": "#FF8080","A700": "#FFD5D5",},
             "Gray"  : {"200": "#CCCCCC","500": "#ECECEC","700": "#F9F9F9",},
@@ -154,6 +180,7 @@ class ScreenHome(MDScreen):
     def regular_update_carousel(self, dt):
         try:
             self.ids.carousel.index += 1
+            
             
         except Exception as e:
             toast_msg = f'Gagal Memperbaharui Tampilan Carousel'
@@ -538,14 +565,6 @@ class ScreenMain(MDScreen):
             Logger.error(f"{self.name}: {toast_msg}, {e}")  
             flag_conn_stat = False
 
-    def unsigned_to_signed(self, val):
-        if val >= 32768:
-            return val - 65536
-        return val
-
-    def regular_get_data(self, dt):
-        pass
-
     def exec_reload_database(self):
         global mydb
         try:
@@ -718,8 +737,18 @@ class ScreenMain(MDScreen):
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
         global dt_visual_flag, dt_id_user, dt_foto_user, dt_verified_data, dt_verified_payment
 
+        if dt_sts_uji in ("B", "U"):
+            target_table = TB_DAFTAR_BERKALA
+        elif dt_sts_uji in ("BR", "ND", "MD"):
+            target_table = TB_DAFTAR_BARU
+        else:
+            toast(f"Status Uji '{dt_sts_uji}' tidak valid.")
+            dt_verified_data = 0
+            dt_verified_payment = 0
+            return
+
         mycursor = mydb.cursor()
-        mycursor.execute(f"SELECT NOANTRIAN, NOUJI, NOPOL, STS_SPP FROM {TB_DAFTAR_BERKALA} WHERE NOANTRIAN = '{dt_no_antri}' ")
+        mycursor.execute(f"SELECT NOANTRIAN, NOUJI, NOPOL, STS_SPP FROM {target_table} WHERE NOANTRIAN = %s", (dt_no_antri,))
         myresult = mycursor.fetchone()
         if myresult is None:
             toast_msg = f'Belum ada data untuk No. Antrian {dt_no_antri}, No. Uji {dt_no_uji}, Silahkan Verifikasi terlebih dahulu'
@@ -1443,12 +1472,12 @@ class ScreenMenu(MDScreen):
             
             id_image = result_image[0]
 
-            mycursor.execute(f"SELECT id_uji FROM {TB_UJI} WHERE id_image = %s", (id_image,))
+            mycursor.execute(f"SELECT id_uji FROM {TB_UJI} WHERE id_image = %s AND nopol = %s", (id_image, dt_no_pol))
             uji_ids_to_delete = [item[0] for item in mycursor.fetchall()]
             if uji_ids_to_delete:
                 id_placeholders = ', '.join(['%s'] * len(uji_ids_to_delete))
                 mycursor.execute(f"DELETE FROM {TB_UJI_DETAIL} WHERE id_uji IN ({id_placeholders})", uji_ids_to_delete)
-                mycursor.execute(f"DELETE FROM {TB_UJI} WHERE id_image = %s", (id_image,))
+                mycursor.execute(f"DELETE FROM {TB_UJI} WHERE id_image = %s AND nopol = %s", (id_image, dt_no_pol))
 
             relevant_groups = ('V1', 'V2', 'P2', 'P3', 'P4')
 
@@ -1464,7 +1493,7 @@ class ScreenMenu(MDScreen):
                 mycursor.execute(sql_insert_uji, params_uji)
 
             # 5. Ambil semua subkomponen yang relevan untuk diisi ke uji_detail
-            mycursor.execute(f"SELECT id_uji, kode_kelompok_uji FROM {TB_UJI} WHERE id_image = %s", (id_image,))
+            mycursor.execute(f"SELECT id_uji, kode_kelompok_uji FROM {TB_UJI} WHERE id_image = %s AND nopol = %s", (id_image, dt_no_pol))
             id_uji_map = {kode_kelompok: id_uji for id_uji, kode_kelompok in mycursor.fetchall()}
 
             mycursor.execute(f"""
@@ -1872,11 +1901,11 @@ class ScreenMenu(MDScreen):
             db = pymysql.connect(host=DB_HOST, user=DB_USER, password=DB_PASSWORD, database=DB_NAME, autocommit=True)
             cur = db.cursor()
             now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            cur.execute("UPDATE temp_image_kendaraanbr SET tgl_capture=%s, NIP_ID1=%s, NIP_ID2=%s, useridv1=%s, useridv2=%s, useridfoto=%s WHERE nopol=%s", 
-                        (now, dt_nrp_user, dt_nrp_user, dt_nrp_user, dt_nrp_user, dt_id_user, dt_no_pol))
+            cur.execute("UPDATE temp_image_kendaraanbr SET tgl_capture=%s, NIP_ID1=%s, NIP_ID2=%s, useridv1=%s, useridv2=%s, useridfoto=%s WHERE nopol=%s",
+                        (now, dt_nrp_user, dt_nrp_user, dt_id_user, dt_id_user, dt_id_user, dt_no_pol))
             target = TB_DAFTAR_BERKALA if dt_sts_uji in ("B", "U") else TB_DAFTAR_BARU
-            cur.execute(f"UPDATE {target} SET NIP_ID1=%s, NIP_ID2=%s, useridv1=%s, useridv2=%s, useridfoto=%s WHERE NOANTRIAN=%s", 
-                        (dt_nrp_user, dt_nrp_user, dt_nrp_user, dt_nrp_user, dt_id_user, dt_no_antri))
+            cur.execute(f"UPDATE {target} SET NIP_ID1=%s, NIP_ID2=%s, useridv1=%s, useridv2=%s, useridfoto=%s WHERE NOANTRIAN=%s",
+                        (dt_nrp_user, dt_nrp_user, dt_id_user, dt_id_user, dt_id_user, dt_no_antri))
             cur.execute(f"UPDATE {TB_DATA} SET check_flag = '1' WHERE noantrian = %s", (dt_no_antri,))
             db.close()
             Clock.schedule_once(lambda dt: toast('Inspeksi Selesai!'))
@@ -1904,8 +1933,9 @@ class ScreenInspectId(MDScreen):
         self.ids.lb_unit_address.text = LB_UNIT_ADDRESS
     
     def on_enter(self):
-        global dt_no_antri, dt_no_pol, dt_no_uji
+        global dt_no_antri, dt_no_pol, dt_no_uji, selected_row_komponen_uji
 
+        selected_row_komponen_uji = None
         self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Inspeksi Identitas: LULUS"
         self.exec_reload_komponen_uji()
 
@@ -1928,7 +1958,7 @@ class ScreenInspectId(MDScreen):
             # self.ids.bt_dropdown_caller.disabled = True
             row = int(str(instance.id).replace("card_komponen_uji",""))
             selected_row_komponen_uji = row
-            self.exec_reload_subkomponen_uji(db_komponen_uji[1, row])
+            self.exec_reload_subkomponen_uji(db_komponen_uji[1, row], db_komponen_uji[0, row])
 
         except Exception as e:
             toast_msg = f'Gagal Mengeksekusi Perintah dari Baris Tabel Komponen Uji'
@@ -1946,12 +1976,12 @@ class ScreenInspectId(MDScreen):
             selected_row_komponen_uji = row
             if(flags_komponen_uji[row]):
                 flags_komponen_uji[row] = False
-                self.exec_reload_subkomponen_uji(db_komponen_uji[1, row], flags_komponen_uji[row])
+                self.exec_reload_subkomponen_uji(db_komponen_uji[1, row], db_komponen_uji[0, row], flags_komponen_uji[row])
                 self.ids[f'bt_komponen_uji{row}'].icon = "cancel"
                 self.ids[f'bt_komponen_uji{row}'].md_bg_color = "#FF2A2A"
             else:
                 flags_komponen_uji[row] = True
-                self.exec_reload_subkomponen_uji(db_komponen_uji[1, row], flags_komponen_uji[row])
+                self.exec_reload_subkomponen_uji(db_komponen_uji[1, row], db_komponen_uji[0, row], flags_komponen_uji[row])
                 self.ids[f'bt_komponen_uji{row}'].icon = "check-bold"
                 self.ids[f'bt_komponen_uji{row}'].md_bg_color = "#2CA02C"
 
@@ -1967,6 +1997,10 @@ class ScreenInspectId(MDScreen):
         global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
 
         try:
+            if selected_row_komponen_uji is None:
+                toast("Pilih komponen uji terlebih dahulu.")
+                return
+
             # self.ids.bt_dropdown_caller.disabled = True
             row = int(str(instance.id).replace("card_subkomponen_uji",""))
             selected_row_subkomponen_uji = row
@@ -2002,11 +2036,11 @@ class ScreenInspectId(MDScreen):
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
     def exec_reload_komponen_uji(self):
-        global mydb, db_komponen_uji
+        global mydb, db_komponen_uji, dt_no_pol
         global flags_komponen_uji
         global window_size_x, window_size_y
 
-        db_komponen_uji = np.array([]) 
+        db_komponen_uji = np.array([])
         flags_komponen_uji = np.array([], dtype='bool')
 
         try:
@@ -2020,12 +2054,13 @@ class ScreenInspectId(MDScreen):
 
             db_komponen_uji = np.array(result_tb_komponen_uji).T
             flags_komponen_uji = np.ones(db_komponen_uji[0,:].size, dtype='bool')
-            
+            self.load_saved_komponen_status()
+
         except Exception as e:
             toast_msg = f'Gagal Mengambil Data: {e}'
             toast(toast_msg)
             Logger.error(f"{self.name}: {toast_msg}")
-            return 
+            return
         
         try:
             layout_list = self.ids.layout_list_komponen_uji
@@ -2052,32 +2087,102 @@ class ScreenInspectId(MDScreen):
                 layout_list.add_widget(card)
                 
                 bt_check = MDIconButton(
-                        size_hint_x= 0.1, 
-                        icon="check-bold", 
-                        md_bg_color="#2CA02C",
+                        size_hint_x= 0.1,
+                        icon="check-bold" if flags_komponen_uji[i] else "cancel",
+                        md_bg_color="#2CA02C" if flags_komponen_uji[i] else "#FF2A2A",
                         on_press = self.on_komponen_uji_bt_press,
                         id=f'bt_komponen_uji{i}',
-                        )         
+                        )
                 self.ids[f'bt_komponen_uji{i}'] = bt_check
                 card.add_widget(bt_check)
 
         except Exception as e:
             toast_msg = f'Gagal Memperbaharui Tabel Komponen Uji'
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
 
+    def load_saved_komponen_status(self):
+        global mydb, db_komponen_uji, flags_komponen_uji, dt_no_pol
 
-    def exec_reload_subkomponen_uji(self, kode_komponen_uji, default=True):
+        try:
+            tb_image = mydb.cursor()
+            tb_image.execute("SELECT id FROM temp_image_kendaraanbr WHERE nopol = %s ORDER BY id DESC LIMIT 1", (dt_no_pol,))
+            result_image = tb_image.fetchone()
+            if not result_image:
+                return
+            id_image = result_image[0]
+
+            # kode_kelompok_uji bisa dipakai bersama oleh banyak kode_komponen_uji,
+            # jadi status per kartu harus dihitung dari uji_detail (per kode_komponen_uji),
+            # bukan dari uji.lulus_uji yang levelnya per kelompok.
+            for i in range(db_komponen_uji[0,:].size):
+                kode_kelompok = db_komponen_uji[0, i]
+                kode_komponen = db_komponen_uji[1, i]
+
+                tb_uji = mydb.cursor()
+                tb_uji.execute(f"SELECT id_uji FROM {TB_UJI} WHERE id_image = %s AND kode_kelompok_uji = %s AND nopol = %s LIMIT 1", (id_image, kode_kelompok, dt_no_pol))
+                result_uji = tb_uji.fetchone()
+                if not result_uji:
+                    continue
+                id_uji = result_uji[0]
+
+                tb_detail = mydb.cursor()
+                tb_detail.execute(f"SELECT hasil FROM {TB_UJI_DETAIL} WHERE id_uji = %s AND kode_komponen_uji = %s", (id_uji, kode_komponen))
+                hasil_rows = tb_detail.fetchall()
+                if hasil_rows:
+                    flags_komponen_uji[i] = all(str(h[0]) == '1' for h in hasil_rows)
+            mydb.commit()
+        except Exception as e:
+            Logger.error(f"{self.name}: Gagal memuat status komponen uji tersimpan, {e}")
+
+    def load_saved_subkomponen_status(self, kode_kelompok_uji):
+        global mydb, dt_no_pol
+
+        saved_hasil = {}
+        saved_keterangan = {}
+        try:
+            tb_image = mydb.cursor()
+            tb_image.execute("SELECT id FROM temp_image_kendaraanbr WHERE nopol = %s ORDER BY id DESC LIMIT 1", (dt_no_pol,))
+            result_image = tb_image.fetchone()
+            if not result_image:
+                return saved_hasil, saved_keterangan
+            id_image = result_image[0]
+
+            tb_uji = mydb.cursor()
+            tb_uji.execute(f"SELECT id_uji FROM {TB_UJI} WHERE id_image = %s AND kode_kelompok_uji = %s AND nopol = %s LIMIT 1", (id_image, kode_kelompok_uji, dt_no_pol))
+            result_uji = tb_uji.fetchone()
+            if not result_uji:
+                return saved_hasil, saved_keterangan
+            id_uji = result_uji[0]
+
+            tb_detail = mydb.cursor()
+            tb_detail.execute(f"SELECT kode_subkomponen_uji, hasil, keterangan FROM {TB_UJI_DETAIL} WHERE id_uji = %s", (id_uji,))
+            for kode_sub, hasil, keterangan in tb_detail.fetchall():
+                saved_hasil[kode_sub] = (str(hasil) == '1')
+                saved_keterangan[kode_sub] = keterangan or ""
+            mydb.commit()
+        except Exception as e:
+            Logger.error(f"{self.name}: Gagal memuat status subkomponen uji tersimpan, {e}")
+        return saved_hasil, saved_keterangan
+
+    def exec_reload_subkomponen_uji(self, kode_komponen_uji, kode_kelompok_uji=None, default=None):
         global mydb, db_subkomponen_uji, dt_no_pol, dt_sts_uji, dt_no_antri
         global flags_subkomponen_uji
         global window_size_x, window_size_y
 
+        saved_hasil = {}
+        saved_keterangan = {}
         try:
             tb_subkomponen_uji = mydb.cursor()
-            tb_subkomponen_uji.execute(f"SELECT kode_subkomponen_uji, stringintegrasi, value, nama FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = '{kode_komponen_uji}' ORDER BY urut")
+            tb_subkomponen_uji.execute(f"SELECT kode_subkomponen_uji, stringintegrasi, value, nama FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = %s ORDER BY urut", (kode_komponen_uji,))
             result_tb_subkomponen_uji = tb_subkomponen_uji.fetchall()
             mydb.commit()
             db_subkomponen_uji = np.array(result_tb_subkomponen_uji).T
-            if(default):
+            if default is None:
+                saved_hasil, saved_keterangan = self.load_saved_subkomponen_status(kode_kelompok_uji)
+                flags_subkomponen_uji = np.array([
+                    saved_hasil.get(db_subkomponen_uji[0, i], True) for i in range(db_subkomponen_uji[0,:].size)
+                ], dtype='bool')
+            elif default:
                 flags_subkomponen_uji = np.ones(db_subkomponen_uji[0,:].size, dtype='bool')
             else:
                 flags_subkomponen_uji = np.zeros(db_subkomponen_uji[0,:].size, dtype='bool')
@@ -2110,8 +2215,8 @@ class ScreenInspectId(MDScreen):
                 
                 # <--- DIUBAH: Dibuat Read-Only dengan disabled=True
                 tx_value = MDTextField(disabled=True, size_hint_x= 0.2, hint_text="Data",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
-                tx_comment = MDTextField(disabled = True, size_hint_x= 0.2, hint_text="Komentar",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
-                if(default):
+                tx_comment = MDTextField(disabled = True, size_hint_x= 0.2, hint_text="Komentar", text=saved_keterangan.get(db_subkomponen_uji[0, i], ""),text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
+                if(flags_subkomponen_uji[i]):
                     bt_check = MDIconButton(size_hint_x= 0.1, icon="check-bold", md_bg_color="#2CA02C",)
                 else:
                     bt_check = MDIconButton(size_hint_x= 0.1, icon="cancel", md_bg_color="#FF2A2A",)
@@ -2205,57 +2310,68 @@ class ScreenInspectId(MDScreen):
         threading.Thread(target=self._save_inspect_bg, daemon=True).start()
 
     def _save_inspect_bg(self):
-        global mydb, dt_no_pol, selected_row_komponen_uji, db_komponen_uji, db_subkomponen_uji
+        global mydb, dt_no_pol, dt_no_uji, dt_no_antri, selected_row_komponen_uji, db_komponen_uji, db_subkomponen_uji
+        Logger.info(f"{self.name}: [SAVE] Mulai proses simpan - nopol={dt_no_pol}, no_uji={dt_no_uji}, no_antri={dt_no_antri}, selected_row={selected_row_komponen_uji}")
         try:
             db = pymysql.connect(host=DB_HOST, user=DB_USER, password=DB_PASSWORD, database=DB_NAME, autocommit=True)
             cur = db.cursor()
-            
+
             # 1. Cari ID Image langsung dari temp_image_kendaraanbr
             cur.execute("SELECT id FROM temp_image_kendaraanbr WHERE nopol = %s ORDER BY id DESC LIMIT 1", (dt_no_pol,))
             result_image = cur.fetchone()
-            
+
             if not result_image:
+                Logger.warning(f"{self.name}: [SAVE] Data image tidak ditemukan untuk nopol={dt_no_pol}, simpan dibatalkan")
                 Clock.schedule_once(lambda dt: toast("Data Image belum ada! Pastikan kendaraan sudah diverifikasi."))
                 db.close()
                 return
-            
+
             id_image = result_image[0]
-            
+            Logger.info(f"{self.name}: [SAVE] id_image ditemukan = {id_image}")
+
             kode_kelompok = db_komponen_uji[0, selected_row_komponen_uji]
             status = '0' if self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon == "cancel" else '1'
-            
-            # Update tabel UJI
-            cur.execute(f"UPDATE {TB_UJI} SET lulus_uji = %s WHERE id_image = %s AND kode_kelompok_uji = %s", (status, id_image, kode_kelompok))
-            
-            # 2. Cari ID Uji (Jaring Pengaman 2)
-            cur.execute(f"SELECT id_uji FROM {TB_UJI} WHERE id_image = %s AND kode_kelompok_uji = %s LIMIT 1", (id_image, kode_kelompok))
+            Logger.info(f"{self.name}: [SAVE] kode_kelompok_uji={kode_kelompok}, status_lulus={status}")
+
+            # Update tabel UJI jika tersedia, jika tidak maka insert by nouji dan tanggal sekarang
+            cur.execute(f"UPDATE {TB_UJI} SET lulus_uji = %s WHERE id_image = %s AND kode_kelompok_uji = %s AND nopol = %s", (status, id_image, kode_kelompok, dt_no_pol))
+            Logger.info(f"{self.name}: [SAVE] UPDATE {TB_UJI} rowcount={cur.rowcount}")
+
+            cur.execute(f"SELECT id_uji FROM {TB_UJI} WHERE id_image = %s AND kode_kelompok_uji = %s AND nopol = %s LIMIT 1", (id_image, kode_kelompok, dt_no_pol))
             result_uji = cur.fetchone()
-            if not result_uji:
-                Clock.schedule_once(lambda dt: toast("Data Uji belum diinisialisasi! Silakan kembali ke menu awal."))
-                db.close()
-                return
-            id_uji = result_uji[0]
-            
+            if result_uji:
+                id_uji = result_uji[0]
+                Logger.info(f"{self.name}: [SAVE] Baris {TB_UJI} sudah ada -> id_uji={id_uji} (jalur UPDATE)")
+            else:
+                cur.execute(f"""
+                    INSERT INTO {TB_UJI} (id_image, nouji, newnouji, nopol, tanggal, kode_kelompok_uji, lulus_uji, noantrian)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """, (id_image, dt_no_uji, dt_no_uji, dt_no_pol, datetime.datetime.now(), kode_kelompok, status, dt_no_antri))
+                id_uji = cur.lastrowid
+                Logger.info(f"{self.name}: [SAVE] Baris {TB_UJI} belum ada -> INSERT baru id_uji={id_uji} (jalur INSERT)")
+
             # 3. Simpan Detail Komentar
             for i in range(db_subkomponen_uji[0,:].size):
                 kode_sub = db_subkomponen_uji[0,i]
                 komen = self.ids[f'tx_comment{i}'].text
                 hasil = '1' if self.ids[f'bt_subkomponen_uji{i}'].icon == "check-bold" else '0'
-                cur.execute(f"REPLACE INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES (%s, %s, %s, %s, %s)", 
+                cur.execute(f"REPLACE INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES (%s, %s, %s, %s, %s)",
                             (id_uji, hasil, db_komponen_uji[1, selected_row_komponen_uji], kode_sub, komen))
-            
+                Logger.debug(f"{self.name}: [SAVE] subkomponen={kode_sub}, hasil={hasil}, komentar={komen!r}")
+
             db.close()
+            Logger.info(f"{self.name}: [SAVE] Simpan sukses - id_uji={id_uji}, total_subkomponen={db_subkomponen_uji[0,:].size}")
             Clock.schedule_once(lambda dt: toast('Data Inspeksi Berhasil Disimpan!'))
             Clock.schedule_once(lambda dt: self.open_screen_menu())
-            
+
         except Exception as e:
-            Logger.error(f"Save Inspect Error: {e}")
+            Logger.error(f"{self.name}: [SAVE] Gagal simpan - {e}\n{traceback.format_exc()}")
             Clock.schedule_once(lambda dt: toast(f'Gagal Simpan: Error Database'))
 
     def exec_cancel(self):
         self.open_screen_menu()
 
-class ScreenInspectVisual(MDScreen):        
+class ScreenInspectVisual(MDScreen):
     def __init__(self, **kwargs):
         super(ScreenInspectVisual, self).__init__(**kwargs)
         Clock.schedule_once(self.delayed_init, 1)
@@ -2271,8 +2387,9 @@ class ScreenInspectVisual(MDScreen):
         self.ids.lb_unit_address.text = LB_UNIT_ADDRESS
     
     def on_enter(self):
-        global dt_no_antri, dt_no_pol, dt_no_uji
+        global dt_no_antri, dt_no_pol, dt_no_uji, selected_row_komponen_uji
 
+        selected_row_komponen_uji = None
         self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Inspeksi Visual 1: LULUS"
         self.exec_reload_komponen_uji()
 
@@ -2295,7 +2412,7 @@ class ScreenInspectVisual(MDScreen):
             # self.ids.bt_dropdown_caller.disabled = True
             row = int(str(instance.id).replace("card_komponen_uji",""))
             selected_row_komponen_uji = row
-            self.exec_reload_subkomponen_uji(db_komponen_uji[1, row])
+            self.exec_reload_subkomponen_uji(db_komponen_uji[1, row], db_komponen_uji[0, row])
 
         except Exception as e:
             toast_msg = f'Gagal Mengeksekusi Perintah dari Baris Tabel Komponen Uji'
@@ -2313,12 +2430,12 @@ class ScreenInspectVisual(MDScreen):
             selected_row_komponen_uji = row
             if(flags_komponen_uji[row]):
                 flags_komponen_uji[row] = False
-                self.exec_reload_subkomponen_uji(db_komponen_uji[1, row], flags_komponen_uji[row])
+                self.exec_reload_subkomponen_uji(db_komponen_uji[1, row], db_komponen_uji[0, row], flags_komponen_uji[row])
                 self.ids[f'bt_komponen_uji{row}'].icon = "cancel"
                 self.ids[f'bt_komponen_uji{row}'].md_bg_color = "#FF2A2A"
             else:
                 flags_komponen_uji[row] = True
-                self.exec_reload_subkomponen_uji(db_komponen_uji[1, row], flags_komponen_uji[row])
+                self.exec_reload_subkomponen_uji(db_komponen_uji[1, row], db_komponen_uji[0, row], flags_komponen_uji[row])
                 self.ids[f'bt_komponen_uji{row}'].icon = "check-bold"
                 self.ids[f'bt_komponen_uji{row}'].md_bg_color = "#2CA02C"
 
@@ -2334,6 +2451,10 @@ class ScreenInspectVisual(MDScreen):
         global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
 
         try:
+            if selected_row_komponen_uji is None:
+                toast("Pilih komponen uji terlebih dahulu.")
+                return
+
             # self.ids.bt_dropdown_caller.disabled = True
             row = int(str(instance.id).replace("card_subkomponen_uji",""))
             selected_row_subkomponen_uji = row
@@ -2370,7 +2491,7 @@ class ScreenInspectVisual(MDScreen):
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
     def exec_reload_komponen_uji(self):
-        global mydb, db_komponen_uji
+        global mydb, db_komponen_uji, dt_no_pol
         global flags_komponen_uji
         global window_size_x, window_size_y
 
@@ -2380,11 +2501,12 @@ class ScreenInspectVisual(MDScreen):
             result_tb_komponen_uji = tb_komponen_uji.fetchall()
             mydb.commit()
             db_komponen_uji = np.array(result_tb_komponen_uji).T
-            flags_komponen_uji = np.ones(db_komponen_uji[0,:].size, dtype='bool')            
+            flags_komponen_uji = np.ones(db_komponen_uji[0,:].size, dtype='bool')
+            self.load_saved_komponen_status()
         except Exception as e:
             toast_msg = f'Gagal Mengambil Data dari Database Tabel Komponen Uji'
             toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
 
         try:
             layout_list = self.ids.layout_list_komponen_uji
@@ -2392,9 +2514,9 @@ class ScreenInspectVisual(MDScreen):
         except Exception as e:
             toast_msg = f'Gagal Menghapus Widget'
             toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
-        
-        try:           
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
+
+        try:
             layout_list = self.ids.layout_list_komponen_uji
             for i in range(db_komponen_uji[0,:].size):
                 card = MDCard(
@@ -2410,54 +2532,125 @@ class ScreenInspectVisual(MDScreen):
                         )
                 self.ids[f'card_komponen_uji{i}'] = card
                 layout_list.add_widget(card)
-                
+
                 bt_check = MDIconButton(
-                        size_hint_x= 0.1, 
-                        icon="check-bold", 
-                        md_bg_color="#2CA02C",
+                        size_hint_x= 0.1,
+                        icon="check-bold" if flags_komponen_uji[i] else "cancel",
+                        md_bg_color="#2CA02C" if flags_komponen_uji[i] else "#FF2A2A",
                         on_press = self.on_komponen_uji_bt_press,
                         id=f'bt_komponen_uji{i}',
-                        )                
+                        )
                 self.ids[f'bt_komponen_uji{i}'] = bt_check
                 card.add_widget(bt_check)
-                
+
         except Exception as e:
             toast_msg = f'Gagal Memperbaharui Tabel Komponen Uji'
             toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
 
-    def exec_reload_subkomponen_uji(self, kode_komponen_uji, default=True):
-        global mydb, db_subkomponen_uji
-        global flags_subkomponen_uji
+    def load_saved_komponen_status(self):
+        global mydb, db_komponen_uji, flags_komponen_uji, dt_no_pol
 
         try:
+            tb_image = mydb.cursor()
+            tb_image.execute("SELECT id FROM temp_image_kendaraanbr WHERE nopol = %s ORDER BY id DESC LIMIT 1", (dt_no_pol,))
+            result_image = tb_image.fetchone()
+            if not result_image:
+                return
+            id_image = result_image[0]
+
+            # kode_kelompok_uji bisa dipakai bersama oleh banyak kode_komponen_uji,
+            # jadi status per kartu harus dihitung dari uji_detail (per kode_komponen_uji),
+            # bukan dari uji.lulus_uji yang levelnya per kelompok.
+            for i in range(db_komponen_uji[0,:].size):
+                kode_kelompok = db_komponen_uji[0, i]
+                kode_komponen = db_komponen_uji[1, i]
+
+                tb_uji = mydb.cursor()
+                tb_uji.execute(f"SELECT id_uji FROM {TB_UJI} WHERE id_image = %s AND kode_kelompok_uji = %s AND nopol = %s LIMIT 1", (id_image, kode_kelompok, dt_no_pol))
+                result_uji = tb_uji.fetchone()
+                if not result_uji:
+                    continue
+                id_uji = result_uji[0]
+
+                tb_detail = mydb.cursor()
+                tb_detail.execute(f"SELECT hasil FROM {TB_UJI_DETAIL} WHERE id_uji = %s AND kode_komponen_uji = %s", (id_uji, kode_komponen))
+                hasil_rows = tb_detail.fetchall()
+                if hasil_rows:
+                    flags_komponen_uji[i] = all(str(h[0]) == '1' for h in hasil_rows)
+            mydb.commit()
+        except Exception as e:
+            Logger.error(f"{self.name}: Gagal memuat status komponen uji tersimpan, {e}")
+
+    def load_saved_subkomponen_status(self, kode_kelompok_uji):
+        global mydb, dt_no_pol
+
+        saved_hasil = {}
+        saved_keterangan = {}
+        try:
+            tb_image = mydb.cursor()
+            tb_image.execute("SELECT id FROM temp_image_kendaraanbr WHERE nopol = %s ORDER BY id DESC LIMIT 1", (dt_no_pol,))
+            result_image = tb_image.fetchone()
+            if not result_image:
+                return saved_hasil, saved_keterangan
+            id_image = result_image[0]
+
+            tb_uji = mydb.cursor()
+            tb_uji.execute(f"SELECT id_uji FROM {TB_UJI} WHERE id_image = %s AND kode_kelompok_uji = %s AND nopol = %s LIMIT 1", (id_image, kode_kelompok_uji, dt_no_pol))
+            result_uji = tb_uji.fetchone()
+            if not result_uji:
+                return saved_hasil, saved_keterangan
+            id_uji = result_uji[0]
+
+            tb_detail = mydb.cursor()
+            tb_detail.execute(f"SELECT kode_subkomponen_uji, hasil, keterangan FROM {TB_UJI_DETAIL} WHERE id_uji = %s", (id_uji,))
+            for kode_sub, hasil, keterangan in tb_detail.fetchall():
+                saved_hasil[kode_sub] = (str(hasil) == '1')
+                saved_keterangan[kode_sub] = keterangan or ""
+            mydb.commit()
+        except Exception as e:
+            Logger.error(f"{self.name}: Gagal memuat status subkomponen uji tersimpan, {e}")
+        return saved_hasil, saved_keterangan
+
+    def exec_reload_subkomponen_uji(self, kode_komponen_uji, kode_kelompok_uji=None, default=None):
+        global mydb, db_subkomponen_uji, dt_no_pol
+        global flags_subkomponen_uji
+
+        saved_hasil = {}
+        saved_keterangan = {}
+        try:
             tb_subkomponen_uji = mydb.cursor()
-            tb_subkomponen_uji.execute(f"SELECT kode_subkomponen_uji, string, keterangan, nama FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = '{kode_komponen_uji}'")
+            tb_subkomponen_uji.execute(f"SELECT kode_subkomponen_uji, string, keterangan, nama FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = %s", (kode_komponen_uji,))
             result_tb_subkomponen_uji = tb_subkomponen_uji.fetchall()
             mydb.commit()
             db_subkomponen_uji = np.array(result_tb_subkomponen_uji).T
-            if(default):
+            if default is None:
+                saved_hasil, saved_keterangan = self.load_saved_subkomponen_status(kode_kelompok_uji)
+                flags_subkomponen_uji = np.array([
+                    saved_hasil.get(db_subkomponen_uji[0, i], True) for i in range(db_subkomponen_uji[0,:].size)
+                ], dtype='bool')
+            elif default:
                 flags_subkomponen_uji = np.ones(db_subkomponen_uji[0,:].size, dtype='bool')
             else:
                 flags_subkomponen_uji = np.zeros(db_subkomponen_uji[0,:].size, dtype='bool')
         except Exception as e:
             toast_msg = f'Gagal Mengambil Data dari Database Tabel Subkomponen Uji'
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
 
         try:
             layout_list = self.ids.layout_list_subkomponen_uji
             layout_list.clear_widgets(children=None)
         except Exception as e:
             toast_msg = f'Gagal Menghapus Widget'
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
-        
-        try:           
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
+
+        try:
             layout_list = self.ids.layout_list_subkomponen_uji
             for i in range(db_subkomponen_uji[0,:].size):
                 card = MDCard(
                     # MDLabel(text=f"{db_subkomponen_uji[0, i]}", size_hint_x= 0.1),
                     MDLabel(text=f"{db_subkomponen_uji[1, i]}", size_hint_x= 0.4),
-                    
+
                     ripple_behavior = False,
                     padding = [20, 0],
                     spacing = 10,
@@ -2468,12 +2661,12 @@ class ScreenInspectVisual(MDScreen):
                     )
                 self.ids[f'card_subkomponen_uji{i}'] = card
                 layout_list.add_widget(card)
-                
-                tx_comment = MDTextField(disabled = True, size_hint_x= 0.3, hint_text="Komentar",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
-                if(default):
+
+                tx_comment = MDTextField(disabled = True, size_hint_x= 0.3, hint_text="Komentar", text=saved_keterangan.get(db_subkomponen_uji[0, i], ""),text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
+                if(flags_subkomponen_uji[i]):
                     bt_check = MDIconButton(size_hint_x= 0.1, icon="check-bold", md_bg_color="#2CA02C",)
                 else:
-                    bt_check = MDIconButton(size_hint_x= 0.1, icon="cancel", md_bg_color="#FF2A2A",)                           
+                    bt_check = MDIconButton(size_hint_x= 0.1, icon="cancel", md_bg_color="#FF2A2A",)
                 self.ids[f'tx_comment{i}'] = tx_comment
                 self.ids[f'bt_subkomponen_uji{i}'] = bt_check
                 card.add_widget(tx_comment)
@@ -2482,7 +2675,7 @@ class ScreenInspectVisual(MDScreen):
         except Exception as e:
             toast_msg = f'Gagal Memperbaharui Data Tabel Subkomponen Uji'
             toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
 
     # def reload_menu_komentar_uji(self, selected_kode_subkomponen_uji=""):
     #     global window_size_x, window_size_y
@@ -2529,55 +2722,66 @@ class ScreenInspectVisual(MDScreen):
         threading.Thread(target=self._save_inspect_bg, daemon=True).start()
 
     def _save_inspect_bg(self):
-        global mydb, dt_no_pol, selected_row_komponen_uji, db_komponen_uji, db_subkomponen_uji
+        global mydb, dt_no_pol, dt_no_uji, dt_no_antri, selected_row_komponen_uji, db_komponen_uji, db_subkomponen_uji
+        Logger.info(f"{self.name}: [SAVE] Mulai proses simpan - nopol={dt_no_pol}, no_uji={dt_no_uji}, no_antri={dt_no_antri}, selected_row={selected_row_komponen_uji}")
         try:
             db = pymysql.connect(host=DB_HOST, user=DB_USER, password=DB_PASSWORD, database=DB_NAME, autocommit=True)
             cur = db.cursor()
-            
+
             # 1. Cari ID Image (Jaring Pengaman 1)
             cur.execute("SELECT id FROM temp_image_kendaraanbr WHERE nopol = %s ORDER BY id DESC LIMIT 1", (dt_no_pol,))
             result_image = cur.fetchone()
             if not result_image:
+                Logger.warning(f"{self.name}: [SAVE] Data image tidak ditemukan untuk nopol={dt_no_pol}, simpan dibatalkan")
                 Clock.schedule_once(lambda dt: toast("Data Image belum ada! Pastikan kendaraan sudah terdaftar hari ini."))
                 db.close()
                 return
             id_image = result_image[0]
-            
+            Logger.info(f"{self.name}: [SAVE] id_image ditemukan = {id_image}")
+
             kode_kelompok = db_komponen_uji[0, selected_row_komponen_uji]
             status = '0' if self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon == "cancel" else '1'
-            
-            # Update tabel UJI
-            cur.execute(f"UPDATE {TB_UJI} SET lulus_uji = %s WHERE id_image = %s AND kode_kelompok_uji = %s", (status, id_image, kode_kelompok))
-            
-            # 2. Cari ID Uji (Jaring Pengaman 2)
-            cur.execute(f"SELECT id_uji FROM {TB_UJI} WHERE id_image = %s AND kode_kelompok_uji = %s LIMIT 1", (id_image, kode_kelompok))
+            Logger.info(f"{self.name}: [SAVE] kode_kelompok_uji={kode_kelompok}, status_lulus={status}")
+
+            # Update tabel UJI jika tersedia, jika tidak maka insert by nouji dan tanggal sekarang
+            cur.execute(f"UPDATE {TB_UJI} SET lulus_uji = %s WHERE id_image = %s AND kode_kelompok_uji = %s AND nopol = %s", (status, id_image, kode_kelompok, dt_no_pol))
+            Logger.info(f"{self.name}: [SAVE] UPDATE {TB_UJI} rowcount={cur.rowcount}")
+
+            cur.execute(f"SELECT id_uji FROM {TB_UJI} WHERE id_image = %s AND kode_kelompok_uji = %s AND nopol = %s LIMIT 1", (id_image, kode_kelompok, dt_no_pol))
             result_uji = cur.fetchone()
-            if not result_uji:
-                Clock.schedule_once(lambda dt: toast("Data Uji belum diinisialisasi! Silakan kembali ke menu awal."))
-                db.close()
-                return
-            id_uji = result_uji[0]
-            
+            if result_uji:
+                id_uji = result_uji[0]
+                Logger.info(f"{self.name}: [SAVE] Baris {TB_UJI} sudah ada -> id_uji={id_uji} (jalur UPDATE)")
+            else:
+                cur.execute(f"""
+                    INSERT INTO {TB_UJI} (id_image, nouji, newnouji, nopol, tanggal, kode_kelompok_uji, lulus_uji, noantrian)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """, (id_image, dt_no_uji, dt_no_uji, dt_no_pol, datetime.datetime.now(), kode_kelompok, status, dt_no_antri))
+                id_uji = cur.lastrowid
+                Logger.info(f"{self.name}: [SAVE] Baris {TB_UJI} belum ada -> INSERT baru id_uji={id_uji} (jalur INSERT)")
+
             # 3. Simpan Detail Komentar
             for i in range(db_subkomponen_uji[0,:].size):
                 kode_sub = db_subkomponen_uji[0,i]
                 komen = self.ids[f'tx_comment{i}'].text
                 hasil = '1' if self.ids[f'bt_subkomponen_uji{i}'].icon == "check-bold" else '0'
-                cur.execute(f"REPLACE INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES (%s, %s, %s, %s, %s)", 
+                cur.execute(f"REPLACE INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES (%s, %s, %s, %s, %s)",
                             (id_uji, hasil, db_komponen_uji[1, selected_row_komponen_uji], kode_sub, komen))
-            
+                Logger.debug(f"{self.name}: [SAVE] subkomponen={kode_sub}, hasil={hasil}, komentar={komen!r}")
+
             db.close()
+            Logger.info(f"{self.name}: [SAVE] Simpan sukses - id_uji={id_uji}, total_subkomponen={db_subkomponen_uji[0,:].size}")
             Clock.schedule_once(lambda dt: toast('Data Inspeksi Berhasil Disimpan!'))
             Clock.schedule_once(lambda dt: self.open_screen_menu())
-            
+
         except Exception as e:
-            Logger.error(f"Save Inspect Error: {e}")
+            Logger.error(f"{self.name}: [SAVE] Gagal simpan - {e}\n{traceback.format_exc()}")
             Clock.schedule_once(lambda dt: toast(f'Gagal Simpan: Error Database'))
 
     def exec_cancel(self):
         self.open_screen_menu()
 
-class ScreenInspectVisual2(MDScreen):        
+class ScreenInspectVisual2(MDScreen):
     def __init__(self, **kwargs):
         super(ScreenInspectVisual2, self).__init__(**kwargs)
         Clock.schedule_once(self.delayed_init, 1)
@@ -2593,8 +2797,9 @@ class ScreenInspectVisual2(MDScreen):
         self.ids.lb_unit_address.text = LB_UNIT_ADDRESS
     
     def on_enter(self):
-        global dt_no_antri, dt_no_pol, dt_no_uji
+        global dt_no_antri, dt_no_pol, dt_no_uji, selected_row_komponen_uji
 
+        selected_row_komponen_uji = None
         self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Inspeksi Visual 2: LULUS"
         self.exec_reload_komponen_uji()
 
@@ -2617,7 +2822,7 @@ class ScreenInspectVisual2(MDScreen):
             # self.ids.bt_dropdown_caller.disabled = True
             row = int(str(instance.id).replace("card_komponen_uji",""))
             selected_row_komponen_uji = row
-            self.exec_reload_subkomponen_uji(db_komponen_uji[1, row])
+            self.exec_reload_subkomponen_uji(db_komponen_uji[1, row], db_komponen_uji[0, row])
 
         except Exception as e:
             toast_msg = f'Gagal Mengeksekusi Perintah dari Baris Tabel Komponen Uji'
@@ -2635,12 +2840,12 @@ class ScreenInspectVisual2(MDScreen):
             selected_row_komponen_uji = row
             if(flags_komponen_uji[row]):
                 flags_komponen_uji[row] = False
-                self.exec_reload_subkomponen_uji(db_komponen_uji[1, row], flags_komponen_uji[row])
+                self.exec_reload_subkomponen_uji(db_komponen_uji[1, row], db_komponen_uji[0, row], flags_komponen_uji[row])
                 self.ids[f'bt_komponen_uji{row}'].icon = "cancel"
                 self.ids[f'bt_komponen_uji{row}'].md_bg_color = "#FF2A2A"
             else:
                 flags_komponen_uji[row] = True
-                self.exec_reload_subkomponen_uji(db_komponen_uji[1, row], flags_komponen_uji[row])
+                self.exec_reload_subkomponen_uji(db_komponen_uji[1, row], db_komponen_uji[0, row], flags_komponen_uji[row])
                 self.ids[f'bt_komponen_uji{row}'].icon = "check-bold"
                 self.ids[f'bt_komponen_uji{row}'].md_bg_color = "#2CA02C"
 
@@ -2656,6 +2861,10 @@ class ScreenInspectVisual2(MDScreen):
         global selected_row_subkomponen_uji, selected_kode_subkomponen_uji
 
         try:
+            if selected_row_komponen_uji is None:
+                toast("Pilih komponen uji terlebih dahulu.")
+                return
+
             # self.ids.bt_dropdown_caller.disabled = True
             row = int(str(instance.id).replace("card_subkomponen_uji",""))
             selected_row_subkomponen_uji = row
@@ -2691,7 +2900,7 @@ class ScreenInspectVisual2(MDScreen):
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
     def exec_reload_komponen_uji(self):
-        global mydb, db_komponen_uji
+        global mydb, db_komponen_uji, dt_no_pol
         global flags_komponen_uji
         global window_size_x, window_size_y
 
@@ -2701,11 +2910,12 @@ class ScreenInspectVisual2(MDScreen):
             result_tb_komponen_uji = tb_komponen_uji.fetchall()
             mydb.commit()
             db_komponen_uji = np.array(result_tb_komponen_uji).T
-            flags_komponen_uji = np.ones(db_komponen_uji[0,:].size, dtype='bool')            
+            flags_komponen_uji = np.ones(db_komponen_uji[0,:].size, dtype='bool')
+            self.load_saved_komponen_status()
         except Exception as e:
             toast_msg = f'Gagal Mengambil Data dari Database Tabel Komponen Uji'
             toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
 
         try:
             layout_list = self.ids.layout_list_komponen_uji
@@ -2713,9 +2923,9 @@ class ScreenInspectVisual2(MDScreen):
         except Exception as e:
             toast_msg = f'Gagal Menghapus Widget'
             toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
-        
-        try:           
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
+
+        try:
             layout_list = self.ids.layout_list_komponen_uji
             for i in range(db_komponen_uji[0,:].size):
                 card = MDCard(
@@ -2731,55 +2941,126 @@ class ScreenInspectVisual2(MDScreen):
                         )
                 self.ids[f'card_komponen_uji{i}'] = card
                 layout_list.add_widget(card)
-                
+
                 bt_check = MDIconButton(
-                        size_hint_x= 0.1, 
-                        icon="check-bold", 
-                        md_bg_color="#2CA02C",
+                        size_hint_x= 0.1,
+                        icon="check-bold" if flags_komponen_uji[i] else "cancel",
+                        md_bg_color="#2CA02C" if flags_komponen_uji[i] else "#FF2A2A",
                         on_press = self.on_komponen_uji_bt_press,
                         id=f'bt_komponen_uji{i}',
-                        )                
+                        )
                 self.ids[f'bt_komponen_uji{i}'] = bt_check
                 card.add_widget(bt_check)
-                
+
         except Exception as e:
             toast_msg = f'Gagal Memperbaharui Tabel Komponen Uji'
             toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
 
-    def exec_reload_subkomponen_uji(self, kode_komponen_uji, default=True):
-        global mydb, db_subkomponen_uji
+    def load_saved_komponen_status(self):
+        global mydb, db_komponen_uji, flags_komponen_uji, dt_no_pol
+
+        try:
+            tb_image = mydb.cursor()
+            tb_image.execute("SELECT id FROM temp_image_kendaraanbr WHERE nopol = %s ORDER BY id DESC LIMIT 1", (dt_no_pol,))
+            result_image = tb_image.fetchone()
+            if not result_image:
+                return
+            id_image = result_image[0]
+
+            # kode_kelompok_uji bisa dipakai bersama oleh banyak kode_komponen_uji,
+            # jadi status per kartu harus dihitung dari uji_detail (per kode_komponen_uji),
+            # bukan dari uji.lulus_uji yang levelnya per kelompok.
+            for i in range(db_komponen_uji[0,:].size):
+                kode_kelompok = db_komponen_uji[0, i]
+                kode_komponen = db_komponen_uji[1, i]
+
+                tb_uji = mydb.cursor()
+                tb_uji.execute(f"SELECT id_uji FROM {TB_UJI} WHERE id_image = %s AND kode_kelompok_uji = %s AND nopol = %s LIMIT 1", (id_image, kode_kelompok, dt_no_pol))
+                result_uji = tb_uji.fetchone()
+                if not result_uji:
+                    continue
+                id_uji = result_uji[0]
+
+                tb_detail = mydb.cursor()
+                tb_detail.execute(f"SELECT hasil FROM {TB_UJI_DETAIL} WHERE id_uji = %s AND kode_komponen_uji = %s", (id_uji, kode_komponen))
+                hasil_rows = tb_detail.fetchall()
+                if hasil_rows:
+                    flags_komponen_uji[i] = all(str(h[0]) == '1' for h in hasil_rows)
+            mydb.commit()
+        except Exception as e:
+            Logger.error(f"{self.name}: Gagal memuat status komponen uji tersimpan, {e}")
+
+    def load_saved_subkomponen_status(self, kode_kelompok_uji):
+        global mydb, dt_no_pol
+
+        saved_hasil = {}
+        saved_keterangan = {}
+        try:
+            tb_image = mydb.cursor()
+            tb_image.execute("SELECT id FROM temp_image_kendaraanbr WHERE nopol = %s ORDER BY id DESC LIMIT 1", (dt_no_pol,))
+            result_image = tb_image.fetchone()
+            if not result_image:
+                return saved_hasil, saved_keterangan
+            id_image = result_image[0]
+
+            tb_uji = mydb.cursor()
+            tb_uji.execute(f"SELECT id_uji FROM {TB_UJI} WHERE id_image = %s AND kode_kelompok_uji = %s AND nopol = %s LIMIT 1", (id_image, kode_kelompok_uji, dt_no_pol))
+            result_uji = tb_uji.fetchone()
+            if not result_uji:
+                return saved_hasil, saved_keterangan
+            id_uji = result_uji[0]
+
+            tb_detail = mydb.cursor()
+            tb_detail.execute(f"SELECT kode_subkomponen_uji, hasil, keterangan FROM {TB_UJI_DETAIL} WHERE id_uji = %s", (id_uji,))
+            for kode_sub, hasil, keterangan in tb_detail.fetchall():
+                saved_hasil[kode_sub] = (str(hasil) == '1')
+                saved_keterangan[kode_sub] = keterangan or ""
+            mydb.commit()
+        except Exception as e:
+            Logger.error(f"{self.name}: Gagal memuat status subkomponen uji tersimpan, {e}")
+        return saved_hasil, saved_keterangan
+
+    def exec_reload_subkomponen_uji(self, kode_komponen_uji, kode_kelompok_uji=None, default=None):
+        global mydb, db_subkomponen_uji, dt_no_pol
         global flags_subkomponen_uji
         global window_size_x, window_size_y
 
+        saved_hasil = {}
+        saved_keterangan = {}
         try:
             tb_subkomponen_uji = mydb.cursor()
-            tb_subkomponen_uji.execute(f"SELECT kode_subkomponen_uji, string, keterangan, nama FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = '{kode_komponen_uji}' ")
+            tb_subkomponen_uji.execute(f"SELECT kode_subkomponen_uji, string, keterangan, nama FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = %s", (kode_komponen_uji,))
             result_tb_subkomponen_uji = tb_subkomponen_uji.fetchall()
             mydb.commit()
             db_subkomponen_uji = np.array(result_tb_subkomponen_uji).T
-            if(default):
+            if default is None:
+                saved_hasil, saved_keterangan = self.load_saved_subkomponen_status(kode_kelompok_uji)
+                flags_subkomponen_uji = np.array([
+                    saved_hasil.get(db_subkomponen_uji[0, i], True) for i in range(db_subkomponen_uji[0,:].size)
+                ], dtype='bool')
+            elif default:
                 flags_subkomponen_uji = np.ones(db_subkomponen_uji[0,:].size, dtype='bool')
             else:
                 flags_subkomponen_uji = np.zeros(db_subkomponen_uji[0,:].size, dtype='bool')
         except Exception as e:
             toast_msg = f'Gagal Mengambil Data dari Database Tabel Subkomponen Uji'
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
 
         try:
             layout_list = self.ids.layout_list_subkomponen_uji
             layout_list.clear_widgets(children=None)
         except Exception as e:
             toast_msg = f'Gagal Menghapus Widget'
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
-        
-        try:           
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
+
+        try:
             layout_list = self.ids.layout_list_subkomponen_uji
             for i in range(db_subkomponen_uji[0,:].size):
                 card = MDCard(
                     # MDLabel(text=f"{db_subkomponen_uji[0, i]}", size_hint_x= 0.1),
                     MDLabel(text=f"{db_subkomponen_uji[1, i]}", size_hint_x= 0.4),
-                    
+
                     ripple_behavior = False,
                     padding = [20, 0],
                     spacing = 10,
@@ -2790,12 +3071,12 @@ class ScreenInspectVisual2(MDScreen):
                     )
                 self.ids[f'card_subkomponen_uji{i}'] = card
                 layout_list.add_widget(card)
-                
-                tx_comment = MDTextField(disabled = True, size_hint_x= 0.3, hint_text="Komentar",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
-                if(default):
+
+                tx_comment = MDTextField(disabled = True, size_hint_x= 0.3, hint_text="Komentar", text=saved_keterangan.get(db_subkomponen_uji[0, i], ""),text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
+                if(flags_subkomponen_uji[i]):
                     bt_check = MDIconButton(size_hint_x= 0.1, icon="check-bold", md_bg_color="#2CA02C",)
                 else:
-                    bt_check = MDIconButton(size_hint_x= 0.1, icon="cancel", md_bg_color="#FF2A2A",)         
+                    bt_check = MDIconButton(size_hint_x= 0.1, icon="cancel", md_bg_color="#FF2A2A",)
                 self.ids[f'tx_comment{i}'] = tx_comment
                 self.ids[f'bt_subkomponen_uji{i}'] = bt_check
                 card.add_widget(tx_comment)
@@ -2804,7 +3085,7 @@ class ScreenInspectVisual2(MDScreen):
         except Exception as e:
             toast_msg = f'Gagal Memperbaharui Data Tabel Subkomponen Uji'
             toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
 
     # def reload_menu_komentar_uji(self, selected_kode_subkomponen_uji=""):
     #     global window_size_x, window_size_y
@@ -2851,55 +3132,66 @@ class ScreenInspectVisual2(MDScreen):
         threading.Thread(target=self._save_inspect_bg, daemon=True).start()
 
     def _save_inspect_bg(self):
-        global mydb, dt_no_pol, selected_row_komponen_uji, db_komponen_uji, db_subkomponen_uji
+        global mydb, dt_no_pol, dt_no_uji, dt_no_antri, selected_row_komponen_uji, db_komponen_uji, db_subkomponen_uji
+        Logger.info(f"{self.name}: [SAVE] Mulai proses simpan - nopol={dt_no_pol}, no_uji={dt_no_uji}, no_antri={dt_no_antri}, selected_row={selected_row_komponen_uji}")
         try:
             db = pymysql.connect(host=DB_HOST, user=DB_USER, password=DB_PASSWORD, database=DB_NAME, autocommit=True)
             cur = db.cursor()
-            
+
             # 1. Cari ID Image (Jaring Pengaman 1)
             cur.execute("SELECT id FROM temp_image_kendaraanbr WHERE nopol = %s ORDER BY id DESC LIMIT 1", (dt_no_pol,))
             result_image = cur.fetchone()
             if not result_image:
+                Logger.warning(f"{self.name}: [SAVE] Data image tidak ditemukan untuk nopol={dt_no_pol}, simpan dibatalkan")
                 Clock.schedule_once(lambda dt: toast("Data Image belum ada! Pastikan kendaraan sudah diverifikasi."))
                 db.close()
                 return
             id_image = result_image[0]
-            
+            Logger.info(f"{self.name}: [SAVE] id_image ditemukan = {id_image}")
+
             kode_kelompok = db_komponen_uji[0, selected_row_komponen_uji]
             status = '0' if self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon == "cancel" else '1'
-            
-            # Update tabel UJI
-            cur.execute(f"UPDATE {TB_UJI} SET lulus_uji = %s WHERE id_image = %s AND kode_kelompok_uji = %s", (status, id_image, kode_kelompok))
-            
-            # 2. Cari ID Uji (Jaring Pengaman 2)
-            cur.execute(f"SELECT id_uji FROM {TB_UJI} WHERE id_image = %s AND kode_kelompok_uji = %s LIMIT 1", (id_image, kode_kelompok))
+            Logger.info(f"{self.name}: [SAVE] kode_kelompok_uji={kode_kelompok}, status_lulus={status}")
+
+            # Update tabel UJI jika tersedia, jika tidak maka insert by nouji dan tanggal sekarang
+            cur.execute(f"UPDATE {TB_UJI} SET lulus_uji = %s WHERE id_image = %s AND kode_kelompok_uji = %s AND nopol = %s", (status, id_image, kode_kelompok, dt_no_pol))
+            Logger.info(f"{self.name}: [SAVE] UPDATE {TB_UJI} rowcount={cur.rowcount}")
+
+            cur.execute(f"SELECT id_uji FROM {TB_UJI} WHERE id_image = %s AND kode_kelompok_uji = %s AND nopol = %s LIMIT 1", (id_image, kode_kelompok, dt_no_pol))
             result_uji = cur.fetchone()
-            if not result_uji:
-                Clock.schedule_once(lambda dt: toast("Data Uji belum diinisialisasi! Silakan kembali ke menu awal."))
-                db.close()
-                return
-            id_uji = result_uji[0]
-            
+            if result_uji:
+                id_uji = result_uji[0]
+                Logger.info(f"{self.name}: [SAVE] Baris {TB_UJI} sudah ada -> id_uji={id_uji} (jalur UPDATE)")
+            else:
+                cur.execute(f"""
+                    INSERT INTO {TB_UJI} (id_image, nouji, newnouji, nopol, tanggal, kode_kelompok_uji, lulus_uji, noantrian)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """, (id_image, dt_no_uji, dt_no_uji, dt_no_pol, datetime.datetime.now(), kode_kelompok, status, dt_no_antri))
+                id_uji = cur.lastrowid
+                Logger.info(f"{self.name}: [SAVE] Baris {TB_UJI} belum ada -> INSERT baru id_uji={id_uji} (jalur INSERT)")
+
             # 3. Simpan Detail Komentar
             for i in range(db_subkomponen_uji[0,:].size):
                 kode_sub = db_subkomponen_uji[0,i]
                 komen = self.ids[f'tx_comment{i}'].text
                 hasil = '1' if self.ids[f'bt_subkomponen_uji{i}'].icon == "check-bold" else '0'
-                cur.execute(f"REPLACE INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES (%s, %s, %s, %s, %s)", 
+                cur.execute(f"REPLACE INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES (%s, %s, %s, %s, %s)",
                             (id_uji, hasil, db_komponen_uji[1, selected_row_komponen_uji], kode_sub, komen))
-            
+                Logger.debug(f"{self.name}: [SAVE] subkomponen={kode_sub}, hasil={hasil}, komentar={komen!r}")
+
             db.close()
+            Logger.info(f"{self.name}: [SAVE] Simpan sukses - id_uji={id_uji}, total_subkomponen={db_subkomponen_uji[0,:].size}")
             Clock.schedule_once(lambda dt: toast('Data Inspeksi Berhasil Disimpan!'))
             Clock.schedule_once(lambda dt: self.open_screen_menu())
-            
+
         except Exception as e:
-            Logger.error(f"Save Inspect Error: {e}")
+            Logger.error(f"{self.name}: [SAVE] Gagal simpan - {e}\n{traceback.format_exc()}")
             Clock.schedule_once(lambda dt: toast(f'Gagal Simpan: Error Database'))
 
     def exec_cancel(self):
         self.open_screen_menu()
 
-class ScreenInspectPit(MDScreen):        
+class ScreenInspectPit(MDScreen):
     def __init__(self, **kwargs):
         super(ScreenInspectPit, self).__init__(**kwargs)
         Clock.schedule_once(self.delayed_init, 1)
@@ -2915,8 +3207,9 @@ class ScreenInspectPit(MDScreen):
         self.ids.lb_unit_address.text = LB_UNIT_ADDRESS
     
     def on_enter(self):
-        global dt_no_antri, dt_no_pol, dt_no_uji
+        global dt_no_antri, dt_no_pol, dt_no_uji, selected_row_komponen_uji
 
+        selected_row_komponen_uji = None
         self.ids.lb_info.text = f"No. Antrian: {dt_no_antri}, No. Polisi: {dt_no_pol}, No. Uji: {dt_no_uji} \nStatus Inspeksi Kolong: LULUS"
         self.exec_reload_komponen_uji()
 
@@ -2939,7 +3232,7 @@ class ScreenInspectPit(MDScreen):
             # self.ids.bt_dropdown_caller.disabled = True
             row = int(str(instance.id).replace("card_komponen_uji",""))
             selected_row_komponen_uji = row
-            self.exec_reload_subkomponen_uji(db_komponen_uji[1, row])
+            self.exec_reload_subkomponen_uji(db_komponen_uji[1, row], db_komponen_uji[0, row])
 
         except Exception as e:
             toast_msg = f'Gagal Mengeksekusi Perintah dari Baris Tabel Komponen Uji'
@@ -2957,12 +3250,12 @@ class ScreenInspectPit(MDScreen):
             selected_row_komponen_uji = row
             if(flags_komponen_uji[row]):
                 flags_komponen_uji[row] = False
-                self.exec_reload_subkomponen_uji(db_komponen_uji[1, row], flags_komponen_uji[row])
+                self.exec_reload_subkomponen_uji(db_komponen_uji[1, row], db_komponen_uji[0, row], flags_komponen_uji[row])
                 self.ids[f'bt_komponen_uji{row}'].icon = "cancel"
                 self.ids[f'bt_komponen_uji{row}'].md_bg_color = "#FF2A2A"
             else:
                 flags_komponen_uji[row] = True
-                self.exec_reload_subkomponen_uji(db_komponen_uji[1, row], flags_komponen_uji[row])
+                self.exec_reload_subkomponen_uji(db_komponen_uji[1, row], db_komponen_uji[0, row], flags_komponen_uji[row])
                 self.ids[f'bt_komponen_uji{row}'].icon = "check-bold"
                 self.ids[f'bt_komponen_uji{row}'].md_bg_color = "#2CA02C"
 
@@ -3013,7 +3306,7 @@ class ScreenInspectPit(MDScreen):
             Logger.error(f"{self.name}: {toast_msg}, {e}") 
 
     def exec_reload_komponen_uji(self):
-        global mydb, db_komponen_uji
+        global mydb, db_komponen_uji, dt_no_pol
         global flags_komponen_uji
         global window_size_x, window_size_y
 
@@ -3023,11 +3316,12 @@ class ScreenInspectPit(MDScreen):
             result_tb_komponen_uji = tb_komponen_uji.fetchall()
             mydb.commit()
             db_komponen_uji = np.array(result_tb_komponen_uji).T
-            flags_komponen_uji = np.ones(db_komponen_uji[0,:].size, dtype='bool')            
+            flags_komponen_uji = np.ones(db_komponen_uji[0,:].size, dtype='bool')
+            self.load_saved_komponen_status()
         except Exception as e:
             toast_msg = f'Gagal Mengambil Data dari Database Tabel Komponen Uji'
             toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
 
         try:
             layout_list = self.ids.layout_list_komponen_uji
@@ -3035,9 +3329,9 @@ class ScreenInspectPit(MDScreen):
         except Exception as e:
             toast_msg = f'Gagal Menghapus Widget'
             toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
-        
-        try:           
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
+
+        try:
             layout_list = self.ids.layout_list_komponen_uji
             for i in range(db_komponen_uji[0,:].size):
                 card = MDCard(
@@ -3053,54 +3347,125 @@ class ScreenInspectPit(MDScreen):
                         )
                 self.ids[f'card_komponen_uji{i}'] = card
                 layout_list.add_widget(card)
-                
+
                 bt_check = MDIconButton(
-                        size_hint_x= 0.1, 
-                        icon="check-bold", 
-                        md_bg_color="#2CA02C",
+                        size_hint_x= 0.1,
+                        icon="check-bold" if flags_komponen_uji[i] else "cancel",
+                        md_bg_color="#2CA02C" if flags_komponen_uji[i] else "#FF2A2A",
                         on_press = self.on_komponen_uji_bt_press,
                         id=f'bt_komponen_uji{i}',
-                        )               
+                        )
                 self.ids[f'bt_komponen_uji{i}'] = bt_check
                 card.add_widget(bt_check)
-                
+
         except Exception as e:
             toast_msg = f'Gagal Memperbaharui Tabel Komponen Uji'
             toast(toast_msg)
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
 
-    def exec_reload_subkomponen_uji(self, kode_komponen_uji, default=True):
-        global mydb, db_subkomponen_uji
+    def load_saved_komponen_status(self):
+        global mydb, db_komponen_uji, flags_komponen_uji, dt_no_pol
+
+        try:
+            tb_image = mydb.cursor()
+            tb_image.execute("SELECT id FROM temp_image_kendaraanbr WHERE nopol = %s ORDER BY id DESC LIMIT 1", (dt_no_pol,))
+            result_image = tb_image.fetchone()
+            if not result_image:
+                return
+            id_image = result_image[0]
+
+            # kode_kelompok_uji bisa dipakai bersama oleh banyak kode_komponen_uji,
+            # jadi status per kartu harus dihitung dari uji_detail (per kode_komponen_uji),
+            # bukan dari uji.lulus_uji yang levelnya per kelompok.
+            for i in range(db_komponen_uji[0,:].size):
+                kode_kelompok = db_komponen_uji[0, i]
+                kode_komponen = db_komponen_uji[1, i]
+
+                tb_uji = mydb.cursor()
+                tb_uji.execute(f"SELECT id_uji FROM {TB_UJI} WHERE id_image = %s AND kode_kelompok_uji = %s AND nopol = %s LIMIT 1", (id_image, kode_kelompok, dt_no_pol))
+                result_uji = tb_uji.fetchone()
+                if not result_uji:
+                    continue
+                id_uji = result_uji[0]
+
+                tb_detail = mydb.cursor()
+                tb_detail.execute(f"SELECT hasil FROM {TB_UJI_DETAIL} WHERE id_uji = %s AND kode_komponen_uji = %s", (id_uji, kode_komponen))
+                hasil_rows = tb_detail.fetchall()
+                if hasil_rows:
+                    flags_komponen_uji[i] = all(str(h[0]) == '1' for h in hasil_rows)
+            mydb.commit()
+        except Exception as e:
+            Logger.error(f"{self.name}: Gagal memuat status komponen uji tersimpan, {e}")
+
+    def load_saved_subkomponen_status(self, kode_kelompok_uji):
+        global mydb, dt_no_pol
+
+        saved_hasil = {}
+        saved_keterangan = {}
+        try:
+            tb_image = mydb.cursor()
+            tb_image.execute("SELECT id FROM temp_image_kendaraanbr WHERE nopol = %s ORDER BY id DESC LIMIT 1", (dt_no_pol,))
+            result_image = tb_image.fetchone()
+            if not result_image:
+                return saved_hasil, saved_keterangan
+            id_image = result_image[0]
+
+            tb_uji = mydb.cursor()
+            tb_uji.execute(f"SELECT id_uji FROM {TB_UJI} WHERE id_image = %s AND kode_kelompok_uji = %s AND nopol = %s LIMIT 1", (id_image, kode_kelompok_uji, dt_no_pol))
+            result_uji = tb_uji.fetchone()
+            if not result_uji:
+                return saved_hasil, saved_keterangan
+            id_uji = result_uji[0]
+
+            tb_detail = mydb.cursor()
+            tb_detail.execute(f"SELECT kode_subkomponen_uji, hasil, keterangan FROM {TB_UJI_DETAIL} WHERE id_uji = %s", (id_uji,))
+            for kode_sub, hasil, keterangan in tb_detail.fetchall():
+                saved_hasil[kode_sub] = (str(hasil) == '1')
+                saved_keterangan[kode_sub] = keterangan or ""
+            mydb.commit()
+        except Exception as e:
+            Logger.error(f"{self.name}: Gagal memuat status subkomponen uji tersimpan, {e}")
+        return saved_hasil, saved_keterangan
+
+    def exec_reload_subkomponen_uji(self, kode_komponen_uji, kode_kelompok_uji=None, default=None):
+        global mydb, db_subkomponen_uji, dt_no_pol
         global flags_subkomponen_uji
         global window_size_x, window_size_y
 
+        saved_hasil = {}
+        saved_keterangan = {}
         try:
             tb_subkomponen_uji = mydb.cursor()
-            tb_subkomponen_uji.execute(f"SELECT kode_subkomponen_uji, string, keterangan, nama FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = '{kode_komponen_uji}' ")
+            tb_subkomponen_uji.execute(f"SELECT kode_subkomponen_uji, string, keterangan, nama FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = %s", (kode_komponen_uji,))
             result_tb_subkomponen_uji = tb_subkomponen_uji.fetchall()
             mydb.commit()
             db_subkomponen_uji = np.array(result_tb_subkomponen_uji).T
-            if(default):
+            if default is None:
+                saved_hasil, saved_keterangan = self.load_saved_subkomponen_status(kode_kelompok_uji)
+                flags_subkomponen_uji = np.array([
+                    saved_hasil.get(db_subkomponen_uji[0, i], True) for i in range(db_subkomponen_uji[0,:].size)
+                ], dtype='bool')
+            elif default:
                 flags_subkomponen_uji = np.ones(db_subkomponen_uji[0,:].size, dtype='bool')
             else:
                 flags_subkomponen_uji = np.zeros(db_subkomponen_uji[0,:].size, dtype='bool')
         except Exception as e:
             toast_msg = f'Gagal Mengambil Data dari Database Tabel Subkomponen Uji'
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
 
         try:
             layout_list = self.ids.layout_list_subkomponen_uji
             layout_list.clear_widgets(children=None)
         except Exception as e:
             toast_msg = f'Gagal Menghapus Widget'
-            Logger.error(f"{self.name}: {toast_msg}, {e}") 
-        
-        try:           
+            Logger.error(f"{self.name}: {toast_msg}, {e}")
+
+        try:
             layout_list = self.ids.layout_list_subkomponen_uji
             for i in range(db_subkomponen_uji[0,:].size):
                 card = MDCard(
                     MDLabel(text=f"{db_subkomponen_uji[1, i]}", size_hint_x= 0.4),
-                    
+
                     ripple_behavior = False,
                     padding = [20, 0],
                     spacing = 10,
@@ -3111,12 +3476,12 @@ class ScreenInspectPit(MDScreen):
                     )
                 self.ids[f'card_subkomponen_uji{i}'] = card
                 layout_list.add_widget(card)
-                
-                tx_comment = MDTextField(disabled = True, size_hint_x= 0.3, hint_text="Komentar",text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
-                if(default):
+
+                tx_comment = MDTextField(disabled = True, size_hint_x= 0.3, hint_text="Komentar", text=saved_keterangan.get(db_subkomponen_uji[0, i], ""),text_color_focus= "#4471C4",hint_text_color_focus= "#4471C4",line_color_focus= "#4471C4",icon_left_color_focus= "#4471C4")
+                if(flags_subkomponen_uji[i]):
                     bt_check = MDIconButton(size_hint_x= 0.1, icon="check-bold", md_bg_color="#2CA02C",)
                 else:
-                    bt_check = MDIconButton(size_hint_x= 0.1, icon="cancel", md_bg_color="#FF2A2A",)        
+                    bt_check = MDIconButton(size_hint_x= 0.1, icon="cancel", md_bg_color="#FF2A2A",)
                 self.ids[f'tx_comment{i}'] = tx_comment
                 self.ids[f'bt_subkomponen_uji{i}'] = bt_check
                 card.add_widget(tx_comment)
@@ -3170,86 +3535,111 @@ class ScreenInspectPit(MDScreen):
 
 
     def exec_save(self):
+        if selected_row_komponen_uji is None:
+            toast("Pilih komponen uji dulu.")
+            return
+
         # 1. Berikan feedback ke user bahwa tombol ditekan
         toast("Menyimpan data inspeksi...")
-        
+
         # 2. Jalankan proses di thread agar aplikasi tidak beku
         threading.Thread(target=self._save_inspect_bg, daemon=True).start()
 
     def _save_inspect_bg(self):
-        global mydb, dt_no_pol, dt_no_antri, dt_sts_uji, dt_selected_camera, dt_nrp_user, dt_id_user
+        global mydb, dt_no_pol, dt_no_uji, dt_no_antri, dt_sts_uji, dt_selected_camera, dt_nrp_user, dt_id_user
         global selected_row_komponen_uji, db_komponen_uji, db_subkomponen_uji
-        
+
+        Logger.info(f"{self.name}: [SAVE] Mulai proses simpan - nopol={dt_no_pol}, no_uji={dt_no_uji}, no_antri={dt_no_antri}, selected_row={selected_row_komponen_uji}, ada_foto={hasattr(self, 'image_cctv') and self.image_cctv is not None}")
         try:
             # 1. PERSIAPAN DB & SFTP
             db = pymysql.connect(host=DB_HOST, user=DB_USER, password=DB_PASSWORD, database=DB_NAME, autocommit=True)
             cur = db.cursor()
-            
+
             # 2. PROSES FOTO (Jika ada gambar yang diambil)
             if hasattr(self, 'image_cctv') and self.image_cctv is not None:
                 idx = dt_selected_camera + 5 # Sesuai dengan logika PIT Anda
                 filename = f'{dt_no_pol}-{idx}.jpg'
-                
+                Logger.info(f"{self.name}: [SAVE] Memproses foto kamera={dt_selected_camera} (idx={idx}), filename={filename}")
+
                 # Simpan lokal
                 app_data_root = os.path.join(os.environ['PROGRAMDATA'], 'VIIMS', 'assets', 'images')
                 os.makedirs(app_data_root, exist_ok=True)
                 local_path = os.path.join(app_data_root, filename)
                 cv2.imwrite(local_path, cv2.resize(self.image_cctv, (600, 600)))
-                
+                Logger.info(f"{self.name}: [SAVE] Foto disimpan lokal -> {local_path}")
+
                 # Upload SFTP
                 remote_path = f'/var/www/pandeglang/storage/app/capture/{time.strftime("%Y-%m-%d")}/{dt_sts_uji}-{dt_no_antri}/{filename}'
                 self.sftp_upload_file(local_path, remote_path)
-                
+                Logger.info(f"{self.name}: [SAVE] Foto berhasil di-upload via SFTP -> {remote_path}")
+
                 # Update ke tabel TEMP
                 tgl_col, gambar_col = f"tgl_capture{idx}", f"gambar{idx}"
-                cur.execute(f"UPDATE temp_image_kendaraanbr SET `{tgl_col}`=%s, `{gambar_col}`=%s, useridv1=%s, useridv2=%s, useridfoto=%s WHERE nopol=%s", 
+                cur.execute(f"UPDATE temp_image_kendaraanbr SET `{tgl_col}`=%s, `{gambar_col}`=%s, useridv1=%s, useridv2=%s, useridfoto=%s WHERE nopol=%s",
                             (time.strftime("%Y-%m-%d %H:%M:%S"), filename, dt_nrp_user, dt_nrp_user, dt_id_user, dt_no_pol))
+                Logger.info(f"{self.name}: [SAVE] UPDATE temp_image_kendaraanbr ({tgl_col}/{gambar_col}) rowcount={cur.rowcount}")
 
             # 3. PROSES CHECKLIST (Inspeksi)
             # Cari ID Image di temp_image_kendaraanbr
             cur.execute("SELECT id FROM temp_image_kendaraanbr WHERE nopol = %s ORDER BY id DESC LIMIT 1", (dt_no_pol,))
             result_image = cur.fetchone()
-            
+
             if not result_image:
+                Logger.warning(f"{self.name}: [SAVE] Data image tidak ditemukan untuk nopol={dt_no_pol}, simpan dibatalkan")
                 db.close()
                 Clock.schedule_once(lambda dt: toast("Data Image belum ada!"))
                 return
-            
+
             id_image = result_image[0]
+            Logger.info(f"{self.name}: [SAVE] id_image ditemukan = {id_image}")
+
             kode_kelompok = db_komponen_uji[0, selected_row_komponen_uji]
             status = '0' if self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon == "cancel" else '1'
-            
-            # Update status lulus ke tabel UJI
-            cur.execute(f"UPDATE {TB_UJI} SET lulus_uji = %s WHERE id_image = %s AND kode_kelompok_uji = %s", (status, id_image, kode_kelompok))
-            
-            # Cari ID Uji
-            cur.execute(f"SELECT id_uji FROM {TB_UJI} WHERE id_image = %s AND kode_kelompok_uji = %s LIMIT 1", (id_image, kode_kelompok))
+            Logger.info(f"{self.name}: [SAVE] kode_kelompok_uji={kode_kelompok}, status_lulus={status}")
+
+            # Update tabel UJI jika tersedia, jika tidak maka insert by nouji dan tanggal sekarang
+            cur.execute(f"UPDATE {TB_UJI} SET lulus_uji = %s WHERE id_image = %s AND kode_kelompok_uji = %s AND nopol = %s", (status, id_image, kode_kelompok, dt_no_pol))
+            Logger.info(f"{self.name}: [SAVE] UPDATE {TB_UJI} rowcount={cur.rowcount}")
+
+            cur.execute(f"SELECT id_uji FROM {TB_UJI} WHERE id_image = %s AND kode_kelompok_uji = %s AND nopol = %s LIMIT 1", (id_image, kode_kelompok, dt_no_pol))
             result_uji = cur.fetchone()
-            
+
             if result_uji:
                 id_uji = result_uji[0]
-                # Simpan Detail Komentar
-                for i in range(db_subkomponen_uji[0,:].size):
-                    kode_sub = db_subkomponen_uji[0,i]
-                    komen = self.ids[f'tx_comment{i}'].text
-                    hasil = '1' if self.ids[f'bt_subkomponen_uji{i}'].icon == "check-bold" else '0'
-                    cur.execute(f"REPLACE INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES (%s, %s, %s, %s, %s)", 
-                                (id_uji, hasil, db_komponen_uji[1, selected_row_komponen_uji], kode_sub, komen))
-            
+                Logger.info(f"{self.name}: [SAVE] Baris {TB_UJI} sudah ada -> id_uji={id_uji} (jalur UPDATE)")
+            else:
+                cur.execute(f"""
+                    INSERT INTO {TB_UJI} (id_image, nouji, newnouji, nopol, tanggal, kode_kelompok_uji, lulus_uji, noantrian)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """, (id_image, dt_no_uji, dt_no_uji, dt_no_pol, datetime.datetime.now(), kode_kelompok, status, dt_no_antri))
+                id_uji = cur.lastrowid
+                Logger.info(f"{self.name}: [SAVE] Baris {TB_UJI} belum ada -> INSERT baru id_uji={id_uji} (jalur INSERT)")
+
+            # Simpan Detail Komentar
+            for i in range(db_subkomponen_uji[0,:].size):
+                kode_sub = db_subkomponen_uji[0,i]
+                komen = self.ids[f'tx_comment{i}'].text
+                hasil = '1' if self.ids[f'bt_subkomponen_uji{i}'].icon == "check-bold" else '0'
+                cur.execute(f"REPLACE INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES (%s, %s, %s, %s, %s)",
+                            (id_uji, hasil, db_komponen_uji[1, selected_row_komponen_uji], kode_sub, komen))
+                Logger.debug(f"{self.name}: [SAVE] subkomponen={kode_sub}, hasil={hasil}, komentar={komen!r}")
+
             db.close()
+            Logger.info(f"{self.name}: [SAVE] Simpan sukses - id_uji={id_uji}, total_subkomponen={db_subkomponen_uji[0,:].size}")
             Clock.schedule_once(lambda dt: toast('Data PIT & Inspeksi Tersimpan!'))
             Clock.schedule_once(lambda dt: self.open_screen_menu())
-            
+
         except Exception as e:
-            Logger.error(f"Save PIT & Inspect Error: {e}")
+            Logger.error(f"{self.name}: [SAVE] Gagal simpan - {e}\n{traceback.format_exc()}")
             Clock.schedule_once(lambda dt: toast(f'Gagal Simpan: {e}'))
             
     def exec_cancel(self):
         self.open_screen_menu()
 
-class ScreenRealtimeCctv(MDScreen):        
+class ScreenRealtimeCctv(MDScreen):
     def __init__(self, **kwargs):
         super(ScreenRealtimeCctv, self).__init__(**kwargs)
+        self.image_cctv = None
         Clock.schedule_once(self.delayed_init, 1)
 
     def delayed_init(self, dt):
@@ -3304,6 +3694,12 @@ class ScreenRealtimeCctv(MDScreen):
     def exec_play_cctv(self):
         try:
             self.capture = cv2.VideoCapture(rtsp_url_cam_array[dt_selected_camera])
+
+            if not self.capture.isOpened():
+                toast("Kamera tidak terhubung / RTSP gagal dibuka")
+                Logger.error(f"{self.name}: Gagal membuka RTSP {rtsp_url_cam_array[dt_selected_camera]}")
+                return
+
             self.latest_frame = None
             self.cctv_running = True # Bendera penanda CCTV nyala
 
@@ -3314,6 +3710,7 @@ class ScreenRealtimeCctv(MDScreen):
             # 2. Kivy (Jalur Utama) hanya bertugas menampilkan gambar ke layar
             Clock.schedule_interval(self.update_frame_ui, 1/30)
         except Exception as e:
+            toast("Gagal membuka kamera")
             Logger.error(f"{self.name}: Error exec_play_cctv: {e}")
     def get_frame_thread(self):
         # FUNGSI BARU: Ini berjalan di latar belakang, tidak akan bikin aplikasi nge-freeze!
@@ -3417,6 +3814,9 @@ class ScreenRealtimeCctv(MDScreen):
         ssh.close()
 
     def exec_save(self):
+        if not hasattr(self, 'image_cctv') or self.image_cctv is None:
+            toast("Belum ada gambar dari kamera. Pastikan CCTV sudah terhubung (tekan Play) sebelum menyimpan.")
+            return
         threading.Thread(target=self._save_cctv_bg, daemon=True).start()
 
     def _save_cctv_bg(self):
@@ -3427,21 +3827,22 @@ class ScreenRealtimeCctv(MDScreen):
             filename = f'{dt_no_pol}-{idx}.jpg'
             local_path = os.path.join(os.environ['PROGRAMDATA'], 'VIIMS', 'assets', 'images', filename)
             cv2.imwrite(local_path, cv2.resize(self.image_cctv, (600, 600)))
-            
+
             # Upload
             self.sftp_upload_file(local_path, f'/var/www/pandeglang/storage/app/capture/{time.strftime("%Y-%m-%d")}/{dt_sts_uji}-{dt_no_antri}/{filename}')
-            
+
             # DB
             db = pymysql.connect(host=DB_HOST, user=DB_USER, password=DB_PASSWORD, database=DB_NAME, autocommit=True)
             cur = db.cursor()
             gambar_col = "gambar" if idx == 1 else f"gambar{idx}"
             tgl_col = "tgl_capture" if idx == 1 else f"tgl_capture{idx}"
-            cur.execute(f"UPDATE temp_image_kendaraanbr SET `{tgl_col}`=%s, `{gambar_col}`=%s, useridv1=%s, useridv2=%s, useridfoto=%s WHERE nopol=%s", 
+            cur.execute(f"UPDATE temp_image_kendaraanbr SET `{tgl_col}`=%s, `{gambar_col}`=%s, useridv1=%s, useridv2=%s, useridfoto=%s WHERE nopol=%s",
                         (time.strftime("%Y-%m-%d %H:%M:%S"), filename, dt_nrp_user, dt_nrp_user, dt_id_user, dt_no_pol))
             db.close()
             Clock.schedule_once(lambda dt: toast('Foto CCTV Tersimpan!'))
         except Exception as e:
             Logger.error(f"CCTV Save Error: {e}")
+            Clock.schedule_once(lambda dt: toast(f'Gagal menyimpan foto CCTV: Error'))
 
     def open_screen_menu(self):
         self.screen_manager.current = 'screen_menu'
@@ -3523,10 +3924,16 @@ class ScreenRealtimePit(MDScreen):
     def exec_play_cctv(self):
         try:
             self.capture = cv2.VideoCapture(rtsp_url_pit_array[dt_selected_camera])
-            # self.capture = cv2.VideoCapture(0)
+
+            if not self.capture.isOpened():
+                toast("Kamera tidak terhubung / RTSP gagal dibuka")
+                Logger.error(f"{self.name}: Gagal membuka RTSP {rtsp_url_pit_array[dt_selected_camera]}")
+                return
+
             Clock.schedule_interval(self.update_frame, 1/30)
-        except:
-            pass
+        except Exception as e:
+            toast("Gagal membuka kamera")
+            Logger.error(f"{self.name}: Error exec_play_cctv: {e}")
 
     def exec_stop_cctv(self):
         try:
