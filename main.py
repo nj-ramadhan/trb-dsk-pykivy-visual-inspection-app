@@ -156,6 +156,16 @@ def kirim_data_background(sql, values):
             
     threading.Thread(target=tugas_kurir, daemon=True).start()
 
+def save_photo_600(img, path):
+    # Crop persegi dari tengah dulu baru resize, biar gambar tidak cembung/gepeng
+    h, w = img.shape[:2]
+    side = min(h, w)
+    y0 = (h - side) // 2
+    x0 = (w - side) // 2
+    square = img[y0:y0 + side, x0:x0 + side]
+    resized = cv2.resize(square, (600, 600), interpolation=cv2.INTER_AREA)
+    cv2.imwrite(path, resized, [int(cv2.IMWRITE_JPEG_QUALITY), 75])
+
 class ScreenHome(MDScreen):
     def __init__(self, **kwargs):
         super(ScreenHome, self).__init__(**kwargs)
@@ -737,7 +747,7 @@ class ScreenMain(MDScreen):
         global dt_merk, dt_type, dt_jns_kend, dt_jbb, dt_bhn_bkr, dt_warna
         global dt_visual_flag, dt_id_user, dt_foto_user, dt_verified_data, dt_verified_payment
 
-        if dt_sts_uji in ("B", "U"):
+        if dt_sts_uji in ("B", "H", "R", "U", "UB"):
             target_table = TB_DAFTAR_BERKALA
         elif dt_sts_uji in ("BR", "ND", "MD"):
             target_table = TB_DAFTAR_BARU
@@ -1282,7 +1292,7 @@ class ScreenAddQueue(MDScreen):
             try:
                 mycursor = mydb.cursor()
                 
-                if dt_sts_uji in ("B", "U"):
+                if dt_sts_uji in ("B", "H", "R", "UB"):
                     target_table = TB_DAFTAR_BERKALA
                 elif dt_sts_uji in ("BR", "ND", "MD"):
                     target_table = TB_DAFTAR_BARU
@@ -1542,7 +1552,7 @@ class ScreenMenu(MDScreen):
             self.exec_verify_payment()
             return
 
-        if dt_sts_uji in ("B", "U"):
+        if dt_sts_uji in ("B", "H", "R", "UB"):
             target_table = TB_DAFTAR_BERKALA
         elif dt_sts_uji in ("BR", "ND", "MD"):
             target_table = TB_DAFTAR_BARU
@@ -1589,7 +1599,7 @@ class ScreenMenu(MDScreen):
     #     try:
     #         dt_tgl_baru_uji_obj = datetime.datetime.now()
     #         mycursor = mydb.cursor()
-    #         target_table_spp = TB_DAFTAR_BERKALA if dt_sts_uji in ("B", "U") else TB_DAFTAR_BARU
+    #         target_table_spp = TB_DAFTAR_BERKALA if dt_sts_uji in ("B", "H", "R", "UB") else TB_DAFTAR_BARU
     #         sql_spp = f"UPDATE {target_table_spp} SET STS_SPP = '1', TGL_SPP = %s WHERE NOANTRIAN = %s"
     #         mycursor.execute(sql_spp, (dt_tgl_baru_uji_obj, dt_no_antri))
     #         mydb.commit()
@@ -1693,7 +1703,7 @@ class ScreenMenu(MDScreen):
             mycursor = mydb.cursor()
             
             # 1. Tentukan tabel pendaftaran berdasarkan status uji
-            target_table = TB_DAFTAR_BERKALA if dt_sts_uji in ("B", "U") else TB_DAFTAR_BARU
+            target_table = TB_DAFTAR_BERKALA if dt_sts_uji in ("B", "H", "R", "UB") else TB_DAFTAR_BARU
             
             # 2. Update STS_SPP (Hanya ke tabel pendaftaran, tidak ke image_kendaraan)
             sql_spp = f"UPDATE {target_table} SET STS_SPP = '1', TGL_SPP = %s WHERE NOANTRIAN = %s"
@@ -1903,7 +1913,7 @@ class ScreenMenu(MDScreen):
             now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             cur.execute("UPDATE temp_image_kendaraanbr SET tgl_capture=%s, NIP_ID1=%s, NIP_ID2=%s, useridv1=%s, useridv2=%s, useridfoto=%s WHERE nopol=%s",
                         (now, dt_nrp_user, dt_nrp_user, dt_id_user, dt_id_user, dt_id_user, dt_no_pol))
-            target = TB_DAFTAR_BERKALA if dt_sts_uji in ("B", "U") else TB_DAFTAR_BARU
+            target = TB_DAFTAR_BERKALA if dt_sts_uji in ("B", "H", "R", "UB") else TB_DAFTAR_BARU
             cur.execute(f"UPDATE {target} SET NIP_ID1=%s, NIP_ID2=%s, useridv1=%s, useridv2=%s, useridfoto=%s WHERE NOANTRIAN=%s",
                         (dt_nrp_user, dt_nrp_user, dt_id_user, dt_id_user, dt_id_user, dt_no_antri))
             cur.execute(f"UPDATE {TB_DATA} SET check_flag = '1' WHERE noantrian = %s", (dt_no_antri,))
@@ -2232,7 +2242,7 @@ class ScreenInspectId(MDScreen):
 
         try:
             target_table = None
-            if dt_sts_uji in ("B", "U"):
+            if dt_sts_uji in ("B", "H", "R", "UB"):
                 target_table = TB_DAFTAR_BERKALA
             elif dt_sts_uji in ("BR", "ND", "MD"):
                 target_table = TB_DAFTAR_BARU
@@ -2304,9 +2314,6 @@ class ScreenInspectId(MDScreen):
         self.screen_manager.current = 'screen_menu'
 
     def exec_save(self):
-        if selected_row_komponen_uji is None:
-            toast("Pilih komponen uji dulu.")
-            return
         threading.Thread(target=self._save_inspect_bg, daemon=True).start()
 
     def _save_inspect_bg(self):
@@ -2329,14 +2336,9 @@ class ScreenInspectId(MDScreen):
             id_image = result_image[0]
             Logger.info(f"{self.name}: [SAVE] id_image ditemukan = {id_image}")
 
-            kode_kelompok = db_komponen_uji[0, selected_row_komponen_uji]
-            status = '0' if self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon == "cancel" else '1'
-            Logger.info(f"{self.name}: [SAVE] kode_kelompok_uji={kode_kelompok}, status_lulus={status}")
+            kode_kelompok = db_komponen_uji[0, 0]
 
-            # Update tabel UJI jika tersedia, jika tidak maka insert by nouji dan tanggal sekarang
-            cur.execute(f"UPDATE {TB_UJI} SET lulus_uji = %s WHERE id_image = %s AND kode_kelompok_uji = %s AND nopol = %s", (status, id_image, kode_kelompok, dt_no_pol))
-            Logger.info(f"{self.name}: [SAVE] UPDATE {TB_UJI} rowcount={cur.rowcount}")
-
+            # Cari atau buat baris uji utk kelompok ini (status lulus_uji ditentukan belakangan)
             cur.execute(f"SELECT id_uji FROM {TB_UJI} WHERE id_image = %s AND kode_kelompok_uji = %s AND nopol = %s LIMIT 1", (id_image, kode_kelompok, dt_no_pol))
             result_uji = cur.fetchone()
             if result_uji:
@@ -2346,21 +2348,49 @@ class ScreenInspectId(MDScreen):
                 cur.execute(f"""
                     INSERT INTO {TB_UJI} (id_image, nouji, newnouji, nopol, tanggal, kode_kelompok_uji, lulus_uji, noantrian)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                """, (id_image, dt_no_uji, dt_no_uji, dt_no_pol, datetime.datetime.now(), kode_kelompok, status, dt_no_antri))
+                """, (id_image, dt_no_uji, dt_no_uji, dt_no_pol, datetime.datetime.now(), kode_kelompok, '1', dt_no_antri))
                 id_uji = cur.lastrowid
                 Logger.info(f"{self.name}: [SAVE] Baris {TB_UJI} belum ada -> INSERT baru id_uji={id_uji} (jalur INSERT)")
 
-            # 3. Simpan Detail Komentar
-            for i in range(db_subkomponen_uji[0,:].size):
-                kode_sub = db_subkomponen_uji[0,i]
-                komen = self.ids[f'tx_comment{i}'].text
-                hasil = '1' if self.ids[f'bt_subkomponen_uji{i}'].icon == "check-bold" else '0'
+            # 2. Kumpulkan status SEMUA komponen di layar ini: komponen yang sedang dibuka
+            # pakai data UI (paling baru, termasuk toggle barusan), komponen yang belum
+            # pernah dibuka pakai status tersimpan sebelumnya atau default lulus.
+            overall_lulus = True
+            detail_rows = []
+            for row in range(db_komponen_uji[0,:].size):
+                kode_komponen_row = db_komponen_uji[1, row]
+                if row == selected_row_komponen_uji:
+                    for i in range(db_subkomponen_uji[0,:].size):
+                        kode_sub = db_subkomponen_uji[0, i]
+                        hasil = '1' if self.ids[f'bt_subkomponen_uji{i}'].icon == "check-bold" else '0'
+                        komen = self.ids[f'tx_comment{i}'].text
+                        detail_rows.append((hasil, kode_komponen_row, kode_sub, komen))
+                        if hasil == '0':
+                            overall_lulus = False
+                else:
+                    cur.execute(f"SELECT kode_subkomponen_uji FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = %s", (kode_komponen_row,))
+                    sub_codes = [r[0] for r in cur.fetchall()]
+                    if sub_codes:
+                        cur.execute(f"SELECT kode_subkomponen_uji, hasil, keterangan FROM {TB_UJI_DETAIL} WHERE id_uji = %s AND kode_komponen_uji = %s", (id_uji, kode_komponen_row))
+                        saved = {r[0]: (str(r[1]), r[2] or '') for r in cur.fetchall()}
+                        for kode_sub in sub_codes:
+                            hasil, komen = saved.get(kode_sub, ('1', ''))
+                            detail_rows.append((hasil, kode_komponen_row, kode_sub, komen))
+                            if hasil == '0':
+                                overall_lulus = False
+
+            status = '1' if overall_lulus else '0'
+            cur.execute(f"UPDATE {TB_UJI} SET lulus_uji = %s WHERE id_uji = %s", (status, id_uji))
+            Logger.info(f"{self.name}: [SAVE] kode_kelompok_uji={kode_kelompok}, status_lulus={status}, total_subkomponen={len(detail_rows)}")
+
+            # 3. Simpan Detail Komentar (semua komponen)
+            for hasil, kode_komponen, kode_sub, komen in detail_rows:
                 cur.execute(f"REPLACE INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES (%s, %s, %s, %s, %s)",
-                            (id_uji, hasil, db_komponen_uji[1, selected_row_komponen_uji], kode_sub, komen))
+                            (id_uji, hasil, kode_komponen, kode_sub, komen))
                 Logger.debug(f"{self.name}: [SAVE] subkomponen={kode_sub}, hasil={hasil}, komentar={komen!r}")
 
             db.close()
-            Logger.info(f"{self.name}: [SAVE] Simpan sukses - id_uji={id_uji}, total_subkomponen={db_subkomponen_uji[0,:].size}")
+            Logger.info(f"{self.name}: [SAVE] Simpan sukses - id_uji={id_uji}, total_komponen={db_komponen_uji[0,:].size}")
             Clock.schedule_once(lambda dt: toast('Data Inspeksi Berhasil Disimpan!'))
             Clock.schedule_once(lambda dt: self.open_screen_menu())
 
@@ -2716,9 +2746,6 @@ class ScreenInspectVisual(MDScreen):
         self.screen_manager.current = 'screen_menu'
 
     def exec_save(self):
-        if selected_row_komponen_uji is None:
-            toast("Pilih komponen uji dulu.")
-            return
         threading.Thread(target=self._save_inspect_bg, daemon=True).start()
 
     def _save_inspect_bg(self):
@@ -2739,14 +2766,9 @@ class ScreenInspectVisual(MDScreen):
             id_image = result_image[0]
             Logger.info(f"{self.name}: [SAVE] id_image ditemukan = {id_image}")
 
-            kode_kelompok = db_komponen_uji[0, selected_row_komponen_uji]
-            status = '0' if self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon == "cancel" else '1'
-            Logger.info(f"{self.name}: [SAVE] kode_kelompok_uji={kode_kelompok}, status_lulus={status}")
+            kode_kelompok = db_komponen_uji[0, 0]
 
-            # Update tabel UJI jika tersedia, jika tidak maka insert by nouji dan tanggal sekarang
-            cur.execute(f"UPDATE {TB_UJI} SET lulus_uji = %s WHERE id_image = %s AND kode_kelompok_uji = %s AND nopol = %s", (status, id_image, kode_kelompok, dt_no_pol))
-            Logger.info(f"{self.name}: [SAVE] UPDATE {TB_UJI} rowcount={cur.rowcount}")
-
+            # Cari atau buat baris uji utk kelompok ini (status lulus_uji ditentukan belakangan)
             cur.execute(f"SELECT id_uji FROM {TB_UJI} WHERE id_image = %s AND kode_kelompok_uji = %s AND nopol = %s LIMIT 1", (id_image, kode_kelompok, dt_no_pol))
             result_uji = cur.fetchone()
             if result_uji:
@@ -2756,21 +2778,49 @@ class ScreenInspectVisual(MDScreen):
                 cur.execute(f"""
                     INSERT INTO {TB_UJI} (id_image, nouji, newnouji, nopol, tanggal, kode_kelompok_uji, lulus_uji, noantrian)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                """, (id_image, dt_no_uji, dt_no_uji, dt_no_pol, datetime.datetime.now(), kode_kelompok, status, dt_no_antri))
+                """, (id_image, dt_no_uji, dt_no_uji, dt_no_pol, datetime.datetime.now(), kode_kelompok, '1', dt_no_antri))
                 id_uji = cur.lastrowid
                 Logger.info(f"{self.name}: [SAVE] Baris {TB_UJI} belum ada -> INSERT baru id_uji={id_uji} (jalur INSERT)")
 
-            # 3. Simpan Detail Komentar
-            for i in range(db_subkomponen_uji[0,:].size):
-                kode_sub = db_subkomponen_uji[0,i]
-                komen = self.ids[f'tx_comment{i}'].text
-                hasil = '1' if self.ids[f'bt_subkomponen_uji{i}'].icon == "check-bold" else '0'
+            # 2. Kumpulkan status SEMUA komponen di layar ini: komponen yang sedang dibuka
+            # pakai data UI (paling baru, termasuk toggle barusan), komponen yang belum
+            # pernah dibuka pakai status tersimpan sebelumnya atau default lulus.
+            overall_lulus = True
+            detail_rows = []
+            for row in range(db_komponen_uji[0,:].size):
+                kode_komponen_row = db_komponen_uji[1, row]
+                if row == selected_row_komponen_uji:
+                    for i in range(db_subkomponen_uji[0,:].size):
+                        kode_sub = db_subkomponen_uji[0, i]
+                        hasil = '1' if self.ids[f'bt_subkomponen_uji{i}'].icon == "check-bold" else '0'
+                        komen = self.ids[f'tx_comment{i}'].text
+                        detail_rows.append((hasil, kode_komponen_row, kode_sub, komen))
+                        if hasil == '0':
+                            overall_lulus = False
+                else:
+                    cur.execute(f"SELECT kode_subkomponen_uji FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = %s", (kode_komponen_row,))
+                    sub_codes = [r[0] for r in cur.fetchall()]
+                    if sub_codes:
+                        cur.execute(f"SELECT kode_subkomponen_uji, hasil, keterangan FROM {TB_UJI_DETAIL} WHERE id_uji = %s AND kode_komponen_uji = %s", (id_uji, kode_komponen_row))
+                        saved = {r[0]: (str(r[1]), r[2] or '') for r in cur.fetchall()}
+                        for kode_sub in sub_codes:
+                            hasil, komen = saved.get(kode_sub, ('1', ''))
+                            detail_rows.append((hasil, kode_komponen_row, kode_sub, komen))
+                            if hasil == '0':
+                                overall_lulus = False
+
+            status = '1' if overall_lulus else '0'
+            cur.execute(f"UPDATE {TB_UJI} SET lulus_uji = %s WHERE id_uji = %s", (status, id_uji))
+            Logger.info(f"{self.name}: [SAVE] kode_kelompok_uji={kode_kelompok}, status_lulus={status}, total_subkomponen={len(detail_rows)}")
+
+            # 3. Simpan Detail Komentar (semua komponen)
+            for hasil, kode_komponen, kode_sub, komen in detail_rows:
                 cur.execute(f"REPLACE INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES (%s, %s, %s, %s, %s)",
-                            (id_uji, hasil, db_komponen_uji[1, selected_row_komponen_uji], kode_sub, komen))
+                            (id_uji, hasil, kode_komponen, kode_sub, komen))
                 Logger.debug(f"{self.name}: [SAVE] subkomponen={kode_sub}, hasil={hasil}, komentar={komen!r}")
 
             db.close()
-            Logger.info(f"{self.name}: [SAVE] Simpan sukses - id_uji={id_uji}, total_subkomponen={db_subkomponen_uji[0,:].size}")
+            Logger.info(f"{self.name}: [SAVE] Simpan sukses - id_uji={id_uji}, total_komponen={db_komponen_uji[0,:].size}")
             Clock.schedule_once(lambda dt: toast('Data Inspeksi Berhasil Disimpan!'))
             Clock.schedule_once(lambda dt: self.open_screen_menu())
 
@@ -3126,9 +3176,6 @@ class ScreenInspectVisual2(MDScreen):
         self.screen_manager.current = 'screen_menu'
 
     def exec_save(self):
-        if selected_row_komponen_uji is None:
-            toast("Pilih komponen uji dulu.")
-            return
         threading.Thread(target=self._save_inspect_bg, daemon=True).start()
 
     def _save_inspect_bg(self):
@@ -3149,14 +3196,9 @@ class ScreenInspectVisual2(MDScreen):
             id_image = result_image[0]
             Logger.info(f"{self.name}: [SAVE] id_image ditemukan = {id_image}")
 
-            kode_kelompok = db_komponen_uji[0, selected_row_komponen_uji]
-            status = '0' if self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon == "cancel" else '1'
-            Logger.info(f"{self.name}: [SAVE] kode_kelompok_uji={kode_kelompok}, status_lulus={status}")
+            kode_kelompok = db_komponen_uji[0, 0]
 
-            # Update tabel UJI jika tersedia, jika tidak maka insert by nouji dan tanggal sekarang
-            cur.execute(f"UPDATE {TB_UJI} SET lulus_uji = %s WHERE id_image = %s AND kode_kelompok_uji = %s AND nopol = %s", (status, id_image, kode_kelompok, dt_no_pol))
-            Logger.info(f"{self.name}: [SAVE] UPDATE {TB_UJI} rowcount={cur.rowcount}")
-
+            # Cari atau buat baris uji utk kelompok ini (status lulus_uji ditentukan belakangan)
             cur.execute(f"SELECT id_uji FROM {TB_UJI} WHERE id_image = %s AND kode_kelompok_uji = %s AND nopol = %s LIMIT 1", (id_image, kode_kelompok, dt_no_pol))
             result_uji = cur.fetchone()
             if result_uji:
@@ -3166,21 +3208,49 @@ class ScreenInspectVisual2(MDScreen):
                 cur.execute(f"""
                     INSERT INTO {TB_UJI} (id_image, nouji, newnouji, nopol, tanggal, kode_kelompok_uji, lulus_uji, noantrian)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                """, (id_image, dt_no_uji, dt_no_uji, dt_no_pol, datetime.datetime.now(), kode_kelompok, status, dt_no_antri))
+                """, (id_image, dt_no_uji, dt_no_uji, dt_no_pol, datetime.datetime.now(), kode_kelompok, '1', dt_no_antri))
                 id_uji = cur.lastrowid
                 Logger.info(f"{self.name}: [SAVE] Baris {TB_UJI} belum ada -> INSERT baru id_uji={id_uji} (jalur INSERT)")
 
-            # 3. Simpan Detail Komentar
-            for i in range(db_subkomponen_uji[0,:].size):
-                kode_sub = db_subkomponen_uji[0,i]
-                komen = self.ids[f'tx_comment{i}'].text
-                hasil = '1' if self.ids[f'bt_subkomponen_uji{i}'].icon == "check-bold" else '0'
+            # 2. Kumpulkan status SEMUA komponen di layar ini: komponen yang sedang dibuka
+            # pakai data UI (paling baru, termasuk toggle barusan), komponen yang belum
+            # pernah dibuka pakai status tersimpan sebelumnya atau default lulus.
+            overall_lulus = True
+            detail_rows = []
+            for row in range(db_komponen_uji[0,:].size):
+                kode_komponen_row = db_komponen_uji[1, row]
+                if row == selected_row_komponen_uji:
+                    for i in range(db_subkomponen_uji[0,:].size):
+                        kode_sub = db_subkomponen_uji[0, i]
+                        hasil = '1' if self.ids[f'bt_subkomponen_uji{i}'].icon == "check-bold" else '0'
+                        komen = self.ids[f'tx_comment{i}'].text
+                        detail_rows.append((hasil, kode_komponen_row, kode_sub, komen))
+                        if hasil == '0':
+                            overall_lulus = False
+                else:
+                    cur.execute(f"SELECT kode_subkomponen_uji FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = %s", (kode_komponen_row,))
+                    sub_codes = [r[0] for r in cur.fetchall()]
+                    if sub_codes:
+                        cur.execute(f"SELECT kode_subkomponen_uji, hasil, keterangan FROM {TB_UJI_DETAIL} WHERE id_uji = %s AND kode_komponen_uji = %s", (id_uji, kode_komponen_row))
+                        saved = {r[0]: (str(r[1]), r[2] or '') for r in cur.fetchall()}
+                        for kode_sub in sub_codes:
+                            hasil, komen = saved.get(kode_sub, ('1', ''))
+                            detail_rows.append((hasil, kode_komponen_row, kode_sub, komen))
+                            if hasil == '0':
+                                overall_lulus = False
+
+            status = '1' if overall_lulus else '0'
+            cur.execute(f"UPDATE {TB_UJI} SET lulus_uji = %s WHERE id_uji = %s", (status, id_uji))
+            Logger.info(f"{self.name}: [SAVE] kode_kelompok_uji={kode_kelompok}, status_lulus={status}, total_subkomponen={len(detail_rows)}")
+
+            # 3. Simpan Detail Komentar (semua komponen)
+            for hasil, kode_komponen, kode_sub, komen in detail_rows:
                 cur.execute(f"REPLACE INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES (%s, %s, %s, %s, %s)",
-                            (id_uji, hasil, db_komponen_uji[1, selected_row_komponen_uji], kode_sub, komen))
+                            (id_uji, hasil, kode_komponen, kode_sub, komen))
                 Logger.debug(f"{self.name}: [SAVE] subkomponen={kode_sub}, hasil={hasil}, komentar={komen!r}")
 
             db.close()
-            Logger.info(f"{self.name}: [SAVE] Simpan sukses - id_uji={id_uji}, total_subkomponen={db_subkomponen_uji[0,:].size}")
+            Logger.info(f"{self.name}: [SAVE] Simpan sukses - id_uji={id_uji}, total_komponen={db_komponen_uji[0,:].size}")
             Clock.schedule_once(lambda dt: toast('Data Inspeksi Berhasil Disimpan!'))
             Clock.schedule_once(lambda dt: self.open_screen_menu())
 
@@ -3535,10 +3605,6 @@ class ScreenInspectPit(MDScreen):
 
 
     def exec_save(self):
-        if selected_row_komponen_uji is None:
-            toast("Pilih komponen uji dulu.")
-            return
-
         # 1. Berikan feedback ke user bahwa tombol ditekan
         toast("Menyimpan data inspeksi...")
 
@@ -3565,7 +3631,7 @@ class ScreenInspectPit(MDScreen):
                 app_data_root = os.path.join(os.environ['PROGRAMDATA'], 'VIIMS', 'assets', 'images')
                 os.makedirs(app_data_root, exist_ok=True)
                 local_path = os.path.join(app_data_root, filename)
-                cv2.imwrite(local_path, cv2.resize(self.image_cctv, (600, 600)))
+                save_photo_600(self.image_cctv, local_path)
                 Logger.info(f"{self.name}: [SAVE] Foto disimpan lokal -> {local_path}")
 
                 # Upload SFTP
@@ -3593,14 +3659,9 @@ class ScreenInspectPit(MDScreen):
             id_image = result_image[0]
             Logger.info(f"{self.name}: [SAVE] id_image ditemukan = {id_image}")
 
-            kode_kelompok = db_komponen_uji[0, selected_row_komponen_uji]
-            status = '0' if self.ids[f'bt_komponen_uji{selected_row_komponen_uji}'].icon == "cancel" else '1'
-            Logger.info(f"{self.name}: [SAVE] kode_kelompok_uji={kode_kelompok}, status_lulus={status}")
+            kode_kelompok = db_komponen_uji[0, 0]
 
-            # Update tabel UJI jika tersedia, jika tidak maka insert by nouji dan tanggal sekarang
-            cur.execute(f"UPDATE {TB_UJI} SET lulus_uji = %s WHERE id_image = %s AND kode_kelompok_uji = %s AND nopol = %s", (status, id_image, kode_kelompok, dt_no_pol))
-            Logger.info(f"{self.name}: [SAVE] UPDATE {TB_UJI} rowcount={cur.rowcount}")
-
+            # Cari atau buat baris uji utk kelompok ini (status lulus_uji ditentukan belakangan)
             cur.execute(f"SELECT id_uji FROM {TB_UJI} WHERE id_image = %s AND kode_kelompok_uji = %s AND nopol = %s LIMIT 1", (id_image, kode_kelompok, dt_no_pol))
             result_uji = cur.fetchone()
 
@@ -3611,21 +3672,49 @@ class ScreenInspectPit(MDScreen):
                 cur.execute(f"""
                     INSERT INTO {TB_UJI} (id_image, nouji, newnouji, nopol, tanggal, kode_kelompok_uji, lulus_uji, noantrian)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                """, (id_image, dt_no_uji, dt_no_uji, dt_no_pol, datetime.datetime.now(), kode_kelompok, status, dt_no_antri))
+                """, (id_image, dt_no_uji, dt_no_uji, dt_no_pol, datetime.datetime.now(), kode_kelompok, '1', dt_no_antri))
                 id_uji = cur.lastrowid
                 Logger.info(f"{self.name}: [SAVE] Baris {TB_UJI} belum ada -> INSERT baru id_uji={id_uji} (jalur INSERT)")
 
-            # Simpan Detail Komentar
-            for i in range(db_subkomponen_uji[0,:].size):
-                kode_sub = db_subkomponen_uji[0,i]
-                komen = self.ids[f'tx_comment{i}'].text
-                hasil = '1' if self.ids[f'bt_subkomponen_uji{i}'].icon == "check-bold" else '0'
+            # Kumpulkan status SEMUA komponen di layar ini: komponen yang sedang dibuka
+            # pakai data UI (paling baru, termasuk toggle barusan), komponen yang belum
+            # pernah dibuka pakai status tersimpan sebelumnya atau default lulus.
+            overall_lulus = True
+            detail_rows = []
+            for row in range(db_komponen_uji[0,:].size):
+                kode_komponen_row = db_komponen_uji[1, row]
+                if row == selected_row_komponen_uji:
+                    for i in range(db_subkomponen_uji[0,:].size):
+                        kode_sub = db_subkomponen_uji[0, i]
+                        hasil = '1' if self.ids[f'bt_subkomponen_uji{i}'].icon == "check-bold" else '0'
+                        komen = self.ids[f'tx_comment{i}'].text
+                        detail_rows.append((hasil, kode_komponen_row, kode_sub, komen))
+                        if hasil == '0':
+                            overall_lulus = False
+                else:
+                    cur.execute(f"SELECT kode_subkomponen_uji FROM {TB_SUBKOMPONEN_UJI} WHERE kode_komponen_uji = %s", (kode_komponen_row,))
+                    sub_codes = [r[0] for r in cur.fetchall()]
+                    if sub_codes:
+                        cur.execute(f"SELECT kode_subkomponen_uji, hasil, keterangan FROM {TB_UJI_DETAIL} WHERE id_uji = %s AND kode_komponen_uji = %s", (id_uji, kode_komponen_row))
+                        saved = {r[0]: (str(r[1]), r[2] or '') for r in cur.fetchall()}
+                        for kode_sub in sub_codes:
+                            hasil, komen = saved.get(kode_sub, ('1', ''))
+                            detail_rows.append((hasil, kode_komponen_row, kode_sub, komen))
+                            if hasil == '0':
+                                overall_lulus = False
+
+            status = '1' if overall_lulus else '0'
+            cur.execute(f"UPDATE {TB_UJI} SET lulus_uji = %s WHERE id_uji = %s", (status, id_uji))
+            Logger.info(f"{self.name}: [SAVE] kode_kelompok_uji={kode_kelompok}, status_lulus={status}, total_subkomponen={len(detail_rows)}")
+
+            # Simpan Detail Komentar (semua komponen)
+            for hasil, kode_komponen, kode_sub, komen in detail_rows:
                 cur.execute(f"REPLACE INTO {TB_UJI_DETAIL} (id_uji, hasil, kode_komponen_uji, kode_subkomponen_uji, keterangan) VALUES (%s, %s, %s, %s, %s)",
-                            (id_uji, hasil, db_komponen_uji[1, selected_row_komponen_uji], kode_sub, komen))
+                            (id_uji, hasil, kode_komponen, kode_sub, komen))
                 Logger.debug(f"{self.name}: [SAVE] subkomponen={kode_sub}, hasil={hasil}, komentar={komen!r}")
 
             db.close()
-            Logger.info(f"{self.name}: [SAVE] Simpan sukses - id_uji={id_uji}, total_subkomponen={db_subkomponen_uji[0,:].size}")
+            Logger.info(f"{self.name}: [SAVE] Simpan sukses - id_uji={id_uji}, total_komponen={db_komponen_uji[0,:].size}")
             Clock.schedule_once(lambda dt: toast('Data PIT & Inspeksi Tersimpan!'))
             Clock.schedule_once(lambda dt: self.open_screen_menu())
 
@@ -3700,39 +3789,19 @@ class ScreenRealtimeCctv(MDScreen):
                 Logger.error(f"{self.name}: Gagal membuka RTSP {rtsp_url_cam_array[dt_selected_camera]}")
                 return
 
-            self.latest_frame = None
-            self.cctv_running = True # Bendera penanda CCTV nyala
-
-            # 1. Mulai Thread terpisah (Background) khusus untuk membaca kamera
-            self.camera_thread = threading.Thread(target=self.get_frame_thread, daemon=True)
-            self.camera_thread.start()
-
-            # 2. Kivy (Jalur Utama) hanya bertugas menampilkan gambar ke layar
             Clock.schedule_interval(self.update_frame_ui, 1/30)
         except Exception as e:
             toast("Gagal membuka kamera")
             Logger.error(f"{self.name}: Error exec_play_cctv: {e}")
-    def get_frame_thread(self):
-        # FUNGSI BARU: Ini berjalan di latar belakang, tidak akan bikin aplikasi nge-freeze!
-        while self.cctv_running and hasattr(self, 'capture') and self.capture.isOpened():
-            ret, frame = self.capture.read()
-            if ret:
-                self.latest_frame = frame
-            # Beri sedikit istirahat agar CPU tidak bekerja 100%
-            time.sleep(0.01)
 
     def update_frame_ui(self, dt):
-        # NAMA FUNGSI BERUBAH: Ini yang bertugas menggambar ke layar
         try:
-            if self.latest_frame is not None:
-                # Copy frame agar tidak bertabrakan dengan thread background
-                frame = self.latest_frame.copy()
-
-                # Proses gambar seperti biasa
+            ret, frame = self.capture.read()
+            if ret:
                 self.image_cctv = self.zoom_image(frame)
                 frame = cv2.flip(self.image_cctv, 0)
                 frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                
+
                 buf = frame_rgb.tobytes()
                 texture = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt='rgb')
                 texture.blit_buffer(buf, colorfmt='rgb', bufferfmt='ubyte')
@@ -3820,13 +3889,28 @@ class ScreenRealtimeCctv(MDScreen):
         threading.Thread(target=self._save_cctv_bg, daemon=True).start()
 
     def _save_cctv_bg(self):
-        global dt_no_antri, dt_sts_uji, dt_no_pol, dt_selected_camera, dt_nrp_user, dt_id_user
+        global dt_no_antri, dt_sts_uji, dt_no_pol, dt_selected_camera
         try:
             # Pengolahan lokal
             idx = dt_selected_camera + 1
             filename = f'{dt_no_pol}-{idx}.jpg'
             local_path = os.path.join(os.environ['PROGRAMDATA'], 'VIIMS', 'assets', 'images', filename)
-            cv2.imwrite(local_path, cv2.resize(self.image_cctv, (600, 600)))
+
+            # Crop tengah 1000x1000 lalu resize ke 600x600, quality 65 (persis setting lama)
+            h, w = self.image_cctv.shape[:2]
+            crop_size = 1000
+            if h < crop_size or w < crop_size:
+                Logger.error(f"{self.name}: Gambar terlalu kecil untuk crop {crop_size}x{crop_size}")
+                return
+            try:
+                cropped_img = self.center_crop(self.image_cctv, crop_size, crop_size)
+            except ValueError as e:
+                Logger.error(f"{self.name}: {e}")
+                return
+            resized_img = cv2.resize(cropped_img, (600, 600), interpolation=cv2.INTER_AREA)
+            success = cv2.imwrite(local_path, resized_img, [int(cv2.IMWRITE_JPEG_QUALITY), 65])
+            if not success:
+                raise Exception("cv2.imwrite failed. Check image data or disk space.")
 
             # Upload
             self.sftp_upload_file(local_path, f'/var/www/pandeglang/storage/app/capture/{time.strftime("%Y-%m-%d")}/{dt_sts_uji}-{dt_no_antri}/{filename}')
@@ -3836,8 +3920,8 @@ class ScreenRealtimeCctv(MDScreen):
             cur = db.cursor()
             gambar_col = "gambar" if idx == 1 else f"gambar{idx}"
             tgl_col = "tgl_capture" if idx == 1 else f"tgl_capture{idx}"
-            cur.execute(f"UPDATE temp_image_kendaraanbr SET `{tgl_col}`=%s, `{gambar_col}`=%s, useridv1=%s, useridv2=%s, useridfoto=%s WHERE nopol=%s",
-                        (time.strftime("%Y-%m-%d %H:%M:%S"), filename, dt_nrp_user, dt_nrp_user, dt_id_user, dt_no_pol))
+            cur.execute(f"UPDATE temp_image_kendaraanbr SET `{tgl_col}`=%s, `{gambar_col}`=%s WHERE nopol=%s",
+                        (time.strftime("%Y-%m-%d %H:%M:%S"), filename, dt_no_pol))
             db.close()
             Clock.schedule_once(lambda dt: toast('Foto CCTV Tersimpan!'))
         except Exception as e:
@@ -3858,15 +3942,13 @@ class ScreenRealtimeCctv(MDScreen):
 
     def exec_stop_cctv(self):
         try:
-            # Matikan bendera agar thread berhenti
-            self.cctv_running = False 
             Clock.unschedule(self.update_frame_ui)
             if hasattr(self, 'capture') and self.capture:
                 self.capture.release()
         except Exception as e:
             pass
 
-class ScreenRealtimePit(MDScreen):        
+class ScreenRealtimePit(MDScreen):
     def __init__(self, **kwargs):
         super(ScreenRealtimePit, self).__init__(**kwargs)
         self.image_cctv = None
@@ -4047,21 +4129,31 @@ class ScreenRealtimePit(MDScreen):
         toast("Menyimpan foto PIT & Data...")
 
     def _save_pit_bg(self):
-        global dt_no_antri, dt_sts_uji, dt_no_pol, dt_selected_camera, dt_nrp_user, dt_id_user
+        global dt_no_antri, dt_sts_uji, dt_no_pol, dt_selected_camera
         try:
             # --- BAGIAN A: PENGOLAHAN GAMBAR LOKAL ---
             idx = dt_selected_camera + 5
             now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            
+
             app_data_root = os.path.join(os.environ['PROGRAMDATA'], 'VIIMS')
             images_dir = os.path.join(app_data_root, 'assets', 'images')
             os.makedirs(images_dir, exist_ok=True)
-            
+
             filename = f'{dt_no_pol}-{idx}.jpg'
             local_path = os.path.join(images_dir, filename)
 
-            # Resize & Save (menggunakan cv2)
-            resized_img = cv2.resize(self.image_cctv, (600, 600), interpolation=cv2.INTER_AREA)
+            # Crop tengah 1000x1000 lalu resize ke 600x600, quality 75 (persis setting lama)
+            h, w = self.image_cctv.shape[:2]
+            crop_size = 1000
+            if h >= crop_size and w >= crop_size:
+                try:
+                    cropped_img = self.center_crop(self.image_cctv, crop_size, crop_size)
+                    resized_img = cv2.resize(cropped_img, (600, 600), interpolation=cv2.INTER_AREA)
+                except ValueError as e:
+                    Logger.error(f"{self.name}: {e}")
+                    resized_img = cv2.resize(self.image_cctv, (600, 600), interpolation=cv2.INTER_AREA)
+            else:
+                resized_img = cv2.resize(self.image_cctv, (600, 600), interpolation=cv2.INTER_AREA)
             cv2.imwrite(local_path, resized_img, [int(cv2.IMWRITE_JPEG_QUALITY), 75])
 
             # --- BAGIAN B: UPLOAD KE SERVER (SFTP) ---
@@ -4069,20 +4161,15 @@ class ScreenRealtimePit(MDScreen):
             remote_path = f'/var/www/pandeglang/storage/app/capture/{time.strftime("%Y-%m-%d")}/{dt_sts_uji}-{dt_no_antri}/{filename}'
             self.sftp_upload_file(local_path, remote_path)
 
-            # --- BAGIAN C: UPDATE DATABASE ---
+            # --- BAGIAN C: UPDATE DATABASE (temp_image_kendaraanbr saja) ---
             db = pymysql.connect(host=DB_HOST, user=DB_USER, password=DB_PASSWORD, database=DB_NAME, autocommit=True)
             cur = db.cursor()
-            
+
             tgl_col = f"tgl_capture{idx}"
             gambar_col = f"gambar{idx}"
 
-            # 1. Update ke tabel TEMP (temp_image_kendaraanbr)
-            sql_temp = f"UPDATE temp_image_kendaraanbr SET `{tgl_col}`=%s, `{gambar_col}`=%s, useridv1=%s, useridv2=%s, useridfoto=%s WHERE nopol=%s"
-            cur.execute(sql_temp, (now, filename, dt_nrp_user, dt_nrp_user, dt_id_user, dt_no_pol))
-
-            # 2. Update ke tabel MASTER (image_kendaraan)
-            sql_master = f"UPDATE {TB_DATA_IMAGE} SET `{tgl_col}`=%s, `{gambar_col}`=%s WHERE nopol=%s ORDER BY id DESC LIMIT 1"
-            cur.execute(sql_master, (now, filename, dt_no_pol))
+            sql_temp = f"UPDATE temp_image_kendaraanbr SET `{tgl_col}`=%s, `{gambar_col}`=%s WHERE nopol=%s"
+            cur.execute(sql_temp, (now, filename, dt_no_pol))
 
             db.commit()
             db.close()
